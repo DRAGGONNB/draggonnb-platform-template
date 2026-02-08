@@ -164,8 +164,7 @@ export function getColor(variant: ColorVariant, scale?: ColorScale): string {
 
   const colorGroup = colors[variant];
   if (typeof colorGroup === 'object' && scale in colorGroup) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (colorGroup as any)[scale] as string;
+    return (colorGroup as Record<string, string>)[scale];
   }
 
   return colors[variant].DEFAULT;

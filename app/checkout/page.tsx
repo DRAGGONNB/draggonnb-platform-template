@@ -106,7 +106,7 @@ function CheckoutContent() {
       <div className="max-w-lg w-full">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-2">Complete Your Subscription</h1>
-          <p className="text-gray-300">You're subscribing to the {selectedTier.name} plan</p>
+          <p className="text-gray-300">You&apos;re subscribing to the {selectedTier.name} plan</p>
         </div>
 
         {/* Plan Summary Card */}
@@ -120,7 +120,7 @@ function CheckoutContent() {
           </div>
 
           <div className="border-t border-slate-600 pt-4">
-            <h3 className="text-sm font-semibold text-gray-400 uppercase mb-3">What's included:</h3>
+            <h3 className="text-sm font-semibold text-gray-400 uppercase mb-3">What&apos;s included:</h3>
             <ul className="space-y-2">
               {selectedTier.features.slice(0, 5).map((feature, idx) => (
                 <li key={idx} className="flex items-start gap-2 text-sm">

@@ -128,7 +128,7 @@ export default async function PaymentSuccessPage({ searchParams }: PageProps) {
               <span className="text-green-400 font-bold mt-0.5 flex-shrink-0">✓</span>
               <div>
                 <div className="font-medium text-white">Account Provisioning (5-10 minutes)</div>
-                <div className="text-sm text-gray-400">We're setting up your isolated database, CRM, and automation workflows</div>
+                <div className="text-sm text-gray-400">We&apos;re setting up your isolated database, CRM, and automation workflows</div>
               </div>
             </li>
             <li className="flex items-start gap-3">
