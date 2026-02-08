@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -44,6 +44,14 @@ const companySizes = [
 ]
 
 export default function QualifyPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-800" />}>
+      <QualifyForm />
+    </Suspense>
+  )
+}
+
+function QualifyForm() {
   const searchParams = useSearchParams()
 
   const [contactName, setContactName] = useState('')
