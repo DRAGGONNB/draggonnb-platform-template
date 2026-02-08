@@ -1,5 +1,5 @@
 import { Octokit } from 'octokit';
-import { CreatedResources } from '../lib/provisioning/types';
+import { CreatedResources } from '@/lib/provisioning/types';
 
 export const rollbackActions = {
   async supabase(projectId: string): Promise<void> {
