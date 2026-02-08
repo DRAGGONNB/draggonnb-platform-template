@@ -236,7 +236,7 @@ export async function incrementUsage(
     if (usage) {
       await supabase
         .from('client_usage_metrics')
-        .update({ [column]: ((usage as Record<string, number>)[column] || 0) + amount })
+        .update({ [column]: ((usage as unknown as Record<string, number>)[column] || 0) + amount })
         .eq('organization_id', organizationId)
     }
   }
