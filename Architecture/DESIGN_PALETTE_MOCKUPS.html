@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DraggonnB CRMM - Design Palette Mockups</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0a0a0f;
+            color: #ffffff;
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+
+        h1, h2, h3 {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .header h1 {
+            font-size: 48px;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            font-size: 18px;
+            color: #94a3b8;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .section {
+            margin-bottom: 80px;
+        }
+
+        .section-title {
+            font-size: 32px;
+            margin-bottom: 40px;
+            text-align: center;
+            color: #e2e8f0;
+        }
+
+        .palette-comparison {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-bottom: 60px;
+        }
+
+        .palette-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(10px);
+        }
+
+        .palette-name {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .palette-tagline {
+            font-size: 14px;
+            color: #94a3b8;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        /* === HERO SECTION MOCKUPS === */
+        .hero-mockup {
+            padding: 60px 40px;
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-headline {
+            font-size: 42px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            line-height: 1.2;
+        }
+
+        .hero-subheading {
+            font-size: 18px;
+            margin-bottom: 32px;
+            opacity: 0.9;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary {
+            padding: 14px 32px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-secondary {
+            padding: 14px 32px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .trust-badges {
+            display: flex;
+            gap: 24px;
+            margin-top: 32px;
+            font-size: 14px;
+        }
+
+        .badge-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        /* === FEATURE CARD MOCKUPS === */
+        .feature-card-mockup {
+            border-radius: 16px;
+            padding: 32px;
+            backdrop-filter: blur(16px);
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+
+        .feature-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin-bottom: 20px;
+        }
+
+        .feature-title {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .feature-description {
+            font-size: 15px;
+            opacity: 0.8;
+            line-height: 1.6;
+        }
+
+        /* === PRICING CARD MOCKUPS === */
+        .pricing-card-mockup {
+            border-radius: 20px;
+            padding: 40px;
+            backdrop-filter: blur(16px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .popular-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .price-display {
+            margin-bottom: 24px;
+        }
+
+        .currency {
+            font-size: 24px;
+            font-weight: 600;
+            vertical-align: top;
+        }
+
+        .amount {
+            font-size: 56px;
+            font-weight: 700;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .period {
+            font-size: 18px;
+            color: #94a3b8;
+        }
+
+        .pricing-features {
+            list-style: none;
+            margin: 24px 0;
+        }
+
+        .pricing-features li {
+            padding: 12px 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 15px;
+        }
+
+        .checkmark {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        /* === CTA SECTION MOCKUPS === */
+        .cta-mockup {
+            padding: 80px 40px;
+            border-radius: 20px;
+            text-align: center;
+        }
+
+        .cta-headline {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            line-height: 1.2;
+        }
+
+        .cta-text {
+            font-size: 18px;
+            margin-bottom: 32px;
+            opacity: 0.9;
+        }
+
+        /* === PALETTE 1: CORPORATE EMERALD === */
+        .emerald .hero-mockup {
+            background: linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%);
+        }
+
+        .emerald .hero-headline {
+            background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .emerald .btn-primary {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #ffffff;
+            box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);
+        }
+
+        .emerald .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(16, 185, 129, 0.4);
+        }
+
+        .emerald .btn-secondary {
+            border: 2px solid #10b981;
+            color: #10b981;
+        }
+
+        .emerald .btn-secondary:hover {
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .emerald .feature-card-mockup {
+            background: linear-gradient(135deg, rgba(6, 78, 59, 0.4) 0%, rgba(6, 95, 70, 0.2) 100%);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .emerald .feature-card-mockup:hover {
+            border-color: rgba(16, 185, 129, 0.4);
+            box-shadow: 0 8px 32px rgba(16, 185, 129, 0.15);
+            transform: translateY(-4px);
+        }
+
+        .emerald .feature-icon {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        .emerald .pricing-card-mockup {
+            background: linear-gradient(135deg, rgba(6, 78, 59, 0.4) 0%, rgba(6, 95, 70, 0.2) 100%);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .emerald .popular-badge {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #ffffff;
+        }
+
+        .emerald .checkmark {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #ffffff;
+        }
+
+        .emerald .cta-mockup {
+            background: linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%);
+        }
+
+        .emerald .cta-headline {
+            background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* === PALETTE 2: MIDNIGHT INDIGO === */
+        .indigo .hero-mockup {
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
+        }
+
+        .indigo .hero-headline {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .indigo .btn-primary {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            color: #ffffff;
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+        }
+
+        .indigo .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(99, 102, 241, 0.4);
+        }
+
+        .indigo .btn-secondary {
+            border: 2px solid #6366f1;
+            color: #6366f1;
+        }
+
+        .indigo .btn-secondary:hover {
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .indigo .feature-card-mockup {
+            background: linear-gradient(135deg, rgba(30, 27, 75, 0.4) 0%, rgba(49, 46, 129, 0.2) 100%);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+
+        .indigo .feature-card-mockup:hover {
+            border-color: rgba(99, 102, 241, 0.4);
+            box-shadow: 0 8px 32px rgba(99, 102, 241, 0.15);
+            transform: translateY(-4px);
+        }
+
+        .indigo .feature-icon {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+        }
+
+        .indigo .pricing-card-mockup {
+            background: linear-gradient(135deg, rgba(30, 27, 75, 0.4) 0%, rgba(49, 46, 129, 0.2) 100%);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+        }
+
+        .indigo .popular-badge {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            color: #ffffff;
+        }
+
+        .indigo .checkmark {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            color: #ffffff;
+        }
+
+        .indigo .cta-mockup {
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
+        }
+
+        .indigo .cta-headline {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* === PALETTE 3: OBSIDIAN ROSE === */
+        .rose .hero-mockup {
+            background: linear-gradient(135deg, #1f1f1f 0%, #2d2d2d 50%, #3a3a3a 100%);
+        }
+
+        .rose .hero-headline {
+            background: linear-gradient(135deg, #f43f5e 0%, #fb7185 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .rose .btn-primary {
+            background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+            color: #ffffff;
+            box-shadow: 0 8px 24px rgba(244, 63, 94, 0.3);
+        }
+
+        .rose .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(244, 63, 94, 0.4);
+        }
+
+        .rose .btn-secondary {
+            border: 2px solid #f43f5e;
+            color: #f43f5e;
+        }
+
+        .rose .btn-secondary:hover {
+            background: rgba(244, 63, 94, 0.1);
+        }
+
+        .rose .feature-card-mockup {
+            background: linear-gradient(135deg, rgba(31, 31, 31, 0.6) 0%, rgba(45, 45, 45, 0.3) 100%);
+            border: 1px solid rgba(244, 63, 94, 0.2);
+        }
+
+        .rose .feature-card-mockup:hover {
+            border-color: rgba(244, 63, 94, 0.4);
+            box-shadow: 0 8px 32px rgba(244, 63, 94, 0.15);
+            transform: translateY(-4px);
+        }
+
+        .rose .feature-icon {
+            background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+        }
+
+        .rose .pricing-card-mockup {
+            background: linear-gradient(135deg, rgba(31, 31, 31, 0.6) 0%, rgba(45, 45, 45, 0.3) 100%);
+            border: 1px solid rgba(244, 63, 94, 0.3);
+        }
+
+        .rose .popular-badge {
+            background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+            color: #ffffff;
+        }
+
+        .rose .checkmark {
+            background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+            color: #ffffff;
+        }
+
+        .rose .cta-mockup {
+            background: linear-gradient(135deg, #1f1f1f 0%, #2d2d2d 50%, #3a3a3a 100%);
+        }
+
+        .rose .cta-headline {
+            background: linear-gradient(135deg, #f43f5e 0%, #fb7185 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* === COMPARISON NOTES === */
+        .comparison-notes {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 24px;
+            margin-top: 24px;
+        }
+
+        .comparison-notes h4 {
+            font-size: 18px;
+            margin-bottom: 12px;
+            color: #3b82f6;
+        }
+
+        .comparison-notes p {
+            font-size: 14px;
+            color: #cbd5e1;
+            line-height: 1.8;
+        }
+
+        @media (max-width: 1200px) {
+            .palette-comparison {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>DraggonnB CRMM Design Palette Mockups</h1>
+            <p>Visual comparison of three distinct color palettes for the landing page. Scroll to compare each section across all three design directions.</p>
+        </div>
+
+        <!-- === SECTION 1: HERO SECTION === -->
+        <div class="section">
+            <h2 class="section-title">1. Hero Section Comparison</h2>
+            <div class="palette-comparison">
+                <!-- Palette 1: Corporate Emerald -->
+                <div class="palette-card emerald">
+                    <h3 class="palette-name">Corporate Emerald</h3>
+                    <p class="palette-tagline">Trust, Growth, Stability</p>
+                    <div class="hero-mockup">
+                        <div class="hero-content">
+                            <h1 class="hero-headline">Scale Your Business in 48 Hours</h1>
+                            <p class="hero-subheading">AI-powered automation that delivers 3 quick wins for South African SMEs. From lead to deployment in 2 days.</p>
+                            <div class="hero-buttons">
+                                <button class="btn-primary">Start Free Trial</button>
+                                <button class="btn-secondary">See How It Works</button>
+                            </div>
+                            <div class="trust-badges">
+                                <div class="badge-item">✓ No setup fees</div>
+                                <div class="badge-item">✓ Cancel anytime</div>
+                                <div class="badge-item">✓ SA support</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Palette 2: Midnight Indigo -->
+                <div class="palette-card indigo">
+                    <h3 class="palette-name">Midnight Indigo</h3>
+                    <p class="palette-tagline">Innovation, Intelligence, Premium</p>
+                    <div class="hero-mockup">
+                        <div class="hero-content">
+                            <h1 class="hero-headline">Scale Your Business in 48 Hours</h1>
+                            <p class="hero-subheading">AI-powered automation that delivers 3 quick wins for South African SMEs. From lead to deployment in 2 days.</p>
+                            <div class="hero-buttons">
+                                <button class="btn-primary">Start Free Trial</button>
+                                <button class="btn-secondary">See How It Works</button>
+                            </div>
+                            <div class="trust-badges">
+                                <div class="badge-item">✓ No setup fees</div>
+                                <div class="badge-item">✓ Cancel anytime</div>
+                                <div class="badge-item">✓ SA support</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Palette 3: Obsidian Rose -->
+                <div class="palette-card rose">
+                    <h3 class="palette-name">Obsidian Rose</h3>
+                    <p class="palette-tagline">Bold, Modern, Energetic</p>
+                    <div class="hero-mockup">
+                        <div class="hero-content">
+                            <h1 class="hero-headline">Scale Your Business in 48 Hours</h1>
+                            <p class="hero-subheading">AI-powered automation that delivers 3 quick wins for South African SMEs. From lead to deployment in 2 days.</p>
+                            <div class="hero-buttons">
+                                <button class="btn-primary">Start Free Trial</button>
+                                <button class="btn-secondary">See How It Works</button>
+                            </div>
+                            <div class="trust-badges">
+                                <div class="badge-item">✓ No setup fees</div>
+                                <div class="badge-item">✓ Cancel anytime</div>
+                                <div class="badge-item">✓ SA support</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="comparison-notes">
+                <h4>Hero Section Analysis</h4>
+                <p><strong>Corporate Emerald:</strong> Deep emerald green gradient (#064e3b → #047857) creates immediate trust and professionalism. The gradient headline (#10b981 → #34d399) pops beautifully against the dark background. Primary button has strong emerald glow (#10b981) with 0.3 opacity shadow. Trust badges use subtle white background with 0.1 opacity. Overall feel: Established, reliable, growth-focused.</p>
+                <p><strong>Midnight Indigo:</strong> Rich indigo gradient (#1e1b4b → #4338ca) evokes intelligence and innovation. The purple-indigo headline gradient (#6366f1 → #8b5cf6) creates sophisticated tech aesthetic. Button glow is cooler-toned (indigo #6366f1). Same trust badge treatment but cooler color temperature. Overall feel: Premium, intelligent, forward-thinking.</p>
+                <p><strong>Obsidian Rose:</strong> Charcoal gradient (#1f1f1f → #3a3a3a) provides maximum contrast for the vibrant rose headline (#f43f5e → #fb7185). The bold rose accent demands attention and conveys energy. Primary button has dramatic rose glow. Overall feel: Bold, modern, disruptive, memorable.</p>
+            </div>
+        </div>
+
+        <!-- === SECTION 2: FEATURE CARDS === -->
+        <div class="section">
+            <h2 class="section-title">2. Feature Card Comparison</h2>
+            <div class="palette-comparison">
+                <!-- Palette 1: Corporate Emerald -->
+                <div class="palette-card emerald">
+                    <h3 class="palette-name">Corporate Emerald</h3>
+                    <div class="feature-card-mockup">
+                        <div class="feature-icon">🚀</div>
+                        <h3 class="feature-title">48-Hour Deployment</h3>
+                        <p class="feature-description">From initial consultation to live production environment. Our AI analyzes your business and identifies 3 quick wins you can implement immediately.</p>
+                    </div>
+                </div>
+
+                <!-- Palette 2: Midnight Indigo -->
+                <div class="palette-card indigo">
+                    <h3 class="palette-name">Midnight Indigo</h3>
+                    <div class="feature-card-mockup">
+                        <div class="feature-icon">🚀</div>
+                        <h3 class="feature-title">48-Hour Deployment</h3>
+                        <p class="feature-description">From initial consultation to live production environment. Our AI analyzes your business and identifies 3 quick wins you can implement immediately.</p>
+                    </div>
+                </div>
+
+                <!-- Palette 3: Obsidian Rose -->
+                <div class="palette-card rose">
+                    <h3 class="palette-name">Obsidian Rose</h3>
+                    <div class="feature-card-mockup">
+                        <div class="feature-icon">🚀</div>
+                        <h3 class="feature-title">48-Hour Deployment</h3>
+                        <p class="feature-description">From initial consultation to live production environment. Our AI analyzes your business and identifies 3 quick wins you can implement immediately.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="comparison-notes">
+                <h4>Feature Card Analysis</h4>
+                <p><strong>Corporate Emerald:</strong> Glass morphism background with emerald tint (rgba(6, 78, 59, 0.4) → rgba(6, 95, 70, 0.2)). Border uses emerald at 0.2 opacity (#10b981), increasing to 0.4 on hover. Icon background is solid emerald gradient. 16px backdrop blur creates depth. Hover state lifts card -4px with emerald glow shadow (0.15 opacity). Overall: Professional, trustworthy, inviting.</p>
+                <p><strong>Midnight Indigo:</strong> Glass background with deep indigo tint (rgba(30, 27, 75, 0.4) → rgba(49, 46, 129, 0.2)). Border is indigo (#6366f1) at 0.2 opacity, hover to 0.4. Icon uses indigo gradient. Same 16px blur and -4px lift on hover with indigo glow. Overall: Sophisticated, premium, intelligent design.</p>
+                <p><strong>Obsidian Rose:</strong> Glass background with charcoal tint (rgba(31, 31, 31, 0.6) → rgba(45, 45, 45, 0.3)) - more opaque for stronger contrast. Border is rose (#f43f5e) at 0.2 opacity, hover to 0.4. Icon uses bold rose gradient. Hover creates dramatic rose glow. Overall: Bold, modern, memorable, high-energy.</p>
+            </div>
+        </div>
+
+        <!-- === SECTION 3: PRICING CARDS === -->
+        <div class="section">
+            <h2 class="section-title">3. Pricing Card Comparison</h2>
+            <div class="palette-comparison">
+                <!-- Palette 1: Corporate Emerald -->
+                <div class="palette-card emerald">
+                    <h3 class="palette-name">Corporate Emerald</h3>
+                    <div class="pricing-card-mockup">
+                        <div class="popular-badge">Most Popular</div>
+                        <h3 style="font-size: 20px; margin-bottom: 8px; color: #10b981;">Professional</h3>
+                        <div class="price-display">
+                            <span class="currency">R</span><span class="amount">3,500</span><span class="period">/month</span>
+                        </div>
+                        <ul class="pricing-features">
+                            <li><span class="checkmark">✓</span> 100 social posts per month</li>
+                            <li><span class="checkmark">✓</span> 200 AI content generations</li>
+                            <li><span class="checkmark">✓</span> 10 social accounts</li>
+                            <li><span class="checkmark">✓</span> Priority WhatsApp support</li>
+                            <li><span class="checkmark">✓</span> Daily analytics & insights</li>
+                        </ul>
+                        <button class="btn-primary" style="width: 100%;">Get Started</button>
+                    </div>
+                </div>
+
+                <!-- Palette 2: Midnight Indigo -->
+                <div class="palette-card indigo">
+                    <h3 class="palette-name">Midnight Indigo</h3>
+                    <div class="pricing-card-mockup">
+                        <div class="popular-badge">Most Popular</div>
+                        <h3 style="font-size: 20px; margin-bottom: 8px; color: #6366f1;">Professional</h3>
+                        <div class="price-display">
+                            <span class="currency">R</span><span class="amount">3,500</span><span class="period">/month</span>
+                        </div>
+                        <ul class="pricing-features">
+                            <li><span class="checkmark">✓</span> 100 social posts per month</li>
+                            <li><span class="checkmark">✓</span> 200 AI content generations</li>
+                            <li><span class="checkmark">✓</span> 10 social accounts</li>
+                            <li><span class="checkmark">✓</span> Priority WhatsApp support</li>
+                            <li><span class="checkmark">✓</span> Daily analytics & insights</li>
+                        </ul>
+                        <button class="btn-primary" style="width: 100%;">Get Started</button>
+                    </div>
+                </div>
+
+                <!-- Palette 3: Obsidian Rose -->
+                <div class="palette-card rose">
+                    <h3 class="palette-name">Obsidian Rose</h3>
+                    <div class="pricing-card-mockup">
+                        <div class="popular-badge">Most Popular</div>
+                        <h3 style="font-size: 20px; margin-bottom: 8px; color: #f43f5e;">Professional</h3>
+                        <div class="price-display">
+                            <span class="currency">R</span><span class="amount">3,500</span><span class="period">/month</span>
+                        </div>
+                        <ul class="pricing-features">
+                            <li><span class="checkmark">✓</span> 100 social posts per month</li>
+                            <li><span class="checkmark">✓</span> 200 AI content generations</li>
+                            <li><span class="checkmark">✓</span> 10 social accounts</li>
+                            <li><span class="checkmark">✓</span> Priority WhatsApp support</li>
+                            <li><span class="checkmark">✓</span> Daily analytics & insights</li>
+                        </ul>
+                        <button class="btn-primary" style="width: 100%;">Get Started</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="comparison-notes">
+                <h4>Pricing Card Analysis</h4>
+                <p><strong>Corporate Emerald:</strong> Same glass morphism as feature cards. "Popular" badge uses solid emerald gradient (#10b981 → #059669) with white text. Plan title uses emerald accent color. Price display uses Space Grotesk font at 56px bold. Checkmarks are circular emerald gradients with white check symbol. Border is emerald at 0.3 opacity (stronger than feature cards). Full-width CTA button. Overall: Professional, clear value proposition, trustworthy.</p>
+                <p><strong>Midnight Indigo:</strong> Glass background with indigo tint. "Popular" badge uses indigo gradient (#6366f1 → #4f46e5). Plan title uses indigo accent. Same typography hierarchy. Checkmarks are indigo gradients. Border at 0.3 opacity in indigo. Overall: Premium positioning, intelligent choice, sophisticated.</p>
+                <p><strong>Obsidian Rose:</strong> Charcoal glass background (more opaque at 0.6 → 0.3). "Popular" badge uses bold rose gradient (#f43f5e → #e11d48). Plan title uses rose accent. Checkmarks are rose gradients - highly visible. Border at 0.3 opacity in rose. Overall: Bold, stands out, memorable, energetic value prop.</p>
+            </div>
+        </div>
+
+        <!-- === SECTION 4: CTA SECTION === -->
+        <div class="section">
+            <h2 class="section-title">4. Call-to-Action Section Comparison</h2>
+            <div class="palette-comparison">
+                <!-- Palette 1: Corporate Emerald -->
+                <div class="palette-card emerald">
+                    <h3 class="palette-name">Corporate Emerald</h3>
+                    <div class="cta-mockup">
+                        <h2 class="cta-headline">Ready to Scale Your Business?</h2>
+                        <p class="cta-text">Join 100+ South African SMEs automating their growth with DraggonnB CRMM</p>
+                        <button class="btn-primary">Start Your Free Trial</button>
+                        <p style="margin-top: 16px; font-size: 14px; opacity: 0.7;">No credit card required • 14-day trial • Cancel anytime</p>
+                    </div>
+                </div>
+
+                <!-- Palette 2: Midnight Indigo -->
+                <div class="palette-card indigo">
+                    <h3 class="palette-name">Midnight Indigo</h3>
+                    <div class="cta-mockup">
+                        <h2 class="cta-headline">Ready to Scale Your Business?</h2>
+                        <p class="cta-text">Join 100+ South African SMEs automating their growth with DraggonnB CRMM</p>
+                        <button class="btn-primary">Start Your Free Trial</button>
+                        <p style="margin-top: 16px; font-size: 14px; opacity: 0.7;">No credit card required • 14-day trial • Cancel anytime</p>
+                    </div>
+                </div>
+
+                <!-- Palette 3: Obsidian Rose -->
+                <div class="palette-card rose">
+                    <h3 class="palette-name">Obsidian Rose</h3>
+                    <div class="cta-mockup">
+                        <h2 class="cta-headline">Ready to Scale Your Business?</h2>
+                        <p class="cta-text">Join 100+ South African SMEs automating their growth with DraggonnB CRMM</p>
+                        <button class="btn-primary">Start Your Free Trial</button>
+                        <p style="margin-top: 16px; font-size: 14px; opacity: 0.7;">No credit card required • 14-day trial • Cancel anytime</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="comparison-notes">
+                <h4>CTA Section Analysis</h4>
+                <p><strong>Corporate Emerald:</strong> Full-width gradient background matching hero section (#064e3b → #047857). Headline uses same emerald gradient text (#10b981 → #34d399) at 48px. Supporting text at 18px with 0.9 opacity. Large emerald CTA button with prominent glow. Fine print below in muted white (0.7 opacity). Overall: Confident, trustworthy final push, reduces friction with clear trial terms.</p>
+                <p><strong>Midnight Indigo:</strong> Full-width indigo gradient (#1e1b4b → #4338ca). Headline uses indigo-purple gradient (#6366f1 → #8b5cf6). Same text hierarchy. Indigo CTA button with cool-toned glow. Overall: Premium, intelligent positioning, appeals to forward-thinking decision makers.</p>
+                <p><strong>Obsidian Rose:</strong> Full-width charcoal gradient (#1f1f1f → #3a3a3a). Headline uses vibrant rose gradient (#f43f5e → #fb7185) - maximum impact. Same hierarchy. Rose CTA button creates strong contrast and urgency. Overall: Bold, energetic, memorable final impression, creates FOMO.</p>
+            </div>
+        </div>
+
+        <!-- === FINAL RECOMMENDATION === -->
+        <div class="section">
+            <h2 class="section-title">Design Palette Recommendations</h2>
+            <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 40px; max-width: 1000px; margin: 0 auto;">
+                <h3 style="font-size: 24px; margin-bottom: 24px; text-align: center;">Which Palette is Right for DraggonnB CRMM?</h3>
+
+                <div style="margin-bottom: 32px;">
+                    <h4 style="color: #10b981; font-size: 20px; margin-bottom: 12px;">1. Corporate Emerald - "The Trust Builder"</h4>
+                    <p style="color: #cbd5e1; margin-bottom: 8px;"><strong>Best for:</strong> Conservative B2B audiences, established businesses, industries where trust is paramount</p>
+                    <p style="color: #cbd5e1; margin-bottom: 8px;"><strong>Psychological impact:</strong> Green = growth, money, stability, nature. Emerald specifically = premium + trustworthy</p>
+                    <p style="color: #cbd5e1; margin-bottom: 8px;"><strong>Competitive advantage:</strong> Differentiates from blue-heavy SaaS landscape</p>
+                    <p style="color: #cbd5e1;"><strong>Recommendation:</strong> Choose this if target audience values reliability over innovation</p>
+                </div>
+
+                <div style="margin-bottom: 32px;">
+                    <h4 style="color: #6366f1; font-size: 20px; margin-bottom: 12px;">2. Midnight Indigo - "The Premium Innovator"</h4>
+                    <p style="color: #cbd5e1; margin-bottom: 8px;"><strong>Best for:</strong> Tech-forward audiences, innovation-focused businesses, premium positioning</p>
+                    <p style="color: #cbd5e1; margin-bottom: 8px;"><strong>Psychological impact:</strong> Indigo/purple = intelligence, wisdom, luxury, creativity, AI/tech</p>
+                    <p style="color: #cbd5e1; margin-bottom: 8px;"><strong>Competitive advantage:</strong> Aligns with AI-powered positioning, appeals to early adopters</p>
+                    <p style="color: #cbd5e1;"><strong>Recommendation:</strong> Choose this if emphasizing cutting-edge AI and premium features</p>
+                </div>
+
+                <div>
+                    <h4 style="color: #f43f5e; font-size: 20px; margin-bottom: 12px;">3. Obsidian Rose - "The Disruptor"</h4>
+                    <p style="color: #cbd5e1; margin-bottom: 8px;"><strong>Best for:</strong> Bold brands, younger audiences, highly competitive markets needing differentiation</p>
+                    <p style="color: #cbd5e1; margin-bottom: 8px;"><strong>Psychological impact:</strong> Rose/red = energy, passion, action, urgency, confidence</p>
+                    <p style="color: #cbd5e1; margin-bottom: 8px;"><strong>Competitive advantage:</strong> Highly memorable, stands out in crowded B2B SaaS space</p>
+                    <p style="color: #cbd5e1;"><strong>Recommendation:</strong> Choose this if targeting disruptive, fast-growth startups or creative industries</p>
+                </div>
+
+                <div style="margin-top: 40px; padding: 24px; background: rgba(59, 130, 246, 0.1); border-left: 4px solid #3b82f6; border-radius: 8px;">
+                    <h4 style="color: #3b82f6; font-size: 18px; margin-bottom: 12px;">My Recommendation for DraggonnB CRMM:</h4>
+                    <p style="color: #e2e8f0; line-height: 1.8;"><strong>Corporate Emerald</strong> with the option to A/B test against <strong>Midnight Indigo</strong>. Here's why: Your target audience (South African SMEs) values trust and proven ROI over bleeding-edge tech aesthetics. The emerald palette conveys growth (literally - your value prop is "scale your business") and financial success (green = money, profits). It differentiates you from the sea of blue SaaS products. However, Midnight Indigo works excellently if you want to emphasize the AI-powered intelligence aspect and position as premium/sophisticated. Obsidian Rose is bold but may be too aggressive for conservative B2B buyers making a R3,500/month commitment.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- === COLOR SPECIFICATIONS === -->
+        <div class="section">
+            <h2 class="section-title">Exact Color Specifications</h2>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;">
+                <!-- Corporate Emerald Colors -->
+                <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 24px;">
+                    <h3 style="color: #10b981; margin-bottom: 16px;">Corporate Emerald</h3>
+                    <div style="margin-bottom: 12px;">
+                        <div style="background: #064e3b; height: 40px; border-radius: 6px; margin-bottom: 4px;"></div>
+                        <p style="font-size: 12px; color: #94a3b8;">BG Dark: #064e3b</p>
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <div style="background: #047857; height: 40px; border-radius: 6px; margin-bottom: 4px;"></div>
+                        <p style="font-size: 12px; color: #94a3b8;">BG Light: #047857</p>
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <div style="background: #10b981; height: 40px; border-radius: 6px; margin-bottom: 4px;"></div>
+                        <p style="font-size: 12px; color: #94a3b8;">Primary: #10b981</p>
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <div style="background: #34d399; height: 40px; border-radius: 6px; margin-bottom: 4px;"></div>
+                        <p style="font-size: 12px; color: #94a3b8;">Accent: #34d399</p>
+                    </div>
+                    <div>
+                        <div style="background: #059669; height: 40px; border-radius: 6px; margin-bottom: 4px;"></div>
+                        <p style="font-size: 12px; color: #94a3b8;">Hover: #059669</p>
+                    </div>
+                </div>
+
+                <!-- Midnight Indigo Colors -->
+                <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 24px;">
+                    <h3 style="color: #6366f1; margin-bottom: 16px;">Midnight Indigo</h3>
+                    <div style="margin-bottom: 12px;">
+                        <div style="background: #1e1b4b; height: 40px; border-radius: 6px; margin-bottom: 4px;"></div>
+                        <p style="font-size: 12px; color: #94a3b8;">BG Dark: #1e1b4b</p>
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <div style="background: #4338ca; height: 40px; border-radius: 6px; margin-bottom: 4px;"></div>
+                        <p style="font-size: 12px; color: #94a3b8;">BG Light: #4338ca</p>
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <div style="background: #6366f1; height: 40px; border-radius: 6px; margin-bottom: 4px;"></div>
+                        <p style="font-size: 12px; color: #94a3b8;">Primary: #6366f1</p>
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <div style="background: #8b5cf6; height: 40px; border-radius: 6px; margin-bottom: 4px;"></div>
+                        <p style="font-size: 12px; color: #94a3b8;">Accent: #8b5cf6</p>
+                    </div>
+                    <div>
+                        <div style="background: #4f46e5; height: 40px; border-radius: 6px; margin-bottom: 4px;"></div>
+                        <p style="font-size: 12px; color: #94a3b8;">Hover: #4f46e5</p>
+                    </div>
+                </div>
+
+                <!-- Obsidian Rose Colors -->
+                <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(244, 63, 94, 0.3); border-radius: 12px; padding: 24px;">
+                    <h3 style="color: #f43f5e; margin-bottom: 16px;">Obsidian Rose</h3>
+                    <div style="margin-bottom: 12px;">
+                        <div style="background: #1f1f1f; height: 40px; border-radius: 6px; margin-bottom: 4px;"></div>
+                        <p style="font-size: 12px; color: #94a3b8;">BG Dark: #1f1f1f</p>
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <div style="background: #3a3a3a; height: 40px; border-radius: 6px; margin-bottom: 4px;"></div>
+                        <p style="font-size: 12px; color: #94a3b8;">BG Light: #3a3a3a</p>
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <div style="background: #f43f5e; height: 40px; border-radius: 6px; margin-bottom: 4px;"></div>
+                        <p style="font-size: 12px; color: #94a3b8;">Primary: #f43f5e</p>
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <div style="background: #fb7185; height: 40px; border-radius: 6px; margin-bottom: 4px;"></div>
+                        <p style="font-size: 12px; color: #94a3b8;">Accent: #fb7185</p>
+                    </div>
+                    <div>
+                        <div style="background: #e11d48; height: 40px; border-radius: 6px; margin-bottom: 4px;"></div>
+                        <p style="font-size: 12px; color: #94a3b8;">Hover: #e11d48</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

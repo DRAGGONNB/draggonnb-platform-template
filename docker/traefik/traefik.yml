@@ -1,0 +1,139 @@
+# =============================================================================
+# DraggonnB CRMM - Traefik Configuration
+# =============================================================================
+# Traefik v3.0 Static Configuration
+#
+# Features:
+#   - Automatic SSL via Let's Encrypt
+#   - Docker provider integration
+#   - HTTP to HTTPS redirect
+#   - Access logging
+#   - Health check endpoint
+# =============================================================================
+
+# =============================================================================
+# GLOBAL SETTINGS
+# =============================================================================
+global:
+  checkNewVersion: false
+  sendAnonymousUsage: false
+
+# =============================================================================
+# API & DASHBOARD
+# =============================================================================
+api:
+  dashboard: true
+  insecure: false
+
+# =============================================================================
+# LOGGING
+# =============================================================================
+log:
+  level: INFO
+  format: json
+
+accessLog:
+  format: json
+  filters:
+    statusCodes:
+      - "400-599"
+    retryAttempts: true
+    minDuration: "100ms"
+  fields:
+    defaultMode: keep
+    headers:
+      defaultMode: drop
+      names:
+        User-Agent: keep
+        X-Forwarded-For: keep
+        X-Real-IP: keep
+
+# =============================================================================
+# ENTRYPOINTS
+# =============================================================================
+entryPoints:
+  # HTTP - redirects to HTTPS
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
+
+  # HTTPS - main entry point
+  websecure:
+    address: ":443"
+    http:
+      tls:
+        certResolver: letsencrypt
+    # Enable Proxy Protocol if behind load balancer (uncomment if needed)
+    # proxyProtocol:
+    #   trustedIPs:
+    #     - "10.0.0.0/8"
+    #     - "172.16.0.0/12"
+    #     - "192.168.0.0/16"
+
+# =============================================================================
+# CERTIFICATE RESOLVERS
+# =============================================================================
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      # IMPORTANT: Change to your email
+      email: admin@draggonnb.app
+      storage: /certificates/acme.json
+      # Use staging server for testing (uncomment for testing)
+      # caServer: https://acme-staging-v02.api.letsencrypt.org/directory
+      httpChallenge:
+        entryPoint: web
+      # Alternative: DNS challenge (for wildcard certs)
+      # dnsChallenge:
+      #   provider: cloudflare
+      #   delayBeforeCheck: 10
+
+# =============================================================================
+# PROVIDERS
+# =============================================================================
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    network: traefik-public
+    watch: true
+
+  # Optional: File provider for additional routes
+  file:
+    directory: /etc/traefik/dynamic
+    watch: true
+
+# =============================================================================
+# HEALTH CHECK
+# =============================================================================
+ping:
+  entryPoint: websecure
+
+# =============================================================================
+# METRICS (Optional - for monitoring)
+# =============================================================================
+# metrics:
+#   prometheus:
+#     entryPoint: metrics
+#     addEntryPointsLabels: true
+#     addServicesLabels: true
+#     buckets:
+#       - 0.1
+#       - 0.3
+#       - 1.2
+#       - 5.0
+
+# =============================================================================
+# EXPERIMENTAL FEATURES (Optional)
+# =============================================================================
+# experimental:
+#   plugins:
+#     # Example: GeoIP blocking plugin
+#     geoblock:
+#       moduleName: github.com/PascalMinder/geoblock
+#       version: v0.2.7

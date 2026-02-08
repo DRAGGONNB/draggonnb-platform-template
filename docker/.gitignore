@@ -1,0 +1,28 @@
+# Environment files (contain secrets)
+.env
+.env.local
+.env.production
+.env.staging
+
+# Backup files
+backups/
+*.tar.gz
+*.backup
+
+# SSL certificates
+certificates/
+acme.json
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

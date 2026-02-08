@@ -1,0 +1,838 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Background & Foreground */
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    /* Card */
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    /* Popover */
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    /* Primary (Brand Blue) */
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --primary-50: 214 100% 97%;
+    --primary-100: 214 95% 93%;
+    --primary-200: 213 97% 87%;
+    --primary-300: 212 96% 78%;
+    --primary-400: 213 94% 68%;
+    --primary-500: 217 91% 60%;
+    --primary-600: 221 83% 53%;
+    --primary-700: 224 76% 48%;
+    --primary-800: 226 71% 40%;
+    --primary-900: 224 64% 33%;
+
+    /* Futuristic Colors - Electric Blue */
+    --electric-blue: 210 100% 60%;
+    --electric-blue-50: 210 100% 97%;
+    --electric-blue-100: 210 100% 90%;
+    --electric-blue-200: 210 100% 80%;
+    --electric-blue-300: 210 100% 70%;
+    --electric-blue-400: 210 100% 60%;
+    --electric-blue-500: 210 90% 52%;
+    --electric-blue-600: 210 85% 45%;
+    --electric-blue-700: 210 80% 38%;
+    --electric-blue-800: 210 75% 30%;
+    --electric-blue-900: 210 70% 22%;
+
+    /* Futuristic Colors - Neon Cyan */
+    --neon-cyan: 185 100% 55%;
+    --neon-cyan-50: 185 100% 97%;
+    --neon-cyan-100: 185 100% 90%;
+    --neon-cyan-200: 185 100% 75%;
+    --neon-cyan-300: 185 100% 65%;
+    --neon-cyan-400: 185 100% 55%;
+    --neon-cyan-500: 185 90% 48%;
+    --neon-cyan-600: 185 85% 40%;
+    --neon-cyan-700: 185 80% 32%;
+    --neon-cyan-800: 185 75% 25%;
+    --neon-cyan-900: 185 70% 18%;
+
+    /* Futuristic Colors - Electric Purple */
+    --electric-purple: 270 100% 65%;
+    --electric-purple-50: 270 100% 97%;
+    --electric-purple-100: 270 100% 92%;
+    --electric-purple-200: 270 100% 85%;
+    --electric-purple-300: 270 100% 75%;
+    --electric-purple-400: 270 100% 65%;
+    --electric-purple-500: 270 85% 58%;
+    --electric-purple-600: 270 75% 50%;
+    --electric-purple-700: 270 70% 42%;
+    --electric-purple-800: 270 65% 33%;
+    --electric-purple-900: 270 60% 25%;
+
+    /* Futuristic Colors - Neon Orange */
+    --neon-orange: 20 100% 60%;
+    --neon-orange-50: 20 100% 97%;
+    --neon-orange-100: 20 100% 90%;
+    --neon-orange-200: 20 100% 80%;
+    --neon-orange-300: 20 100% 70%;
+    --neon-orange-400: 20 100% 60%;
+    --neon-orange-500: 20 95% 52%;
+    --neon-orange-600: 20 90% 45%;
+    --neon-orange-700: 20 85% 38%;
+    --neon-orange-800: 20 80% 30%;
+    --neon-orange-900: 20 75% 22%;
+
+    /* Futuristic Neutrals - Cool Grays */
+    --gray-futuristic-50: 220 20% 98%;
+    --gray-futuristic-100: 220 18% 95%;
+    --gray-futuristic-200: 220 16% 88%;
+    --gray-futuristic-300: 220 14% 75%;
+    --gray-futuristic-400: 220 12% 60%;
+    --gray-futuristic-500: 220 10% 45%;
+    --gray-futuristic-600: 220 12% 35%;
+    --gray-futuristic-700: 220 14% 25%;
+    --gray-futuristic-800: 220 16% 15%;
+    --gray-futuristic-900: 220 20% 8%;
+
+    /* Secondary (Neutral Gray) */
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary-50: 210 40% 98%;
+    --secondary-100: 210 40% 96%;
+    --secondary-200: 214 32% 91%;
+    --secondary-300: 213 27% 84%;
+    --secondary-400: 215 20% 65%;
+    --secondary-500: 215 16% 47%;
+    --secondary-600: 215 19% 35%;
+    --secondary-700: 215 25% 27%;
+    --secondary-800: 217 33% 17%;
+    --secondary-900: 222 47% 11%;
+
+    /* Success (Green) */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --success-50: 138 76% 97%;
+    --success-100: 141 84% 93%;
+    --success-200: 141 79% 85%;
+    --success-300: 142 77% 73%;
+    --success-400: 142 69% 58%;
+    --success-500: 142 76% 36%;
+    --success-600: 142 72% 29%;
+    --success-700: 143 64% 24%;
+    --success-800: 144 61% 20%;
+    --success-900: 144 58% 17%;
+
+    /* Warning (Amber) */
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --warning-50: 48 100% 96%;
+    --warning-100: 48 96% 89%;
+    --warning-200: 48 97% 77%;
+    --warning-300: 46 97% 65%;
+    --warning-400: 43 96% 56%;
+    --warning-500: 38 92% 50%;
+    --warning-600: 32 95% 44%;
+    --warning-700: 26 90% 37%;
+    --warning-800: 23 83% 31%;
+    --warning-900: 22 78% 26%;
+
+    /* Error/Destructive (Red) */
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --error: 0 72% 51%;
+    --error-foreground: 0 0% 100%;
+    --error-50: 0 86% 97%;
+    --error-100: 0 93% 94%;
+    --error-200: 0 96% 89%;
+    --error-300: 0 94% 82%;
+    --error-400: 0 91% 71%;
+    --error-500: 0 84% 60%;
+    --error-600: 0 72% 51%;
+    --error-700: 0 74% 42%;
+    --error-800: 0 70% 35%;
+    --error-900: 0 63% 31%;
+
+    /* Info (Cyan) */
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+    --info-50: 204 100% 97%;
+    --info-100: 204 94% 94%;
+    --info-200: 201 94% 86%;
+    --info-300: 199 95% 74%;
+    --info-400: 198 93% 60%;
+    --info-500: 199 89% 48%;
+    --info-600: 200 98% 39%;
+    --info-700: 201 96% 32%;
+    --info-800: 201 90% 27%;
+    --info-900: 202 80% 24%;
+
+    /* Muted */
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    /* Accent */
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    /* Border & Input */
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+
+    /* Border Radius */
+    --radius: 0.5rem;
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+
+    /* Spacing Scale (used for consistent spacing) */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    --spacing-2xl: 3rem;
+    --spacing-3xl: 4rem;
+
+    /* Typography Scale */
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.875rem;
+    --font-size-base: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.25rem;
+    --font-size-2xl: 1.5rem;
+    --font-size-3xl: 1.875rem;
+    --font-size-4xl: 2.25rem;
+    --font-size-5xl: 3rem;
+
+    /* Shadows (Elevation) */
+    --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+
+    /* Animation Durations */
+    --duration-fast: 150ms;
+    --duration-normal: 250ms;
+    --duration-slow: 350ms;
+
+    /* Z-Index Scale */
+    --z-dropdown: 1000;
+    --z-sticky: 1020;
+    --z-fixed: 1030;
+    --z-modal-backdrop: 1040;
+    --z-modal: 1050;
+    --z-popover: 1060;
+    --z-tooltip: 1070;
+  }
+
+  .dark {
+    /* Background & Foreground - Futuristic Dark */
+    --background: 220 20% 8%;
+    --foreground: 220 20% 98%;
+
+    /* Card - Dark with blue tint */
+    --card: 220 16% 12%;
+    --card-foreground: 220 20% 98%;
+
+    /* Popover */
+    --popover: 220 16% 12%;
+    --popover-foreground: 220 20% 98%;
+
+    /* Primary */
+    --primary: 210 100% 60%;
+    --primary-foreground: 220 20% 98%;
+
+    /* Secondary */
+    --secondary: 220 14% 18%;
+    --secondary-foreground: 220 20% 98%;
+
+    /* Success */
+    --success: 142 77% 73%;
+    --success-foreground: 144 61% 20%;
+
+    /* Warning */
+    --warning: 43 96% 56%;
+    --warning-foreground: 22 78% 26%;
+
+    /* Error/Destructive */
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --error: 0 91% 71%;
+    --error-foreground: 0 63% 31%;
+
+    /* Info */
+    --info: 185 100% 55%;
+    --info-foreground: 220 20% 8%;
+
+    /* Muted */
+    --muted: 220 14% 18%;
+    --muted-foreground: 220 12% 60%;
+
+    /* Accent */
+    --accent: 270 100% 65%;
+    --accent-foreground: 220 20% 98%;
+
+    /* Border & Input - Subtle blue glow */
+    --border: 220 14% 22%;
+    --input: 220 14% 18%;
+    --ring: 210 100% 60%;
+
+    /* Futuristic Colors - Adjusted for dark mode */
+    --electric-blue: 210 100% 70%;
+    --neon-cyan: 185 100% 65%;
+    --electric-purple: 270 100% 75%;
+    --neon-orange: 20 100% 70%;
+
+    /* Dark mode shadows with blue glow */
+    --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.5);
+    --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.6), 0 1px 2px -1px rgb(0 0 0 / 0.6);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.6), 0 2px 4px -2px rgb(0 0 0 / 0.6);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.6), 0 4px 6px -4px rgb(0 0 0 / 0.6);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.6), 0 8px 10px -6px rgb(0 0 0 / 0.6);
+    --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.7);
+    --shadow-glow-blue: 0 0 20px rgb(59 130 246 / 0.5);
+    --shadow-glow-cyan: 0 0 20px rgb(6 182 212 / 0.5);
+    --shadow-glow-purple: 0 0 20px rgb(168 85 247 / 0.5);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Typography */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+    @apply font-semibold tracking-tight;
+  }
+
+  h1 {
+    @apply text-4xl lg:text-5xl;
+  }
+
+  h2 {
+    @apply text-3xl lg:text-4xl;
+  }
+
+  h3 {
+    @apply text-2xl lg:text-3xl;
+  }
+
+  h4 {
+    @apply text-xl lg:text-2xl;
+  }
+
+  h5 {
+    @apply text-lg lg:text-xl;
+  }
+
+  h6 {
+    @apply text-base lg:text-lg;
+  }
+
+  /* Scrollbar Styles */
+  ::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-secondary-100 dark:bg-secondary-800;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-secondary-300 dark:bg-secondary-600 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-secondary-400 dark:bg-secondary-500;
+  }
+}
+
+@layer utilities {
+  /* Text Utilities */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Container Utilities */
+  .container-tight {
+    @apply max-w-4xl mx-auto px-4;
+  }
+
+  .container-wide {
+    @apply max-w-7xl mx-auto px-4;
+  }
+
+  /* Flexbox Utilities */
+  .flex-center {
+    @apply flex items-center justify-center;
+  }
+
+  .flex-between {
+    @apply flex items-center justify-between;
+  }
+
+  /* Animation Utilities */
+  .transition-base {
+    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: var(--duration-normal);
+  }
+
+  .transition-all-base {
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: var(--duration-normal);
+  }
+
+  /* Focus Utilities */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2;
+  }
+
+  /* Gradient Utilities */
+  .gradient-primary {
+    background: linear-gradient(135deg, hsl(var(--primary-500)) 0%, hsl(var(--primary-700)) 100%);
+  }
+
+  .gradient-success {
+    background: linear-gradient(135deg, hsl(var(--success-500)) 0%, hsl(var(--success-700)) 100%);
+  }
+
+  .gradient-warning {
+    background: linear-gradient(135deg, hsl(var(--warning-500)) 0%, hsl(var(--warning-700)) 100%);
+  }
+
+  .gradient-error {
+    background: linear-gradient(135deg, hsl(var(--error-500)) 0%, hsl(var(--error-700)) 100%);
+  }
+
+  /* Futuristic Gradients */
+  .gradient-electric {
+    background: linear-gradient(135deg, hsl(var(--electric-blue-400)) 0%, hsl(var(--electric-purple-400)) 100%);
+  }
+
+  .gradient-hero {
+    background: linear-gradient(135deg, hsl(var(--electric-blue-600)) 0%, hsl(var(--electric-purple-600)) 50%, hsl(var(--neon-cyan-500)) 100%);
+  }
+
+  .gradient-ai {
+    background: linear-gradient(135deg, hsl(var(--neon-cyan-400)) 0%, hsl(var(--electric-blue-500)) 100%);
+  }
+
+  .gradient-mesh {
+    background:
+      radial-gradient(at 0% 0%, hsl(var(--electric-blue-600) / 0.3) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, hsl(var(--electric-purple-600) / 0.3) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, hsl(var(--neon-cyan-600) / 0.3) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, hsl(var(--neon-orange-600) / 0.2) 0px, transparent 50%);
+  }
+
+  /* Glassmorphism Utilities */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+  }
+
+  .dark .glass-card {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+  }
+
+  .glass-sidebar {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(226, 232, 240, 0.5);
+  }
+
+  .dark .glass-sidebar {
+    background: rgba(15, 23, 42, 0.9);
+    border-right: 1px solid rgba(148, 163, 184, 0.1);
+  }
+
+  .glass-widget {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(226, 232, 240, 0.6);
+  }
+
+  .dark .glass-widget {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+  }
+
+  .glass-float {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    box-shadow:
+      0 20px 60px -15px rgba(0, 0, 0, 0.1),
+      0 0 0 1px rgba(0, 0, 0, 0.05);
+  }
+
+  .dark .glass-float {
+    background: rgba(15, 23, 42, 0.95);
+    box-shadow:
+      0 20px 60px -15px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(148, 163, 184, 0.1);
+  }
+
+  /* Microinteraction Animations */
+  @keyframes bounce-subtle {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-4px);
+    }
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% {
+      opacity: 1;
+      box-shadow: 0 0 0 0 hsl(var(--electric-blue-400) / 0.7);
+    }
+    50% {
+      opacity: 0.8;
+      box-shadow: 0 0 0 8px hsl(var(--electric-blue-400) / 0);
+    }
+  }
+
+  @keyframes slide-in {
+    from {
+      transform: translateX(-20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes fade-scale {
+    from {
+      transform: scale(0.95);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  .animate-bounce-subtle {
+    animation: bounce-subtle 2s ease-in-out infinite;
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .animate-slide-in {
+    animation: slide-in 0.3s ease-out;
+  }
+
+  .animate-fade-scale {
+    animation: fade-scale 0.2s ease-out;
+  }
+
+  /* Hover Effects */
+  .hover-lift {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.15);
+  }
+
+  .dark .hover-lift:hover {
+    box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.5);
+  }
+
+  .hover-glow {
+    transition: box-shadow 0.3s ease, border-color 0.3s ease;
+  }
+
+  .hover-glow:hover {
+    box-shadow:
+      0 0 20px hsl(var(--electric-blue-400) / 0.3),
+      0 0 40px hsl(var(--electric-blue-400) / 0.2);
+    border-color: hsl(var(--electric-blue-400) / 0.5);
+  }
+
+  .dark .hover-glow:hover {
+    box-shadow:
+      0 0 20px hsl(var(--electric-blue-400) / 0.5),
+      0 0 40px hsl(var(--electric-blue-400) / 0.3);
+  }
+
+  /* Enhanced Hover Effects */
+  .hover-scale {
+    transition: transform 0.2s ease;
+  }
+
+  .hover-scale:hover {
+    transform: scale(1.02);
+  }
+
+  .hover-glow-cyan {
+    transition: box-shadow 0.3s ease, border-color 0.3s ease;
+  }
+
+  .hover-glow-cyan:hover {
+    box-shadow:
+      0 0 20px hsl(var(--neon-cyan-400) / 0.3),
+      0 0 40px hsl(var(--neon-cyan-400) / 0.2);
+    border-color: hsl(var(--neon-cyan-400) / 0.5);
+  }
+
+  .dark .hover-glow-cyan:hover {
+    box-shadow:
+      0 0 20px hsl(var(--neon-cyan-400) / 0.5),
+      0 0 40px hsl(var(--neon-cyan-400) / 0.3);
+  }
+
+  .hover-glow-purple {
+    transition: box-shadow 0.3s ease, border-color 0.3s ease;
+  }
+
+  .hover-glow-purple:hover {
+    box-shadow:
+      0 0 20px hsl(var(--electric-purple-400) / 0.3),
+      0 0 40px hsl(var(--electric-purple-400) / 0.2);
+    border-color: hsl(var(--electric-purple-400) / 0.5);
+  }
+
+  .dark .hover-glow-purple:hover {
+    box-shadow:
+      0 0 20px hsl(var(--electric-purple-400) / 0.5),
+      0 0 40px hsl(var(--electric-purple-400) / 0.3);
+  }
+
+  /* Futuristic Button Styles */
+  .btn-futuristic {
+    @apply px-6 py-3 rounded-xl font-semibold text-white relative overflow-hidden;
+    background: linear-gradient(135deg, hsl(var(--electric-blue-500)) 0%, hsl(var(--electric-purple-500)) 100%);
+    box-shadow: 0 4px 15px hsl(var(--electric-blue-500) / 0.3);
+    transition: all 0.3s ease;
+  }
+
+  .btn-futuristic::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+  }
+
+  .btn-futuristic:hover::before {
+    left: 100%;
+  }
+
+  .btn-futuristic:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px hsl(var(--electric-blue-500) / 0.5);
+  }
+
+  .btn-futuristic:active {
+    transform: translateY(0);
+  }
+
+  /* Neon Border Effect */
+  .neon-border {
+    border: 2px solid transparent;
+    background-image: linear-gradient(hsl(var(--background)), hsl(var(--background))),
+                      linear-gradient(135deg, hsl(var(--electric-blue-400)), hsl(var(--neon-cyan-400)), hsl(var(--electric-purple-400)));
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+  }
+
+  .dark .neon-border {
+    box-shadow: 0 0 15px hsl(var(--electric-blue-400) / 0.3);
+  }
+
+  /* Gradient Text */
+  .gradient-text {
+    background: linear-gradient(135deg, hsl(var(--electric-blue-400)) 0%, hsl(var(--electric-purple-400)) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .gradient-text-cyan {
+    background: linear-gradient(135deg, hsl(var(--neon-cyan-400)) 0%, hsl(var(--electric-blue-400)) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Card Variants */
+  .card-elevated {
+    @apply rounded-2xl bg-white border border-gray-200;
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+  }
+
+  .dark .card-elevated {
+    background: hsl(var(--gray-futuristic-800));
+    border-color: hsl(var(--gray-futuristic-700));
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
+  }
+
+  .card-elevated:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 15px 50px -12px rgba(0, 0, 0, 0.15);
+  }
+
+  .dark .card-elevated:hover {
+    box-shadow:
+      0 15px 50px -12px rgba(0, 0, 0, 0.6),
+      0 0 20px hsl(var(--electric-blue-400) / 0.2);
+  }
+
+  /* Status Badge Styles */
+  .badge-success {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    background: hsl(var(--success-100));
+    color: hsl(var(--success-800));
+    border: 1px solid hsl(var(--success-300));
+  }
+
+  .dark .badge-success {
+    background: hsl(var(--success-900) / 0.3);
+    color: hsl(var(--success-300));
+    border-color: hsl(var(--success-700) / 0.5);
+  }
+
+  .badge-warning {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    background: hsl(var(--warning-100));
+    color: hsl(var(--warning-800));
+    border: 1px solid hsl(var(--warning-300));
+  }
+
+  .dark .badge-warning {
+    background: hsl(var(--warning-900) / 0.3);
+    color: hsl(var(--warning-300));
+    border-color: hsl(var(--warning-700) / 0.5);
+  }
+
+  .badge-info {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    background: hsl(var(--neon-cyan-100));
+    color: hsl(var(--neon-cyan-800));
+    border: 1px solid hsl(var(--neon-cyan-300));
+  }
+
+  .dark .badge-info {
+    background: hsl(var(--neon-cyan-900) / 0.3);
+    color: hsl(var(--neon-cyan-300));
+    border-color: hsl(var(--neon-cyan-700) / 0.5);
+  }
+
+  /* Loading States */
+  @keyframes shimmer {
+    0% {
+      background-position: -1000px 0;
+    }
+    100% {
+      background-position: 1000px 0;
+    }
+  }
+
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--gray-futuristic-200)) 0%,
+      hsl(var(--gray-futuristic-100)) 50%,
+      hsl(var(--gray-futuristic-200)) 100%
+    );
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite;
+  }
+
+  .dark .skeleton {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--gray-futuristic-800)) 0%,
+      hsl(var(--gray-futuristic-700)) 50%,
+      hsl(var(--gray-futuristic-800)) 100%
+    );
+    background-size: 1000px 100%;
+  }
+
+  /* Interactive Tab Styles */
+  .tab-futuristic {
+    @apply pb-3 px-1 text-sm font-medium transition-all relative;
+    color: hsl(var(--gray-futuristic-500));
+  }
+
+  .tab-futuristic::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, hsl(var(--electric-blue-400)), hsl(var(--neon-cyan-400)));
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+    border-radius: 3px 3px 0 0;
+  }
+
+  .tab-futuristic:hover {
+    color: hsl(var(--electric-blue-500));
+  }
+
+  .tab-futuristic.active {
+    color: hsl(var(--electric-blue-600));
+  }
+
+  .dark .tab-futuristic.active {
+    color: hsl(var(--electric-blue-400));
+  }
+
+  .tab-futuristic.active::after {
+    transform: scaleX(1);
+  }
+
+  /* Input Field Enhancements */
+  .input-futuristic {
+    @apply w-full px-4 py-2 rounded-lg border transition-all;
+    background: hsl(var(--background));
+    border-color: hsl(var(--border));
+    color: hsl(var(--foreground));
+  }
+
+  .input-futuristic:focus {
+    outline: none;
+    border-color: hsl(var(--electric-blue-400));
+    box-shadow: 0 0 0 3px hsl(var(--electric-blue-400) / 0.1);
+  }
+
+  .dark .input-futuristic:focus {
+    box-shadow:
+      0 0 0 3px hsl(var(--electric-blue-400) / 0.2),
+      0 0 20px hsl(var(--electric-blue-400) / 0.1);
+  }
+}

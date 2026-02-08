@@ -1,0 +1,3 @@
+# Dynamic Traefik configuration directory
+# Add additional routing rules here as YAML files
+# Files are automatically watched and loaded by Traefik

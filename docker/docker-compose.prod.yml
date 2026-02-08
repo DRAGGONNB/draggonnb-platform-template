@@ -1,0 +1,180 @@
+# DraggonnB CRMM - Production Overrides
+# Version: 1.0.0
+#
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# This file contains production-specific settings:
+#   - Resource limits
+#   - Enhanced logging
+#   - Production-grade restart policies
+#   - PostgreSQL database option
+#   - Additional security hardening
+
+version: "3.8"
+
+services:
+  # =============================================================================
+  # TRAEFIK - Production Settings
+  # =============================================================================
+  traefik:
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+        reservations:
+          cpus: "0.10"
+          memory: 64M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    labels:
+      # Disable dashboard in production (uncomment to enable)
+      # - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${DOMAIN}`)"
+      - "traefik.http.routers.traefik-dashboard.middlewares=traefik-auth,traefik-ratelimit"
+      # Rate limiting for dashboard
+      - "traefik.http.middlewares.traefik-ratelimit.ratelimit.average=10"
+      - "traefik.http.middlewares.traefik-ratelimit.ratelimit.burst=20"
+
+  # =============================================================================
+  # N8N - Production Settings
+  # =============================================================================
+  n8n:
+    deploy:
+      resources:
+        limits:
+          cpus: "2.00"
+          memory: 2G
+        reservations:
+          cpus: "0.50"
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "10"
+    environment:
+      # Production execution settings
+      - EXECUTIONS_DATA_PRUNE=true
+      - EXECUTIONS_DATA_MAX_AGE=336
+      - N8N_LOG_LEVEL=${N8N_LOG_LEVEL:-info}
+      - N8N_LOG_OUTPUT=console
+
+      # Queue mode for high throughput (optional, requires Redis)
+      # - EXECUTIONS_MODE=queue
+      # - QUEUE_BULL_REDIS_HOST=redis
+      # - QUEUE_BULL_REDIS_PORT=6379
+
+      # Disable telemetry
+      - N8N_DIAGNOSTICS_ENABLED=false
+      - N8N_VERSION_NOTIFICATIONS_ENABLED=false
+    labels:
+      # Rate limiting
+      - "traefik.http.routers.n8n.middlewares=n8n-headers,n8n-ratelimit"
+      - "traefik.http.middlewares.n8n-ratelimit.ratelimit.average=100"
+      - "traefik.http.middlewares.n8n-ratelimit.ratelimit.burst=200"
+      # Stop during backup for data consistency
+      - "draggonnb.backup.stop-during-backup=true"
+
+  # =============================================================================
+  # BACKUP - Production Settings
+  # =============================================================================
+  backup:
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 512M
+        reservations:
+          cpus: "0.10"
+          memory: 64M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    environment:
+      # Production retention (30 days)
+      - BACKUP_RETENTION_DAYS=30
+      # Enable backup verification
+      - BACKUP_SKIP_BACKENDS_FROM_PRUNE=${BACKUP_SKIP_BACKENDS:-}
+
+  # =============================================================================
+  # POSTGRESQL - Optional Production Database
+  # Uncomment this section to use PostgreSQL instead of SQLite
+  # =============================================================================
+  # postgres:
+  #   image: postgres:16-alpine
+  #   container_name: postgres
+  #   restart: unless-stopped
+  #   networks:
+  #     - internal
+  #   environment:
+  #     - TZ=${TIMEZONE:-Africa/Johannesburg}
+  #     - POSTGRES_USER=${POSTGRES_USER:-n8n}
+  #     - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+  #     - POSTGRES_DB=${POSTGRES_DB:-n8n}
+  #   volumes:
+  #     - postgres-data:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-n8n} -d ${POSTGRES_DB:-n8n}"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 5
+  #     start_period: 30s
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: "1.00"
+  #         memory: 1G
+  #       reservations:
+  #         cpus: "0.25"
+  #         memory: 256M
+  #   logging:
+  #     driver: "json-file"
+  #     options:
+  #       max-size: "20m"
+  #       max-file: "5"
+  #   labels:
+  #     - "traefik.enable=false"
+  #     - "draggonnb.backup.stop-during-backup=true"
+
+  # =============================================================================
+  # REDIS - Optional for N8N Queue Mode
+  # Uncomment for high-throughput workflows
+  # =============================================================================
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: redis
+  #   restart: unless-stopped
+  #   networks:
+  #     - internal
+  #   command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+  #   volumes:
+  #     - redis-data:/data
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: "0.50"
+  #         memory: 512M
+  #       reservations:
+  #         cpus: "0.10"
+  #         memory: 64M
+  #   labels:
+  #     - "traefik.enable=false"
+
+# =============================================================================
+# ADDITIONAL VOLUMES FOR PRODUCTION
+# =============================================================================
+# volumes:
+#   postgres-data:
+#     name: postgres-data
+#   redis-data:
+#     name: redis-data

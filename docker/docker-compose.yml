@@ -1,0 +1,167 @@
+# DraggonnB CRMM - Docker Compose Base Configuration
+# Version: 1.0.0
+# Purpose: B2B SaaS VPS deployment template
+#
+# Usage:
+#   Development: docker-compose up -d
+#   Production:  docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Services:
+#   - Traefik: Reverse proxy with automatic SSL
+#   - N8N: Workflow automation engine
+#   - Backup: Automated backup service
+
+version: "3.8"
+
+networks:
+  traefik-public:
+    name: traefik-public
+    driver: bridge
+  internal:
+    name: internal
+    driver: bridge
+    internal: true
+
+volumes:
+  traefik-certificates:
+    name: traefik-certificates
+  n8n-data:
+    name: n8n-data
+  backup-data:
+    name: backup-data
+
+services:
+  # =============================================================================
+  # TRAEFIK - Reverse Proxy & SSL Termination
+  # =============================================================================
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - traefik-public
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - TZ=${TIMEZONE:-Africa/Johannesburg}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - traefik-certificates:/certificates
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=true"
+      # Dashboard (disabled in production by default)
+      - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${DOMAIN}`)"
+      - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
+      - "traefik.http.routers.traefik-dashboard.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.traefik-dashboard.service=api@internal"
+      - "traefik.http.routers.traefik-dashboard.middlewares=traefik-auth"
+      # Basic auth for dashboard (generate with: htpasswd -nb admin password)
+      - "traefik.http.middlewares.traefik-auth.basicauth.users=${TRAEFIK_DASHBOARD_CREDENTIALS}"
+
+  # =============================================================================
+  # N8N - Workflow Automation Engine
+  # =============================================================================
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: n8n
+    restart: unless-stopped
+    networks:
+      - traefik-public
+      - internal
+    environment:
+      # General
+      - TZ=${TIMEZONE:-Africa/Johannesburg}
+      - GENERIC_TIMEZONE=${TIMEZONE:-Africa/Johannesburg}
+      - N8N_HOST=${N8N_SUBDOMAIN}.${DOMAIN}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - WEBHOOK_URL=https://${N8N_SUBDOMAIN}.${DOMAIN}/
+
+      # Security
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+
+      # Database (SQLite by default, PostgreSQL optional)
+      - DB_TYPE=${N8N_DB_TYPE:-sqlite}
+      - DB_SQLITE_DATABASE=/home/node/.n8n/database.sqlite
+
+      # Execution settings
+      - EXECUTIONS_DATA_PRUNE=true
+      - EXECUTIONS_DATA_MAX_AGE=168
+      - N8N_DIAGNOSTICS_ENABLED=false
+      - N8N_PERSONALIZATION_ENABLED=false
+
+      # External hooks (for future integrations)
+      - N8N_EXTERNAL_HOOKS=${N8N_EXTERNAL_HOOKS:-}
+    volumes:
+      - n8n-data:/home/node/.n8n
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:5678/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    labels:
+      - "traefik.enable=true"
+      # HTTP Router
+      - "traefik.http.routers.n8n.rule=Host(`${N8N_SUBDOMAIN}.${DOMAIN}`)"
+      - "traefik.http.routers.n8n.entrypoints=websecure"
+      - "traefik.http.routers.n8n.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.n8n.service=n8n"
+      # Service
+      - "traefik.http.services.n8n.loadbalancer.server.port=5678"
+      # Security headers
+      - "traefik.http.routers.n8n.middlewares=n8n-headers"
+      - "traefik.http.middlewares.n8n-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.n8n-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.n8n-headers.headers.stsPreload=true"
+
+  # =============================================================================
+  # BACKUP - Automated Backup Service
+  # =============================================================================
+  backup:
+    image: offen/docker-volume-backup:v2
+    container_name: backup
+    restart: unless-stopped
+    networks:
+      - internal
+    environment:
+      - TZ=${TIMEZONE:-Africa/Johannesburg}
+      # Backup schedule (daily at 2 AM)
+      - BACKUP_CRON_EXPRESSION=${BACKUP_CRON:-0 2 * * *}
+      - BACKUP_FILENAME=draggonnb-backup-%Y-%m-%d_%H-%M-%S.tar.gz
+      # Retention (keep last 7 daily backups)
+      - BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS:-7}
+      # Compression
+      - BACKUP_COMPRESSION=gz
+      # Notification (optional)
+      - NOTIFICATION_URLS=${BACKUP_NOTIFICATION_URLS:-}
+      # Prune old backups
+      - BACKUP_PRUNING_PREFIX=draggonnb-backup-
+      # Stop containers during backup for consistency
+      - BACKUP_STOP_DURING_BACKUP_LABEL=draggonnb.backup.stop-during-backup
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - n8n-data:/backup/n8n:ro
+      - backup-data:/archive
+      # Optional: Mount external backup location
+      - ${BACKUP_EXTERNAL_PATH:-./backups}:/external-backup
+    healthcheck:
+      test: ["CMD-SHELL", "test -d /archive"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "traefik.enable=false"
