@@ -63,7 +63,7 @@ export async function sendEmail(request: SendEmailRequest): Promise<SendEmailRes
       subject: request.subject,
       html: request.html,
       text: request.text,
-      replyTo: request.replyTo || REPLY_TO_EMAIL,
+      reply_to: request.replyTo || REPLY_TO_EMAIL,
       tags: request.tags?.map(tag => ({ name: tag, value: 'true' })),
     })
 

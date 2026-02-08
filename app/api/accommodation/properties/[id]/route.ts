@@ -52,10 +52,17 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       return NextResponse.json({ error: 'Organization not found' }, { status: 400 })
     }
 
+    const { data: org } = await supabase.from('organizations').select('subscription_tier').eq('id', userData.organization_id).single()
+    const access = checkFeatureAccess(org?.subscription_tier || 'core', 'accommodation_module')
+    if (!access.allowed) {
+      return NextResponse.json({ error: access.reason }, { status: 403 })
+    }
+
     const body = await request.json()
+    const { name, type, address, city, province, postal_code, country, amenities, check_in_time, check_out_time, description, booking_com_id, airbnb_id, status } = body
     const { data: property, error } = await supabase
       .from('accommodation_properties')
-      .update({ ...body, updated_at: new Date().toISOString() })
+      .update({ name, type, address, city, province, postal_code, country, amenities, check_in_time, check_out_time, description, booking_com_id, airbnb_id, status, updated_at: new Date().toISOString() })
       .eq('id', params.id)
       .eq('organization_id', userData.organization_id)
       .select()
@@ -83,6 +90,12 @@ export async function DELETE(_request: Request, { params }: { params: { id: stri
     const { data: userData } = await supabase.from('users').select('organization_id').eq('id', user.id).single()
     if (!userData?.organization_id) {
       return NextResponse.json({ error: 'Organization not found' }, { status: 400 })
+    }
+
+    const { data: org } = await supabase.from('organizations').select('subscription_tier').eq('id', userData.organization_id).single()
+    const delAccess = checkFeatureAccess(org?.subscription_tier || 'core', 'accommodation_module')
+    if (!delAccess.allowed) {
+      return NextResponse.json({ error: delAccess.reason }, { status: 403 })
     }
 
     const { error } = await supabase

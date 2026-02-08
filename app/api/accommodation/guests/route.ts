@@ -26,7 +26,10 @@ export async function GET(request: Request) {
       .order('created_at', { ascending: false })
 
     if (search) {
-      query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%`)
+      const sanitized = search.replace(/[%,.*()]/g, '')
+      if (sanitized) {
+        query = query.or(`first_name.ilike.%${sanitized}%,last_name.ilike.%${sanitized}%,email.ilike.%${sanitized}%`)
+      }
     }
     if (vip === 'true') query = query.eq('vip_status', true)
 

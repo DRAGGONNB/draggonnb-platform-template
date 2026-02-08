@@ -5,6 +5,15 @@ import { sendTextMessage } from '@/lib/whatsapp/client'
 
 export async function POST(request: Request) {
   try {
+    // Verify Telegram secret token
+    const secretToken = process.env.TELEGRAM_WEBHOOK_SECRET
+    if (secretToken) {
+      const headerToken = request.headers.get('x-telegram-bot-api-secret-token')
+      if (headerToken !== secretToken) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+    }
+
     const body = await request.json()
 
     // Handle callback queries (button presses)

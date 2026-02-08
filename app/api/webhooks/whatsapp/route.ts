@@ -26,14 +26,15 @@ export async function POST(request: Request) {
     const appSecret = process.env.WHATSAPP_APP_SECRET
     if (appSecret) {
       const signature = request.headers.get('x-hub-signature-256')
-      if (signature) {
-        const expectedSig = 'sha256=' + crypto
-          .createHmac('sha256', appSecret)
-          .update(rawBody)
-          .digest('hex')
-        if (signature !== expectedSig) {
-          return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
-        }
+      if (!signature) {
+        return NextResponse.json({ error: 'Missing signature' }, { status: 401 })
+      }
+      const expectedSig = 'sha256=' + crypto
+        .createHmac('sha256', appSecret)
+        .update(rawBody)
+        .digest('hex')
+      if (signature !== expectedSig) {
+        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
       }
     }
 
