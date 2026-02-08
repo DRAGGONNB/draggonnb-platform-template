@@ -89,7 +89,7 @@ function EditorContent() {
 
       // Extract variables from template
       const variableMatches = data.html_content.match(/\{\{(\w+)\}\}/g) || []
-      const variables = [...new Set(variableMatches.map((m) => m.replace(/\{\{|\}\}/g, '')))]
+      const variables = Array.from(new Set(variableMatches.map((m) => m.replace(/\{\{|\}\}/g, ''))))
 
       if (templateId) {
         // Update existing template
