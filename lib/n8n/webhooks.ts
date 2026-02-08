@@ -176,6 +176,81 @@ export async function triggerOnboardingEmail(payload: {
 }
 
 /**
+ * Generate email content via N8N workflow
+ */
+export async function triggerEmailContentGeneration(payload: {
+  organizationId: string
+  prompt: string
+  goal: string
+  tone: string
+  audience: string
+}): Promise<N8NWebhookResponse> {
+  try {
+    const webhookPath = process.env.N8N_WEBHOOK_EMAIL_CONTENT || '/webhook/draggonnb-generate-email-content'
+    const response = await fetch(
+      `${N8N_BASE_URL}${webhookPath}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      }
+    )
+
+    if (!response.ok) {
+      throw new Error(`N8N webhook failed: ${response.statusText}`)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Email content generation webhook error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    }
+  }
+}
+
+/**
+ * Generate social content via N8N workflow
+ */
+export async function triggerSocialContentGeneration(payload: {
+  organizationId: string
+  prompt: string
+  platforms: string[]
+  goal: string
+  tone: string
+  audience: string
+}): Promise<N8NWebhookResponse> {
+  try {
+    const webhookPath = process.env.N8N_WEBHOOK_SOCIAL_CONTENT || '/webhook/draggonnb-generate-social-content'
+    const response = await fetch(
+      `${N8N_BASE_URL}${webhookPath}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      }
+    )
+
+    if (!response.ok) {
+      throw new Error(`N8N webhook failed: ${response.statusText}`)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Social content generation webhook error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    }
+  }
+}
+
+/**
  * Trigger lead qualification and business analysis
  */
 export async function triggerLeadAnalysis(payload: {

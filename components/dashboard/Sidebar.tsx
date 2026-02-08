@@ -24,9 +24,20 @@ const navigation = [
     ],
   },
   {
-    section: 'Content',
+    section: 'Content Studio',
     items: [
-      { name: 'Content Generator', href: '/content-generator', icon: '✨', badge: null },
+      { name: 'Content Studio', href: '/content-generator', icon: '✨', badge: null },
+      { name: 'Email Content', href: '/content-generator/email', icon: '📧', badge: null },
+      { name: 'Social Content', href: '/content-generator/social', icon: '📱', badge: null },
+    ],
+  },
+  {
+    section: 'Accommodation',
+    items: [
+      { name: 'Overview', href: '/accommodation', icon: '🏨', badge: 'NEW', badgeColor: 'bg-gradient-to-r from-blue-500 to-blue-600' },
+      { name: 'Properties', href: '/accommodation/properties', icon: '🏠', badge: null },
+      { name: 'Inquiries', href: '/accommodation/inquiries', icon: '📋', badge: null },
+      { name: 'Guests', href: '/accommodation/guests', icon: '👤', badge: null },
     ],
   },
   {

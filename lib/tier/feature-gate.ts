@@ -53,6 +53,7 @@ export type Feature =
   | 'api_access'
   | 'advanced_analytics'
   | 'custom_integrations'
+  | 'accommodation_module'
 
 export type UsageMetric =
   | 'social_posts'
@@ -112,6 +113,7 @@ const FEATURE_MIN_TIER: Record<Feature, string> = {
   ai_agents: 'scale',
   api_access: 'scale',
   custom_integrations: 'scale',
+  accommodation_module: 'growth',
 }
 
 export function checkFeatureAccess(tier: string, feature: Feature): FeatureCheckResult {

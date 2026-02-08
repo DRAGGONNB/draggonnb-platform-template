@@ -57,7 +57,16 @@ export async function updateSession(request: NextRequest) {
   const { data: { user }, error } = await supabase.auth.getUser()
 
   // All routes requiring authentication -- add new protected routes here
-  const protectedRoutes = ['/dashboard', '/crm', '/email', '/content-generator']
+  // Webhook routes bypass auth entirely (they validate their own signatures)
+  const webhookRoutes = ['/api/webhooks/whatsapp', '/api/webhooks/telegram']
+  const isWebhookRoute = webhookRoutes.some(route =>
+    request.nextUrl.pathname.startsWith(route)
+  )
+  if (isWebhookRoute) {
+    return response
+  }
+
+  const protectedRoutes = ['/dashboard', '/crm', '/email', '/content-generator', '/accommodation']
   const isProtectedRoute = protectedRoutes.some(route =>
     request.nextUrl.pathname.startsWith(route)
   )
