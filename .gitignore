@@ -50,6 +50,7 @@ Thumbs.db
 
 # claude
 .claude/
+.auto-claude/
 
 # credentials
 *-cred.json
