@@ -90,7 +90,11 @@ export async function POST(request: Request) {
       try {
         const { provisionClient } = await import('@/scripts/provisioning/orchestrator')
         const qualResult = lead.qualification_result as Record<string, unknown>
-        const tier = (qualResult?.recommended_tier as string) || 'core'
+        const validTiers = ['core', 'growth', 'scale'] as const
+        const rawTier = String(qualResult?.recommended_tier || 'core')
+        const tier = (validTiers as readonly string[]).includes(rawTier)
+          ? (rawTier as 'core' | 'growth' | 'scale')
+          : 'core'
 
         await supabase
           .from('provisioning_jobs')
@@ -101,7 +105,7 @@ export async function POST(request: Request) {
           leadId,
           lead.business_name || 'Unknown Business',
           lead.email || '',
-          tier as 'core' | 'growth' | 'scale'
+          tier
         )
 
         if (result.success) {

@@ -242,6 +242,13 @@ export async function incrementUsage(
   }
 }
 
+// Get AI generation limit for a subscription tier
+export function getGenerationLimit(tier: string): number {
+  const normalized = normalizeTier(tier)
+  const limits = TIER_LIMITS[normalized]
+  return limits?.ai_generations ?? 50
+}
+
 // Helper: get organization's tier
 export async function getOrganizationTier(organizationId: string): Promise<string | null> {
   const supabase = createAdminClient()

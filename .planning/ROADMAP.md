@@ -12,8 +12,8 @@ DraggonnB CRMM is a ~60% complete B2B automation SaaS targeting South African SM
 
 - [x] **Phase 1: Security & Auth Hardening** - Fix every security gap so the app is safe for real users
 - [x] **Phase 2: Core Module Completion** - Wire dashboard, email, and payments to real data
-- [ ] **Phase 3: Landing Page & Public UI** - Build a marketing page that converts visitors to signups
-- [ ] **Phase 4: N8N Automation** - Activate AI content generation and analytics workflows
+- [x] **Phase 3: Landing Page & Public UI** - Build a marketing page that converts visitors to signups
+- [x] **Phase 4: N8N Automation** - Activate AI content generation and analytics workflows
 - [x] **Phase 5: Social Media Integration** - Connect Facebook/Instagram and LinkedIn for publishing
 - [x] **Phase 6: Client Provisioning** - Automate new client deployment (repo, database, hosting)
 - [x] **Phase 7: Testing & Hardening** - Add automated tests for critical paths
@@ -66,7 +66,7 @@ Plans:
 
 Plans:
 - [x] 03-01-PLAN.md -- Marketing landing page (built in Session 12)
-- [ ] 03-02-PLAN.md -- Payment success page improvements (tier display, progress indicator)
+- [x] 03-02-PLAN.md -- Payment success page improvements (tier display, progress indicator) -- Already complete in prior session
 
 ### Phase 4: N8N Automation
 **Goal**: AI content generation, content queue processing, and analytics collection all work end-to-end through N8N workflows
@@ -80,9 +80,9 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 04-01-PLAN.md -- N8N credential configuration and webhook verification
-- [ ] 04-02-PLAN.md -- Content generation and queue API wiring
-- [ ] 04-03-PLAN.md -- Analytics display on dashboard
+- [x] 04-01-PLAN.md -- N8N credential configuration and webhook verification (Session 21)
+- [x] 04-02-PLAN.md -- Content generation and queue API wiring (Session 21)
+- [x] 04-03-PLAN.md -- Analytics display on dashboard (already wired in prior sessions)
 
 ### Phase 5: Social Media Integration
 **Goal**: Users can connect their social media accounts and publish posts to Facebook/Instagram and LinkedIn
@@ -139,8 +139,8 @@ Phases execute in numeric order. Phases 3 and 4 can run in parallel (both depend
 |-------|----------------|--------|-----------|
 | 1. Security & Auth Hardening | 3/3 | Complete | 2026-02-03 |
 | 2. Core Module Completion | 3/3 | Complete | 2026-02-04 |
-| 3. Landing Page & Public UI | 1/2 | In Progress | - |
-| 4. N8N Automation | 0/3 | Planned | - |
+| 3. Landing Page & Public UI | 2/2 | Complete | 2026-02-09 |
+| 4. N8N Automation | 3/3 | Complete | 2026-02-09 |
 | 5. Social Media Integration | 3/3 | Complete | 2026-02-05 |
 | 6. Client Provisioning | 3/3 | Complete | 2026-02-05 |
 | 7. Testing & Hardening | 2/2 | Complete | 2026-02-05 |

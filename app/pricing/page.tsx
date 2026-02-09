@@ -19,6 +19,12 @@ export default function PricingPage() {
     router.push(`/signup?tier=${tierId}`)
   }
 
+  // Show only canonical tier names (not legacy duplicates)
+  const canonicalTiers = ['core', 'growth', 'scale'] as const
+  const displayTiers = canonicalTiers
+    .filter((id) => PRICING_TIERS[id])
+    .map((id) => [id, PRICING_TIERS[id]] as const)
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 text-white">
       {/* Header */}
@@ -36,7 +42,7 @@ export default function PricingPage() {
       {/* Pricing Cards */}
       <div className="px-4 py-12 sm:px-6 lg:px-8">
         <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 md:grid-cols-3">
-          {Object.entries(PRICING_TIERS).map(([tierId, tier]) => (
+          {displayTiers.map(([tierId, tier]) => (
             <div
               key={tierId}
               className={`relative flex flex-col rounded-lg border transition-all duration-300 ${
@@ -46,7 +52,7 @@ export default function PricingPage() {
               }`}
             >
               {/* Popular Badge */}
-              {tierId === 'professional' && (
+              {tierId === 'growth' && (
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2">
                   <span className="inline-block bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-1 rounded-full text-sm font-semibold">
                     Most Popular
@@ -79,7 +85,7 @@ export default function PricingPage() {
                   onClick={() => handleSelectTier(tierId)}
                   disabled={isLoading}
                   className={`w-full py-3 px-4 rounded-lg font-semibold transition-colors duration-200 ${
-                    tierId === 'professional'
+                    tierId === 'growth'
                       ? 'bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white'
                       : 'bg-slate-600 hover:bg-slate-500 disabled:bg-slate-400 text-white'
                   }`}

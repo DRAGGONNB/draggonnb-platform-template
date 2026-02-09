@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { checkUsage, incrementUsage } from '@/lib/tier/feature-gate'
 
 /**
  * POST /api/content/generate
@@ -48,36 +49,15 @@ export async function POST(request: Request) {
 
     const organizationId = userData.organization_id
 
-    // Check usage limits
-    const { data: orgData, error: orgError } = await supabase
-      .from('organizations')
-      .select('subscription_tier, usage_limits')
-      .eq('id', organizationId)
-      .single()
+    // Check usage limits (atomic check via centralized feature gate)
+    const usageCheck = await checkUsage(organizationId, 'ai_generations')
 
-    if (orgError) {
-      return NextResponse.json(
-        { error: 'Failed to fetch organization data' },
-        { status: 500 }
-      )
-    }
-
-    // Get current month's usage
-    const { data: usageData } = await supabase
-      .from('client_usage_metrics')
-      .select('ai_generations_monthly')
-      .eq('organization_id', organizationId)
-      .single()
-
-    const currentUsage = usageData?.ai_generations_monthly || 0
-    const usageLimit = getGenerationLimit(orgData.subscription_tier)
-
-    if (currentUsage >= usageLimit) {
+    if (!usageCheck.allowed) {
       return NextResponse.json(
         {
           error: 'Monthly AI generation limit reached',
-          limit: usageLimit,
-          current: currentUsage,
+          limit: usageCheck.limit,
+          current: usageCheck.current,
         },
         { status: 429 }
       )
@@ -142,21 +122,15 @@ export async function POST(request: Request) {
       }
     })
 
-    // Update usage metrics
-    await supabase
-      .from('client_usage_metrics')
-      .upsert({
-        organization_id: organizationId,
-        ai_generations_monthly: currentUsage + 1,
-        updated_at: new Date().toISOString(),
-      })
+    // Atomically increment usage
+    await incrementUsage(organizationId, 'ai_generations')
 
     return NextResponse.json({
       success: true,
       data: { contents },
       usage: {
-        current: currentUsage + 1,
-        limit: usageLimit,
+        current: usageCheck.current + 1,
+        limit: usageCheck.limit,
       },
     })
   } catch (error) {
@@ -171,17 +145,3 @@ export async function POST(request: Request) {
   }
 }
 
-/**
- * Get AI generation limit based on subscription tier
- */
-function getGenerationLimit(tier: string): number {
-  const limits: Record<string, number> = {
-    starter: 50,
-    core: 50,
-    professional: 200,
-    growth: 200,
-    enterprise: 999999,
-    scale: 999999,
-  }
-  return limits[tier] || limits.starter
-}

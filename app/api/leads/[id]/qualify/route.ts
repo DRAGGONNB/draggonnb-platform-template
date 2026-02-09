@@ -73,6 +73,9 @@ export async function POST(
         business_issues: lead.business_issues || [],
       })
 
+      if (!agentResult.result) {
+        throw new Error('Qualification agent returned no result')
+      }
       qualificationResult = agentResult.result as QualificationResult
     } catch (agentError) {
       console.error('Lead qualification agent failed:', agentError)

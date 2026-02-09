@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Sparkles, Share2, Loader2, Copy, Check } from 'lucide-react'
+import { Sparkles, Share2, Loader2, Copy, Check, CalendarPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -33,6 +33,7 @@ export default function SocialContentPage() {
   const [usage, setUsage] = useState<{ current: number; limit: number } | null>(null)
   const [activeTab, setActiveTab] = useState('linkedin')
   const [copiedIdx, setCopiedIdx] = useState<string | null>(null)
+  const [queuedIdx, setQueuedIdx] = useState<Set<string>>(new Set())
 
   const goals = [
     { value: 'awareness', label: 'Brand Awareness' },
@@ -106,6 +107,23 @@ export default function SocialContentPage() {
     await navigator.clipboard.writeText(text)
     setCopiedIdx(key)
     setTimeout(() => setCopiedIdx(null), 2000)
+  }
+
+  const saveToQueue = async (content: string, platform: string, key: string) => {
+    try {
+      const response = await fetch('/api/content/queue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content, platform, status: 'pending_approval' }),
+      })
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to save to queue')
+      }
+      setQueuedIdx(prev => new Set(prev).add(key))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save to queue')
+    }
   }
 
   return (
@@ -298,17 +316,33 @@ export default function SocialContentPage() {
                         <div key={idx} className="space-y-2">
                           <div className="flex items-center justify-between">
                             <Label>Variant {idx + 1}</Label>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => copyToClipboard(variant, `${p.platform}-${idx}`)}
-                            >
-                              {copiedIdx === `${p.platform}-${idx}` ? (
-                                <Check className="h-4 w-4 text-green-500" />
-                              ) : (
-                                <Copy className="h-4 w-4" />
-                              )}
-                            </Button>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => copyToClipboard(variant, `${p.platform}-${idx}`)}
+                                title="Copy to clipboard"
+                              >
+                                {copiedIdx === `${p.platform}-${idx}` ? (
+                                  <Check className="h-4 w-4 text-green-500" />
+                                ) : (
+                                  <Copy className="h-4 w-4" />
+                                )}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => saveToQueue(variant, p.platform, `${p.platform}-${idx}`)}
+                                disabled={queuedIdx.has(`${p.platform}-${idx}`)}
+                                title="Save to content queue"
+                              >
+                                {queuedIdx.has(`${p.platform}-${idx}`) ? (
+                                  <Check className="h-4 w-4 text-green-500" />
+                                ) : (
+                                  <CalendarPlus className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
                           </div>
                           <Textarea value={variant} rows={4} readOnly className="font-mono text-sm" />
                         </div>
