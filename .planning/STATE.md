@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-02)
 
 **Core value:** A complete, working end-to-end business automation platform that can be cloned and deployed for a new client within 48-72 hours.
-**Current focus:** SQL migrations and credential configuration.
+**Current focus:** Credential configuration only - all code and DB work complete.
 
 ## Current Position
 
-Phase: ALL 7 PHASES COMPLETE + v2 Evolution + Audit fixes applied
-Plan: 16/16 plans complete + v2 features + Phase 4 N8N wiring + audit fixes
+Phase: ALL 7 PHASES COMPLETE + v2 Evolution + Audit fixes + DB migrations applied
+Plan: 16/16 plans complete + all migrations applied to Supabase
 Status: DEPLOYED TO PRODUCTION. Live at https://draggonnb-mvp.vercel.app
-Last activity: 2026-02-09 -- Session 21: Audit fixes, pricing page, N8N wiring, Phase 4 completion
+Last activity: 2026-02-09 -- Session 21: Code fixes + Supabase migrations applied
 
-Progress: [████████████] 95% COMPLETE (SQL migrations remaining)
+Progress: [████████████] 100% COMPLETE (credentials remaining)
 
 ## Accumulated Context
 
@@ -32,11 +32,13 @@ Key architectural decisions:
 
 ### Pending Todos
 
-- Run SQL migrations via Supabase (MCP token expired, needs re-auth or manual SQL Editor):
-  - `scripts/rls-policies.sql` (CRITICAL - 21 tables)
-  - `scripts/migrations/03_ops_control_plane.sql` (ops tables)
-  - `scripts/migrations/04_accommodation_module.sql` (accommodation tables)
-  - `scripts/migrations/05_increment_usage_rpc.sql` (atomic usage increment)
+- DONE: All SQL migrations applied via Supabase MCP (Session 21):
+  - RLS policies already existed on all core tables
+  - Ops control plane tables already existed
+  - Accommodation module tables CREATED (4 tables + RLS + indexes)
+  - increment_usage_metric RPC CREATED (with search_path fix)
+  - Dropped overly permissive duplicate policies on activities/contacts/deals
+  - Enabled RLS on crm_metrics_daily
 - Add `SUPABASE_SERVICE_ROLE_KEY` to .env.local and Vercel
 - Add `EMAIL_TRACKING_SECRET` to .env.local for HMAC-signed email tokens
 - Configure Facebook/LinkedIn OAuth credentials
@@ -45,7 +47,7 @@ Key architectural decisions:
 
 ### Blockers/Concerns
 
-- Supabase MCP token expired (needs browser re-auth to apply migrations programmatically)
+- Supabase MCP re-authed and all migrations applied successfully
 - Resend API key not yet available (email sending works in dev mode via console logging)
 - Facebook App ID/Secret not yet configured (OAuth flow ready, needs credentials)
 - LinkedIn Client ID/Secret not yet configured (OAuth flow ready, needs credentials)
@@ -55,8 +57,8 @@ Key architectural decisions:
 ## Session Continuity
 
 Last session: 2026-02-09 (Session 21)
-Stopped at: All code work complete. Blocked on Supabase MCP re-auth for SQL migrations.
-Resume with: Re-auth Supabase MCP, apply 4 SQL migrations, then deploy to Vercel.
+Stopped at: All code + DB work complete. Vercel auto-deploying from GitHub push.
+Resume with: Configure credentials (Resend, PayFast production, Facebook/LinkedIn OAuth).
 
 ### Session 21 Summary (2026-02-09)
 **What was accomplished:**
