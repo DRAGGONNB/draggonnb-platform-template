@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-02-02)
 
 ## Current Position
 
-Phase: ALL 7 PHASES COMPLETE
-Plan: 16/16 plans complete
-Status: Platform fully operational. N8N workflows active on VPS. Content generation tested end-to-end with GPT-4o.
-Last activity: 2026-02-07 -- Deployed all 3 N8N workflows to VPS, tested content generation webhook successfully.
+Phase: ALL 7 PHASES COMPLETE + v2 Evolution Plan implemented
+Plan: 16/16 plans complete + v2 features (WhatsApp, Telegram, Content Studio, Accommodation)
+Status: DEPLOYED TO PRODUCTION. Live at https://draggonnb-mvp.vercel.app
+Last activity: 2026-02-09 -- VPS infrastructure: Gitea installed, org/repos created, access controls, CLAUDE.md rules.
 
 Progress: [████████████] 100% COMPLETE
 
@@ -97,10 +97,126 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-02-07 (Session 17)
-Stopped at: All phases complete. N8N workflows deployed and tested on VPS. Platform fully operational.
-Resume with: Run RLS SQL via Supabase MCP (scripts/rls-policies.sql), configure .env.local, deploy to Vercel.
-Note: Use Supabase MCP to run SQL queries directly - do not ask user to run them manually.
+Last session: 2026-02-09 (Session 19)
+Stopped at: VPS infrastructure setup complete. Gitea running at http://72.61.146.151:3030 with org, repos, access controls. CLAUDE.md project rules created. OpenClaw viewer access configured.
+Resume with: Apply RLS policies + v2 migrations to Supabase. Fix MEDIUM audit issues. Add DNS A record for git.draggonnb.online.
+Note: Supabase MCP configured globally. Gitea API token in Claude Code memory.
+
+### Session 19 Summary (2026-02-09)
+**What was accomplished:**
+1. **Gitea installed on VPS** via Docker behind Traefik (v1.25.4)
+   - Container: root-gitea-1, port 3030 (public), port 222 (SSH)
+   - Admin: info@draggonnb.online
+   - Traefik route for git.draggonnb.online (pending DNS)
+2. **Organization and repos created:**
+   - `draggonnb/ops-hub` — infrastructure.md, clients.md
+   - `draggonnb/platform-crmm` — STATE.md, PROJECT.md, ROADMAP.md, .env.example
+   - `draggonnb/company-internal` — placeholder
+   - `draggonnb/vdj-accounting` — placeholder
+3. **Access controls established:**
+   - Claude Code: full admin (API token in memory)
+   - OpenClaw: read-only viewer (`openclaw-viewer`, restricted user, read-only team)
+   - Token rotated after accidental exposure in OpenClaw chat
+4. **CLAUDE.md created** — project rules: file discipline, source of truth, sync protocol
+5. **Operating model defined:**
+   - Claude Code = execution layer (full VPS/infra control)
+   - OpenClaw = ideation layer (read-only Gitea access)
+   - Chris = decision maker
+6. **Statusline configured** globally in ~/.claude/settings.json
+7. **Firewall updated:** port 3030 opened for Gitea HTTP access
+
+**Git commits this session:** None (infrastructure work only)
+
+**Uncommitted changes:**
+- `.gitignore` — added .mcp.json exclusion
+- `.planning/STATE.md` — this session summary
+- `CLAUDE.md` — new project rules file
+
+**Files created this session:**
+- `CLAUDE.md` — project rules and operating model
+
+**VPS changes this session:**
+- docker-compose.yml updated: added Gitea service with Traefik labels + port 3030
+- Gitea volume created: root_gitea_data
+- UFW: port 3030/tcp opened
+- Gitea users: admin (full), openclaw-viewer (restricted read-only)
+- Gitea org: draggonnb with 4 repos
+- Gitea teams: Owners (admin), viewers (read-only, includes openclaw-viewer)
+
+**What to do next session:**
+1. `/clear` (fresh context)
+2. Add DNS A record: `git` -> `72.61.146.151` on `draggonnb.online` (if not done)
+3. Run SQL on Supabase (manually or via MCP):
+   - `scripts/rls-policies.sql` (CRITICAL - 21 tables)
+   - `scripts/migrations/03_ops_control_plane.sql`
+   - `scripts/migrations/04_accommodation_module.sql`
+4. Fix MEDIUM audit issues (race condition in usage tracking, duplicate getGenerationLimit, tier type mismatch, qualifyLead param mismatch)
+5. Create `.env.local` with real values
+6. Add `SUPABASE_SERVICE_ROLE_KEY` to Vercel env vars
+
+**Key decisions:**
+- Gitea on VPS as central source of truth (code on GitHub, state on Gitea)
+- One repo per project, only essential state files (STATE.md, PROJECT.md, ROADMAP.md)
+- Claude Code = single control plane, OpenClaw = read-only advisor
+- Port 3030 for Gitea HTTP (3000 taken by existing Node process)
+- Restricted Gitea user for OpenClaw (cannot push/edit/delete)
+
+**Credentials created this session:**
+- Gitea admin API token: 317b6e...97ae07 (stored in Claude Code memory)
+- OpenClaw viewer token: 48fc50...c0075c (read-only, rotated after exposure)
+
+### Session 18 Summary (2026-02-08)
+**What was accomplished:**
+1. **Team-based parallel audit:** Launched 3 agents (code-auditor, test-runner, vercel-checker)
+2. **Code audit found 13 issues:** 3 CRITICAL, 3 HIGH, 4 MEDIUM, 3 LOW
+3. **All CRITICAL and HIGH issues fixed:**
+   - SQL injection in accommodation guests search (sanitized PostgREST filter input)
+   - WhatsApp webhook signature bypass (reject missing signature when secret configured)
+   - Telegram webhook no auth (added X-Telegram-Bot-Api-Secret-Token verification)
+   - Arbitrary field update via spread in accommodation PATCH handlers (whitelisted fields)
+   - Missing feature gates on accommodation PATCH/DELETE (added checkFeatureAccess)
+4. **Build-breaking type error fixed:** `replyTo` → `reply_to` in lib/email/resend.ts (Resend SDK uses snake_case)
+5. **4 additional build fixes for Vercel strict TypeScript:**
+   - GenericStringError type assertion → cast through `unknown`
+   - Missing `@types/pg` devDependency
+   - Broken import path in scripts/provisioning/rollback.ts
+   - useSearchParams not wrapped in Suspense on qualify page
+6. **Pushed all v2 code to GitHub** (commit 30f0724 had never been pushed)
+7. **SUCCESSFUL VERCEL DEPLOYMENT** after 5 iterative fix-commit-deploy cycles
+   - Production URL: https://draggonnb-mvp.vercel.app
+   - 68 pages generated (static + dynamic)
+   - All API routes compiled
+8. **Verified live site:** Landing page loads correctly with pricing tiers, features, CTAs
+
+**Git commits this session (5):**
+- `b911a4a` fix: security hardening and build fix for Vercel deployment
+- `6856064` fix: resolve TypeScript type assertion error in feature-gate
+- `e707ce5` fix: add @types/pg for TypeScript declarations
+- `c16c847` fix: correct import path in provisioning rollback script
+- `bdf69f3` fix: wrap useSearchParams in Suspense boundary on qualify page
+
+**Files modified this session:**
+- lib/email/resend.ts (replyTo → reply_to)
+- app/api/accommodation/guests/route.ts (SQL injection fix)
+- app/api/webhooks/whatsapp/route.ts (signature bypass fix)
+- app/api/webhooks/telegram/route.ts (added auth)
+- app/api/accommodation/properties/[id]/route.ts (field whitelist + feature gate)
+- app/api/accommodation/inquiries/[id]/route.ts (field whitelist + feature gate)
+- lib/tier/feature-gate.ts (type assertion fix)
+- scripts/provisioning/rollback.ts (import path fix)
+- app/qualify/page.tsx (Suspense boundary)
+- .env.example (added TELEGRAM_WEBHOOK_SECRET)
+- package.json (added @types/pg)
+
+**Remaining actions for next session:**
+1. Run SQL scripts on Supabase (no MCP configured):
+   - `scripts/rls-policies.sql` (CRITICAL - 21 tables, RLS policies)
+   - `scripts/migrations/03_ops_control_plane.sql` (ops_leads, provisioning_jobs, ops_activity_log)
+   - `scripts/migrations/04_accommodation_module.sql` (accommodation tables + RLS)
+2. Create `.env.local` with real values (from `.env.example`)
+3. Add SUPABASE_SERVICE_ROLE_KEY to Vercel env vars
+4. Configure Facebook/LinkedIn OAuth credentials
+5. Fix remaining MEDIUM audit issues (race condition in usage tracking, duplicate getGenerationLimit, tier type mismatch in telegram webhook, qualifyLead param mismatch)
 
 ### Session 16 Summary (2026-02-07)
 **What was accomplished:**
