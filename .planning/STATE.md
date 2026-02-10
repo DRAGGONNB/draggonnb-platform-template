@@ -48,7 +48,7 @@ Key architectural decisions:
 ## Session Continuity
 
 Last session: 2026-02-10 (Session 22)
-Stopped at: Dashboard, CRM, and security all fixed. Vercel auto-deployed.
+Stopped at: All code, DB, and security work complete. Dashboard/CRM/security fixes deployed.
 Resume with: Configure credentials (Resend, PayFast production, Facebook/LinkedIn OAuth).
 
 ### Session 22 Summary (2026-02-10)
@@ -70,5 +70,40 @@ Resume with: Configure credentials (Resend, PayFast production, Facebook/LinkedI
    - Converted 3 SECURITY DEFINER views to SECURITY INVOKER (dbe_lead_pipeline, dbe_client_overview, dbe_dashboard_metrics)
    - Security advisor now clean: only INFO-level items remain (intentional service-role-only tables)
 5. All 41 tests still passing, no new TypeScript errors
+6. State synced to Gitea VPS (platform-crmm repo)
 
-**Prior session:** Session 21 was audit fixes + Supabase migrations.
+**Git commits this session:**
+- `332c0f3` chore: update state for session 22 (dashboard/CRM/security fixes)
+- `3420348` fix: dashboard data queries, +New dropdown, CRM navigation
+- `aae845d` chore: update state after Supabase migrations applied
+- `cb0560b` fix: resolve audit issues, complete Phase 3+4, wire N8N integration
+
+**Uncommitted changes:** None -- all work committed
+
+**Supabase migrations this session:**
+- `create_companies_and_platform_metrics` (companies + platform_metrics tables + RLS)
+- `fix_function_search_paths_v2` (5 functions with SET search_path = public)
+- `fix_security_definer_views` (3 views converted to SECURITY INVOKER)
+
+**What to do next session:**
+1. Configure Resend API key (RESEND_API_KEY in .env.local + Vercel)
+2. Add SUPABASE_SERVICE_ROLE_KEY to .env.local and Vercel env vars
+3. Add EMAIL_TRACKING_SECRET to .env.local
+4. Configure PayFast production merchant credentials
+5. Configure Facebook/LinkedIn OAuth credentials
+6. Test full user flow end-to-end on production (signup -> dashboard -> CRM -> content)
+
+**Key decisions:**
+- Dashboard queries fixed to match actual DB schema (column names differed from code assumptions)
+- Missing tables (companies, platform_metrics) created rather than removing code references
+- SECURITY DEFINER views converted to SECURITY INVOKER for proper RLS enforcement
+
+**Blockers/concerns:**
+- Vercel MCP not connecting (Streamable HTTP error) -- deploy works via GitHub auto-deploy
+- Supabase MCP tokens expire frequently -- need re-auth each session
+- Gitea DNS doesn't resolve from Windows dev machine -- use SSH + localhost:3030
+
+### Previous Sessions
+- Session 21 (2026-02-09): Audit fixes + Supabase migrations (RLS, accommodation, RPC)
+- Session 20 (2026-02-08): Cleanup (git, Vercel, GitHub sync)
+- Sessions 1-19: All 7 phases built + v2 evolution plan
