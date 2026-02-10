@@ -171,9 +171,12 @@ export function Sidebar({ usageStats }: SidebarProps) {
                 />
               </div>
             </div>
-            <button className="mt-3 w-full rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-orange-500/30 transition-all hover:shadow-xl hover:shadow-orange-500/40 hover:-translate-y-0.5">
-              ↑ Upgrade Plan
-            </button>
+            <Link
+              href="/pricing"
+              className="mt-3 block w-full rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-2.5 text-center text-sm font-semibold text-white shadow-lg shadow-orange-500/30 transition-all hover:shadow-xl hover:shadow-orange-500/40 hover:-translate-y-0.5"
+            >
+              Upgrade Plan
+            </Link>
           </div>
         </div>
       </div>

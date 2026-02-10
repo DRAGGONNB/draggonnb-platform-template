@@ -18,6 +18,8 @@ async function getDashboardData(organizationId: string) {
     .from('client_usage_metrics')
     .select('*')
     .eq('organization_id', organizationId)
+    .order('metric_date', { ascending: false })
+    .limit(1)
     .single()
 
   const contactsQuery = supabase
@@ -29,7 +31,7 @@ async function getDashboardData(organizationId: string) {
     .from('deals')
     .select('value')
     .eq('organization_id', organizationId)
-    .eq('status', 'closed_won')
+    .eq('stage', 'won')
 
   const postsQuery = supabase
     .from('social_posts')
@@ -92,19 +94,22 @@ export default async function DashboardPage() {
   const data = await getDashboardData(userOrg.organizationId)
 
   // Calculate stats from data
-  const postsCount = data.usage?.posts_monthly || 0
-  const engagementRate = data.usage?.engagement_rate || 0
+  const postsCount = data.usage?.posts_published || 0
+  const engagementRate = 0 // Calculated from platform_metrics when available
   const contactsCount = data.contactsCount || 0
   const totalRevenue = data.deals?.reduce((sum, d) => sum + (d.value || 0), 0) || 0
   const revenueImpact = totalRevenue > 0 ? `R${(totalRevenue / 1000).toFixed(1)}k` : 'R0'
 
   // Transform analytics data for chart
-  const chartData = data.analytics?.map((snapshot) => ({
-    date: new Date(snapshot.snapshot_date).toLocaleDateString('en-US', { weekday: 'short' }),
-    linkedin: snapshot.linkedin_engagements || 0,
-    facebook: snapshot.facebook_engagements || 0,
-    instagram: snapshot.instagram_engagements || 0,
-  })) || []
+  const chartData = data.analytics?.map((snapshot) => {
+    const breakdown = snapshot.platform_breakdown || {}
+    return {
+      date: new Date(snapshot.snapshot_date).toLocaleDateString('en-US', { weekday: 'short' }),
+      linkedin: breakdown.linkedin?.engagement || 0,
+      facebook: breakdown.facebook?.engagement || 0,
+      instagram: breakdown.instagram?.engagement || 0,
+    }
+  }) || []
 
   // Transform top posts
   const topPerformingPosts = data.topPosts?.map((post) => ({
@@ -125,29 +130,29 @@ export default async function DashboardPage() {
             icon="📝"
             value={postsCount}
             label="Posts Published"
-            trend="+12 from last month"
-            trendDirection="up"
+            trend={postsCount > 0 ? 'This month' : 'No posts yet'}
+            trendDirection={postsCount > 0 ? 'up' : 'neutral'}
           />
           <StatCard
             icon="💬"
             value={`${engagementRate}%`}
             label="Engagement Rate"
-            trend="+0.3% from last month"
-            trendDirection="up"
+            trend={engagementRate > 0 ? 'This month' : 'Publish to track'}
+            trendDirection={engagementRate > 0 ? 'up' : 'neutral'}
           />
           <StatCard
             icon="👥"
             value={contactsCount}
-            label="New Contacts"
-            trend="+8 this week"
-            trendDirection="up"
+            label="CRM Contacts"
+            trend={contactsCount > 0 ? 'Total in CRM' : 'Add contacts to start'}
+            trendDirection={contactsCount > 0 ? 'up' : 'neutral'}
           />
           <StatCard
             icon="💰"
             value={revenueImpact}
             label="Revenue Impact"
-            trend="+R2.1k this week"
-            trendDirection="up"
+            trend={totalRevenue > 0 ? 'From closed deals' : 'Close deals to track'}
+            trendDirection={totalRevenue > 0 ? 'up' : 'neutral'}
           />
         </div>
       </div>
@@ -190,31 +195,45 @@ export default async function DashboardPage() {
             <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-gray-500">
               Upcoming Posts
             </h3>
-            <div className="space-y-3 text-sm text-gray-600">
-              <div className="border-b border-gray-100 pb-3">
-                <div className="mb-1 font-medium text-gray-900">Today</div>
-                <div>3 posts scheduled</div>
+            {(data.recentPosts?.length || 0) > 0 ? (
+              <div className="space-y-3 text-sm text-gray-600">
+                {data.recentPosts?.slice(0, 3).map((post, i) => (
+                  <div key={post.id || i} className="border-b border-gray-100 pb-2 last:border-0">
+                    <div className="font-medium text-gray-900 truncate">{post.content?.substring(0, 40) || 'Post'}</div>
+                    <div className="text-xs text-gray-400">{post.status || 'draft'}</div>
+                  </div>
+                ))}
               </div>
-              <div>
-                <div className="mb-1 font-medium text-gray-900">This Week</div>
-                <div>12 posts total</div>
+            ) : (
+              <div className="py-4 text-center text-sm text-gray-400">
+                <p>No posts yet</p>
+                <p className="text-xs mt-1">Create content to see posts here</p>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Usage & Limits */}
           <div className="rounded-2xl border bg-white p-5">
             <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-gray-500">
-              Usage & Limits
+              Usage This Month
             </h3>
             <div className="space-y-3 text-sm">
               <div>
                 <div className="mb-1.5 flex justify-between font-medium text-gray-900">
-                  <span>Storage</span>
-                  <span>2.3GB / 5GB</span>
+                  <span>Posts Published</span>
+                  <span>{data.usage?.posts_published || 0}</span>
                 </div>
                 <div className="h-1.5 overflow-hidden rounded-full bg-gray-200">
-                  <div className="h-full w-[46%] bg-gradient-to-r from-blue-600 to-blue-700" />
+                  <div className="h-full bg-gradient-to-r from-blue-600 to-blue-700" style={{ width: `${Math.min((data.usage?.posts_published || 0) / 30 * 100, 100)}%` }} />
+                </div>
+              </div>
+              <div>
+                <div className="mb-1.5 flex justify-between font-medium text-gray-900">
+                  <span>AI Generations</span>
+                  <span>{data.usage?.ai_generations_count || 0}</span>
+                </div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-gray-200">
+                  <div className="h-full bg-gradient-to-r from-blue-600 to-blue-700" style={{ width: `${Math.min((data.usage?.ai_generations_count || 0) / 50 * 100, 100)}%` }} />
                 </div>
               </div>
             </div>
