@@ -5,15 +5,15 @@
 See: .planning/PROJECT.md (updated 2026-02-02)
 
 **Core value:** A complete, working end-to-end business automation platform that can be cloned and deployed for a new client within 48-72 hours.
-**Current focus:** Credential configuration only - all code, DB, and security work complete.
+**Current focus:** Production credentials configured. Social OAuth + PayFast passphrase remaining.
 
 ## Current Position
 
 Phase: ALL 7 PHASES COMPLETE + v2 Evolution + Audit fixes + DB migrations + Dashboard fixes
 Plan: 16/16 plans complete + all migrations applied to Supabase
 Status: DEPLOYED TO PRODUCTION. Live at https://draggonnb-mvp.vercel.app
-Last activity: 2026-02-10 -- Session 22: Dashboard/CRM fixes + security hardening
-Progress: [████████████] 100% COMPLETE (credentials remaining)
+Last activity: 2026-02-10 -- Session 23: Production credentials configured (PayFast, Resend, Supabase service role)
+Progress: [████████████] 100% COMPLETE (social OAuth + PayFast passphrase remaining)
 
 ## Accumulated Context
 
@@ -31,25 +31,38 @@ Key architectural decisions:
 
 ### Pending Todos
 
-- Add `SUPABASE_SERVICE_ROLE_KEY` to .env.local and Vercel
-- Add `EMAIL_TRACKING_SECRET` to .env.local for HMAC-signed email tokens
-- Configure Facebook/LinkedIn OAuth credentials
-- Configure Resend API key
-- Configure PayFast production merchant credentials
+- Configure PayFast passphrase (from PayFast dashboard)
+- Switch PAYFAST_MODE from sandbox to production (when ready for real payments)
+- Configure Facebook/LinkedIn OAuth credentials (for social posting)
 
 ### Blockers/Concerns
 
-- Resend API key not yet available (email sending works in dev mode via console logging)
 - Facebook App ID/Secret not yet configured (OAuth flow ready, needs credentials)
 - LinkedIn Client ID/Secret not yet configured (OAuth flow ready, needs credentials)
-- Production PayFast merchant credentials not available (needed before real payments)
+- PayFast passphrase not yet provided (merchant ID + key configured)
 - N8N workflows deployed and active on VPS -- content generator tested end-to-end with GPT-4o
 
 ## Session Continuity
 
-Last session: 2026-02-10 (Session 22)
-Stopped at: All code, DB, and security work complete. Dashboard/CRM/security fixes deployed.
-Resume with: Configure credentials (Resend, PayFast production, Facebook/LinkedIn OAuth).
+Last session: 2026-02-10 (Session 23)
+Stopped at: PayFast + Resend + Supabase service role + email tracking credentials configured in .env.local and Vercel.
+Resume with: PayFast passphrase, switch to production mode, Facebook/LinkedIn OAuth credentials.
+
+### Session 23 Summary (2026-02-10)
+**What was accomplished:**
+1. Production credentials configured:
+   - PayFast: Merchant ID (32705333) + Merchant Key set in .env.local and Vercel
+   - Resend: API key configured in .env.local and Vercel
+   - Supabase: Service role key added to Vercel production env
+   - Email tracking: SECRET added to Vercel production env
+2. Vercel now has 12 production env vars (was missing 5 critical ones)
+3. VPS Gitea sync automated: created sync-gitea-state.sh script
+4. STATE.md updated to reflect credentials progress
+
+**Still needed:**
+- PayFast passphrase (from PayFast dashboard)
+- PAYFAST_MODE switch to production (when ready)
+- Facebook/LinkedIn OAuth credentials
 
 ### Session 22 Summary (2026-02-10)
 **What was accomplished:**
