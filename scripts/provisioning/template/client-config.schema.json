@@ -1,0 +1,101 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DraggonnB Client Configuration",
+  "description": "Module manifest and deployment configuration for a client instance.",
+  "type": "object",
+  "required": ["client_id", "client_name", "tier", "modules"],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "client_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique identifier for the client"
+    },
+    "client_name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Display name for the client organization"
+    },
+    "tier": {
+      "type": "string",
+      "enum": ["core", "growth", "scale"],
+      "description": "Subscription tier determining feature access"
+    },
+    "modules": {
+      "type": "object",
+      "required": ["crm", "email", "social", "content_studio", "accommodation", "ai_agents"],
+      "properties": {
+        "crm": { "type": "boolean" },
+        "email": { "type": "boolean" },
+        "social": { "type": "boolean" },
+        "content_studio": { "type": "boolean" },
+        "accommodation": { "type": "boolean" },
+        "ai_agents": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "branding": {
+      "type": "object",
+      "properties": {
+        "primary_color": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "description": "Hex color code for primary brand color"
+        },
+        "secondary_color": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "description": "Hex color code for secondary brand color"
+        },
+        "logo_url": {
+          "type": ["string", "null"],
+          "format": "uri",
+          "description": "URL to the client logo image"
+        },
+        "company_name": {
+          "type": "string",
+          "description": "Company name for branding display"
+        },
+        "tagline": {
+          "type": "string",
+          "description": "Optional tagline or slogan"
+        }
+      },
+      "additionalProperties": false
+    },
+    "integrations": {
+      "type": "object",
+      "properties": {
+        "payfast": { "type": "boolean" },
+        "resend": { "type": "boolean" },
+        "n8n": { "type": "boolean" },
+        "facebook": { "type": "boolean" },
+        "linkedin": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "deployment": {
+      "type": "object",
+      "properties": {
+        "region": {
+          "type": "string",
+          "enum": ["us-east-1", "eu-west-1", "ap-southeast-1"],
+          "description": "Deployment region for Supabase and Vercel"
+        },
+        "custom_domain": {
+          "type": ["string", "null"],
+          "description": "Custom domain for the client deployment"
+        },
+        "supabase_plan": {
+          "type": "string",
+          "enum": ["free", "pro", "team"],
+          "description": "Supabase project plan"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

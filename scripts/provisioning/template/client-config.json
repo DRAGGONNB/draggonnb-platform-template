@@ -1,0 +1,33 @@
+{
+  "$schema": "./client-config.schema.json",
+  "client_id": "",
+  "client_name": "",
+  "tier": "core",
+  "modules": {
+    "crm": true,
+    "email": true,
+    "social": false,
+    "content_studio": false,
+    "accommodation": false,
+    "ai_agents": false
+  },
+  "branding": {
+    "primary_color": "#3B82F6",
+    "secondary_color": "#1E293B",
+    "logo_url": null,
+    "company_name": "",
+    "tagline": ""
+  },
+  "integrations": {
+    "payfast": true,
+    "resend": true,
+    "n8n": true,
+    "facebook": false,
+    "linkedin": false
+  },
+  "deployment": {
+    "region": "us-east-1",
+    "custom_domain": null,
+    "supabase_plan": "free"
+  }
+}

@@ -14,6 +14,7 @@ export type AgentType =
   | 'social_responder'
   | 'customer_support'
   | 'content_autopilot'
+  | 'client_onboarding'
 
 export type AgentStatus = 'active' | 'completed' | 'failed'
 
@@ -124,4 +125,39 @@ export interface Proposal {
   implementation_timeline: string
   total_estimated_savings: string
   next_steps: string[]
+}
+
+// ============================================================================
+// CLIENT ONBOARDING
+// ============================================================================
+
+export interface ContentCalendarEntry {
+  week: number
+  content_type: 'blog' | 'social' | 'email' | 'ad'
+  topic: string
+  platform: string
+  goal: string
+}
+
+export interface EmailTemplateSpec {
+  name: string
+  purpose: string
+  subject_line: string
+  key_sections: string[]
+}
+
+export interface AutomationSuggestion {
+  name: string
+  trigger: string
+  action: string
+  module: string
+  priority: 'high' | 'medium' | 'low'
+}
+
+export interface OnboardingPlan {
+  content_calendar: ContentCalendarEntry[]
+  email_templates: EmailTemplateSpec[]
+  automation_suggestions: AutomationSuggestion[]
+  quick_wins: string[]
+  thirty_day_goals: string[]
 }

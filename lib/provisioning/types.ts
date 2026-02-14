@@ -1,8 +1,11 @@
+import { ClientConfig } from './client-config';
+
 export interface ProvisioningJob {
   clientId: string;
   clientName: string;
   orgEmail: string;
   tier: 'starter' | 'professional' | 'enterprise' | 'core' | 'growth' | 'scale';
+  clientConfig?: ClientConfig;
   createdResources?: CreatedResources;
 }
 
@@ -18,6 +21,9 @@ export interface CreatedResources {
   vercelDeploymentUrl?: string;
   n8nWorkflowId?: string;
   n8nWebhookUrl?: string;
+  automationWorkflowIds?: string;
+  onboardingEmailIds?: string;
+  qaResult?: string;
 }
 
 export interface ProvisioningResult {
@@ -35,4 +41,6 @@ export type ProvisioningStep =
   | 'n8n-webhooks'
   | 'deploy-automations'
   | 'onboarding-sequence'
+  | 'qa-check'
+  | 'register-client'
   | 'finalize';

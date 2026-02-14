@@ -1,0 +1,23 @@
+/* Client Brand Theme Override
+ * These CSS custom properties are injected at runtime from NEXT_PUBLIC_BRAND_* env vars.
+ * The theme-provider component reads env vars and sets these on :root.
+ */
+
+:root {
+  /* Primary brand color scale (generated from --brand-primary) */
+  --brand-primary: var(--env-brand-primary, #3B82F6);
+  --brand-primary-light: color-mix(in srgb, var(--brand-primary) 70%, white);
+  --brand-primary-dark: color-mix(in srgb, var(--brand-primary) 70%, black);
+  --brand-primary-subtle: color-mix(in srgb, var(--brand-primary) 10%, transparent);
+
+  /* Secondary/background */
+  --brand-secondary: var(--env-brand-secondary, #1E293B);
+
+  /* Text on brand backgrounds */
+  --brand-on-primary: white;
+  --brand-on-secondary: white;
+
+  /* Gradients using brand colors */
+  --brand-gradient: linear-gradient(135deg, var(--brand-primary), var(--brand-primary-dark));
+  --brand-gradient-subtle: linear-gradient(135deg, var(--brand-primary-subtle), transparent);
+}

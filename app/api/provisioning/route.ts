@@ -7,7 +7,26 @@ const provisioningSchema = z.object({
   clientId: z.string().min(1).max(50),
   clientName: z.string().min(1).max(100),
   orgEmail: z.string().email(),
-  tier: z.enum(['starter', 'professional', 'enterprise'])
+  tier: z.enum(['starter', 'professional', 'enterprise', 'core', 'growth', 'scale']),
+  modules: z.object({
+    crm: z.boolean().optional(),
+    email: z.boolean().optional(),
+    social: z.boolean().optional(),
+    content_studio: z.boolean().optional(),
+    accommodation: z.boolean().optional(),
+    ai_agents: z.boolean().optional(),
+  }).optional(),
+  branding: z.object({
+    primary_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+    secondary_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+    logo_url: z.string().url().nullable().optional(),
+    company_name: z.string().max(100).optional(),
+    tagline: z.string().max(200).optional(),
+  }).optional(),
+  integrations: z.object({
+    facebook: z.boolean().optional(),
+    linkedin: z.boolean().optional(),
+  }).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -37,10 +56,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { clientId, clientName, orgEmail, tier } = validation.data;
+    const { clientId, clientName, orgEmail, tier, modules, branding, integrations } = validation.data;
 
-    // Run provisioning
-    const result = await provisionClient(clientId, clientName, orgEmail, tier);
+    // Run provisioning with optional config overrides
+    const overrides = { modules, branding, integrations };
+    const result = await provisionClient(clientId, clientName, orgEmail, tier, overrides);
 
     if (!result.success) {
       return NextResponse.json(
@@ -56,7 +76,8 @@ export async function POST(request: NextRequest) {
         supabaseProjectId: result.resources?.supabaseProjectId,
         githubRepoUrl: result.resources?.githubRepoUrl,
         vercelDeploymentUrl: result.resources?.vercelDeploymentUrl,
-        n8nWebhookUrl: result.resources?.n8nWebhookUrl
+        n8nWebhookUrl: result.resources?.n8nWebhookUrl,
+        qaResult: result.resources?.qaResult,
       }
     });
 
