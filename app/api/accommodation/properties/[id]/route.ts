@@ -1,31 +1,16 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { checkFeatureAccess } from '@/lib/tier/feature-gate'
+import { getAccommodationAuth, isAuthError } from '@/lib/accommodation/api-helpers'
 
 export async function GET(_request: Request, { params }: { params: { id: string } }) {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const auth = await getAccommodationAuth()
+    if (isAuthError(auth)) return auth
 
-    const { data: userData } = await supabase.from('users').select('organization_id').eq('id', user.id).single()
-    if (!userData?.organization_id) {
-      return NextResponse.json({ error: 'Organization not found' }, { status: 400 })
-    }
-
-    const { data: org } = await supabase.from('organizations').select('subscription_tier').eq('id', userData.organization_id).single()
-    const access = checkFeatureAccess(org?.subscription_tier || 'core', 'accommodation_module')
-    if (!access.allowed) {
-      return NextResponse.json({ error: access.reason }, { status: 403 })
-    }
-
-    const { data: property, error } = await supabase
+    const { data: property, error } = await auth.supabase
       .from('accommodation_properties')
-      .select('*, accommodation_units(*)')
+      .select('*, accommodation_units(*, accommodation_rooms(*))')
       .eq('id', params.id)
-      .eq('organization_id', userData.organization_id)
+      .eq('organization_id', auth.organizationId)
       .single()
 
     if (error || !property) {
@@ -41,30 +26,19 @@ export async function GET(_request: Request, { params }: { params: { id: string 
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { data: userData } = await supabase.from('users').select('organization_id').eq('id', user.id).single()
-    if (!userData?.organization_id) {
-      return NextResponse.json({ error: 'Organization not found' }, { status: 400 })
-    }
-
-    const { data: org } = await supabase.from('organizations').select('subscription_tier').eq('id', userData.organization_id).single()
-    const access = checkFeatureAccess(org?.subscription_tier || 'core', 'accommodation_module')
-    if (!access.allowed) {
-      return NextResponse.json({ error: access.reason }, { status: 403 })
-    }
+    const auth = await getAccommodationAuth()
+    if (isAuthError(auth)) return auth
 
     const body = await request.json()
-    const { name, type, address, city, province, postal_code, country, amenities, check_in_time, check_out_time, description, booking_com_id, airbnb_id, status } = body
-    const { data: property, error } = await supabase
+
+    // Remove fields that shouldn't be updated directly
+    const { id, organization_id, created_by, created_at, accommodation_units, ...updateData } = body
+
+    const { data: property, error } = await auth.supabase
       .from('accommodation_properties')
-      .update({ name, type, address, city, province, postal_code, country, amenities, check_in_time, check_out_time, description, booking_com_id, airbnb_id, status, updated_at: new Date().toISOString() })
+      .update({ ...updateData, updated_at: new Date().toISOString() })
       .eq('id', params.id)
-      .eq('organization_id', userData.organization_id)
+      .eq('organization_id', auth.organizationId)
       .select()
       .single()
 
@@ -81,28 +55,14 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 
 export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const auth = await getAccommodationAuth()
+    if (isAuthError(auth)) return auth
 
-    const { data: userData } = await supabase.from('users').select('organization_id').eq('id', user.id).single()
-    if (!userData?.organization_id) {
-      return NextResponse.json({ error: 'Organization not found' }, { status: 400 })
-    }
-
-    const { data: org } = await supabase.from('organizations').select('subscription_tier').eq('id', userData.organization_id).single()
-    const delAccess = checkFeatureAccess(org?.subscription_tier || 'core', 'accommodation_module')
-    if (!delAccess.allowed) {
-      return NextResponse.json({ error: delAccess.reason }, { status: 403 })
-    }
-
-    const { error } = await supabase
+    const { error } = await auth.supabase
       .from('accommodation_properties')
       .delete()
       .eq('id', params.id)
-      .eq('organization_id', userData.organization_id)
+      .eq('organization_id', auth.organizationId)
 
     if (error) {
       return NextResponse.json({ error: 'Failed to delete property' }, { status: 500 })
