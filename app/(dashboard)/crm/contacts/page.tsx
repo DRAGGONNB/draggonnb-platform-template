@@ -139,7 +139,7 @@ export default function ContactsPage() {
   const statusColors: Record<string, string> = {
     active: 'bg-green-100 text-green-700',
     inactive: 'bg-gray-100 text-gray-700',
-    lead: 'bg-blue-100 text-blue-700',
+    lead: 'bg-brand-crimson-100 text-brand-crimson-700',
     customer: 'bg-purple-100 text-purple-700',
   }
 

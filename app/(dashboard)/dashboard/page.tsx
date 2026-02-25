@@ -121,7 +121,7 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-8">
       {/* Hero Section with Stats */}
-      <div className="gradient-hero rounded-2xl p-10 text-white animate-slide-in">
+      <div className="gradient-mesh-brand rounded-2xl p-10 text-white animate-slide-in">
         <h1 className="mb-2 text-3xl font-bold">Welcome back, {userOrg.fullName?.split(' ')[0] || 'there'}!</h1>
         <p className="mb-8 text-base opacity-90">Last 30 Days Performance Overview</p>
 
@@ -224,7 +224,7 @@ export default async function DashboardPage() {
                   <span>{data.usage?.posts_published || 0}</span>
                 </div>
                 <div className="h-1.5 overflow-hidden rounded-full bg-gray-200">
-                  <div className="h-full bg-gradient-to-r from-blue-600 to-blue-700" style={{ width: `${Math.min((data.usage?.posts_published || 0) / 30 * 100, 100)}%` }} />
+                  <div className="h-full bg-gradient-to-r from-brand-crimson-600 to-brand-crimson-700" style={{ width: `${Math.min((data.usage?.posts_published || 0) / 30 * 100, 100)}%` }} />
                 </div>
               </div>
               <div>
@@ -233,7 +233,7 @@ export default async function DashboardPage() {
                   <span>{data.usage?.ai_generations_count || 0}</span>
                 </div>
                 <div className="h-1.5 overflow-hidden rounded-full bg-gray-200">
-                  <div className="h-full bg-gradient-to-r from-blue-600 to-blue-700" style={{ width: `${Math.min((data.usage?.ai_generations_count || 0) / 50 * 100, 100)}%` }} />
+                  <div className="h-full bg-gradient-to-r from-brand-crimson-600 to-brand-crimson-700" style={{ width: `${Math.min((data.usage?.ai_generations_count || 0) / 50 * 100, 100)}%` }} />
                 </div>
               </div>
             </div>

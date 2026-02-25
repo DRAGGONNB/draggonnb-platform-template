@@ -140,6 +140,20 @@
     "tags": ["gitea", "dns", "windows", "ssh-tunnel"]
   },
   {
+    "id": "ERR-012",
+    "timestamp": "2026-02-25",
+    "session": 24,
+    "category": "deployment",
+    "source": "vercel",
+    "error_message": "Error: No existing credentials found. Please run `vercel login` or pass \"--token\"",
+    "root_cause": "GitHub Actions workflow referenced secrets.VERCEL_TOKEN, secrets.VERCEL_ORG_ID, secrets.VERCEL_PROJECT_ID but these secrets were not configured in the GitHub repo settings",
+    "resolution": "User added VERCEL_TOKEN, VERCEL_ORG_ID, and VERCEL_PROJECT_ID to GitHub repo Settings > Secrets and variables > Actions",
+    "prevention": "When setting up GitHub Actions workflows that use Vercel CLI, ensure VERCEL_TOKEN, VERCEL_ORG_ID, and VERCEL_PROJECT_ID are added to repo secrets before the first run",
+    "files_affected": [".github/workflows/deploy-to-vercel.yml"],
+    "recurring": false,
+    "tags": ["vercel", "github-actions", "secrets", "deployment"]
+  },
+  {
     "id": "ERR-011",
     "timestamp": "2026-02-05",
     "session": 20,

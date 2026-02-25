@@ -43,7 +43,7 @@ export function HeroSection() {
 
         <p className="mx-auto mb-10 max-w-2xl text-lg text-brand-charcoal-200 sm:text-xl">
           Stop patching together tools. DraggonnB gives you a complete digital
-          operations platform -- from guest bookings and staff management to AI
+          operations platform -- CRM, email campaigns, AI content, and smart
           agents that run your business around the clock.
         </p>
 
@@ -95,12 +95,12 @@ export function SocialProofBar() {
 
 const painPoints = [
   {
-    problem: 'Manual bookings, pricing spreadsheets, and scattered guest data',
-    solution: 'Unified property management with variable pricing and guest portal',
+    problem: 'Scattered contacts, lost deals, and no visibility on your pipeline',
+    solution: 'Complete CRM with contacts, companies, deals pipeline, and real-time stats',
   },
   {
-    problem: 'Staff coordination via phone calls and WhatsApp chaos',
-    solution: 'Structured Telegram/WhatsApp SOPs with automated task flows',
+    problem: 'Manual email blasts, no sequences, and zero campaign analytics',
+    solution: 'Full email operations: campaigns, sequences, templates, A/B testing, and tracking',
   },
   {
     problem: 'Expensive custom software that takes months to build',
@@ -163,6 +163,7 @@ const modules = [
     description: 'Track contacts, companies, and deals. Automated lead nurture from WhatsApp intake to qualified opportunity.',
     gradient: 'from-brand-crimson-500 to-brand-crimson-700',
     tier: 'Core' as const,
+    comingSoon: false,
   },
   {
     icon: Mail,
@@ -170,13 +171,15 @@ const modules = [
     description: 'Sequences, templates, behavioral triggers, A/B testing, and smart segmentation. Full email operations.',
     gradient: 'from-brand-crimson-600 to-brand-crimson-800',
     tier: 'Core' as const,
+    comingSoon: false,
   },
   {
     icon: Building2,
     title: 'Accommodation',
-    description: '35-table schema covering inventory, variable pricing, bookings, payments, operations, guest experience.',
+    description: 'Property inventory, guest management, and inquiry pipeline live now. Variable pricing, bookings, and guest portal expanding soon.',
     gradient: 'from-brand-crimson-400 to-brand-gold-500',
     tier: 'Growth' as const,
+    comingSoon: false,
   },
   {
     icon: UtensilsCrossed,
@@ -184,6 +187,7 @@ const modules = [
     description: 'POS integration, kitchen SOPs, food temp scanning, events coordination, and booking management.',
     gradient: 'from-brand-gold-500 to-brand-crimson-500',
     tier: 'Growth' as const,
+    comingSoon: true,
   },
   {
     icon: Sparkles,
@@ -191,6 +195,7 @@ const modules = [
     description: 'AI content generation for social, email, and web. Autopilot mode generates and schedules weekly content.',
     gradient: 'from-brand-crimson-500 to-brand-charcoal-500',
     tier: 'Growth' as const,
+    comingSoon: false,
   },
   {
     icon: Bot,
@@ -198,6 +203,7 @@ const modules = [
     description: 'LeadQualifier, ProposalGenerator, ClientOnboarding, BusinessAutopilot. Agents that run your business 24/7.',
     gradient: 'from-brand-crimson-400 to-brand-crimson-600',
     tier: 'Scale' as const,
+    comingSoon: false,
   },
 ]
 
@@ -216,7 +222,7 @@ export function ModuleShowcaseSection() {
             Modular by <span className="gradient-text-brand">Design</span>
           </h2>
           <p className="mx-auto max-w-2xl text-lg text-brand-charcoal-300">
-            Pick the modules your business needs. Each one is production-ready, AI-enhanced, and built for South African operations.
+            Pick the modules your business needs. AI-enhanced and built for South African operations.
           </p>
         </div>
 
@@ -226,12 +232,23 @@ export function ModuleShowcaseSection() {
             return (
               <div
                 key={mod.title}
-                className="group relative rounded-xl border border-white/10 bg-brand-charcoal-800/60 p-6 transition-all hover-lift hover-glow-brand"
+                className={`group relative rounded-xl border p-6 transition-all hover-lift ${
+                  mod.comingSoon
+                    ? 'border-white/5 bg-brand-charcoal-800/40 opacity-80'
+                    : 'border-white/10 bg-brand-charcoal-800/60 hover-glow-brand'
+                }`}
               >
-                <span className={`absolute right-4 top-4 rounded-full px-2.5 py-0.5 text-xs font-medium ${tierBadgeStyles[mod.tier]}`}>
-                  {mod.tier}
-                </span>
-                <div className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br ${mod.gradient} shadow-lg`}>
+                <div className="absolute right-4 top-4 flex items-center gap-2">
+                  {mod.comingSoon && (
+                    <span className="rounded-full bg-brand-gold-500/20 px-2.5 py-0.5 text-xs font-medium text-brand-gold-400">
+                      Coming Soon
+                    </span>
+                  )}
+                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${tierBadgeStyles[mod.tier]}`}>
+                    {mod.tier}
+                  </span>
+                </div>
+                <div className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br ${mod.gradient} shadow-lg ${mod.comingSoon ? 'opacity-60' : ''}`}>
                   <Icon className="h-6 w-6 text-white" />
                 </div>
                 <h3 className="mb-2 text-lg font-semibold text-white">{mod.title}</h3>

@@ -12,26 +12,30 @@ import {
 import { Button } from '@/components/ui/button'
 
 const tabs = [
-  { id: 'accommodation', label: 'Accommodation & Lodges', icon: Building2 },
-  { id: 'restaurant', label: 'Restaurant & Events', icon: UtensilsCrossed },
-  { id: 'custom', label: 'Custom Solutions', icon: Puzzle },
+  { id: 'accommodation', label: 'Accommodation & Lodges', icon: Building2, comingSoon: false },
+  { id: 'restaurant', label: 'Restaurant & Events', icon: UtensilsCrossed, comingSoon: true },
+  { id: 'custom', label: 'Custom Solutions', icon: Puzzle, comingSoon: false },
 ] as const
 
 type TabId = (typeof tabs)[number]['id']
 
-const accommodationFeatures = [
-  'Variable pricing engine (seasonal, per-person, per-unit, per-room)',
-  'Calendar + 3rd party booking sync',
-  'Email manager for guest communications',
-  'Property & maintenance management',
-  'Staff coordination via Telegram',
-  'Guest portal with self-service',
-  'AI agent automation (WhatsApp/Telegram)',
-  'Stock management',
-  'Vehicle maintenance & licence tracking',
+const accommodationFeaturesLive = [
+  'Property & unit inventory management',
+  'Guest database and profiles',
+  'Inquiry pipeline and tracking',
+  'Image gallery management',
+  'Property configuration',
 ]
 
-const accommodationDomains = ['Inventory', 'Pricing', 'Bookings', 'Payments', 'Operations', 'Guest Experience', 'Config']
+const accommodationFeaturesExpanding = [
+  'Variable pricing engine (seasonal, per-person, per-unit)',
+  'Calendar + 3rd party booking sync',
+  'Guest portal with self-service',
+  'Booking confirmation & payment processing',
+  'Operations workflow & staff coordination',
+]
+
+const accommodationDomains = ['Inventory', 'Guests', 'Inquiries', 'Pricing', 'Bookings', 'Operations', 'Config']
 
 const restaurantFeatures = [
   'Multi-entry API for POS/3rd party integration',
@@ -87,6 +91,11 @@ export function IndustrySolutionsSection() {
               >
                 <Icon className={`h-4 w-4 ${isActive ? 'text-brand-crimson-400' : ''}`} />
                 {tab.label}
+                {tab.comingSoon && (
+                  <span className="rounded-full bg-brand-gold-500/20 px-2 py-0.5 text-[10px] font-semibold text-brand-gold-400">
+                    Soon
+                  </span>
+                )}
               </button>
             )
           })}
@@ -97,11 +106,21 @@ export function IndustrySolutionsSection() {
           {activeTab === 'accommodation' && (
             <div className="grid gap-8 lg:grid-cols-2">
               <div>
-                <h3 className="mb-5 text-xl font-semibold text-white">Complete Property Operations</h3>
-                <ul className="space-y-3">
-                  {accommodationFeatures.map((feature) => (
+                <h3 className="mb-5 text-xl font-semibold text-white">Property Operations</h3>
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-brand-crimson-400">Available Now</p>
+                <ul className="mb-6 space-y-3">
+                  {accommodationFeaturesLive.map((feature) => (
                     <li key={feature} className="flex items-start gap-3 text-sm text-brand-charcoal-200">
                       <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand-crimson-400" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-brand-gold-400">Expanding</p>
+                <ul className="space-y-3">
+                  {accommodationFeaturesExpanding.map((feature) => (
+                    <li key={feature} className="flex items-start gap-3 text-sm text-brand-charcoal-300">
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand-charcoal-500" />
                       {feature}
                     </li>
                   ))}
@@ -116,8 +135,9 @@ export function IndustrySolutionsSection() {
                 </div>
                 <p className="mb-6 text-sm leading-relaxed text-brand-charcoal-300">
                   From a single guest house to a multi-property game lodge, the accommodation
-                  module handles inventory, pricing, bookings, payments, operations, guest
-                  experience, and property configuration.
+                  module provides a 35-table database foundation covering inventory, guests, and
+                  inquiries today -- with pricing, bookings, payments, and operations expanding
+                  in upcoming releases.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {accommodationDomains.map((domain) => (
@@ -133,11 +153,14 @@ export function IndustrySolutionsSection() {
           {activeTab === 'restaurant' && (
             <div className="grid gap-8 lg:grid-cols-2">
               <div>
-                <h3 className="mb-5 text-xl font-semibold text-white">Kitchen to Table Operations</h3>
+                <div className="mb-5 flex items-center gap-3">
+                  <h3 className="text-xl font-semibold text-white">Kitchen to Table Operations</h3>
+                  <span className="rounded-full bg-brand-gold-500/20 px-3 py-1 text-xs font-semibold text-brand-gold-400">Coming Soon</span>
+                </div>
                 <ul className="space-y-3">
                   {restaurantFeatures.map((feature) => (
-                    <li key={feature} className="flex items-start gap-3 text-sm text-brand-charcoal-200">
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand-crimson-400" />
+                    <li key={feature} className="flex items-start gap-3 text-sm text-brand-charcoal-300">
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand-charcoal-500" />
                       {feature}
                     </li>
                   ))}
@@ -147,15 +170,22 @@ export function IndustrySolutionsSection() {
                 <p className="mb-6 text-sm leading-relaxed text-brand-charcoal-300">
                   Purpose-built for South African restaurants, event venues, and hospitality
                   groups. Integrates with your existing POS and streamlines kitchen-to-table
-                  operations.
+                  operations. This module is currently in development -- register your interest
+                  to get early access.
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  <span className="rounded-full border border-brand-crimson-500/20 bg-brand-crimson-500/10 px-3 py-1 text-xs text-brand-crimson-300">POS Integration</span>
-                  <span className="rounded-full border border-brand-crimson-500/20 bg-brand-crimson-500/10 px-3 py-1 text-xs text-brand-crimson-300">Kitchen SOPs</span>
-                  <span className="rounded-full border border-brand-crimson-500/20 bg-brand-crimson-500/10 px-3 py-1 text-xs text-brand-crimson-300">Events</span>
-                  <span className="rounded-full border border-brand-crimson-500/20 bg-brand-crimson-500/10 px-3 py-1 text-xs text-brand-crimson-300">Restaurants</span>
-                  <span className="rounded-full border border-brand-crimson-500/20 bg-brand-crimson-500/10 px-3 py-1 text-xs text-brand-crimson-300">Venues</span>
+                <div className="mb-6 flex flex-wrap gap-2">
+                  <span className="rounded-full border border-brand-charcoal-500/30 bg-brand-charcoal-700/50 px-3 py-1 text-xs text-brand-charcoal-300">POS Integration</span>
+                  <span className="rounded-full border border-brand-charcoal-500/30 bg-brand-charcoal-700/50 px-3 py-1 text-xs text-brand-charcoal-300">Kitchen SOPs</span>
+                  <span className="rounded-full border border-brand-charcoal-500/30 bg-brand-charcoal-700/50 px-3 py-1 text-xs text-brand-charcoal-300">Events</span>
+                  <span className="rounded-full border border-brand-charcoal-500/30 bg-brand-charcoal-700/50 px-3 py-1 text-xs text-brand-charcoal-300">Restaurants</span>
+                  <span className="rounded-full border border-brand-charcoal-500/30 bg-brand-charcoal-700/50 px-3 py-1 text-xs text-brand-charcoal-300">Venues</span>
                 </div>
+                <Button asChild variant="outline" className="rounded-lg border-brand-gold-500/40 bg-transparent text-brand-gold-400 hover:bg-brand-gold-500/10 hover:text-brand-gold-300">
+                  <Link href="/qualify">
+                    Register Interest
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
               </div>
             </div>
           )}
