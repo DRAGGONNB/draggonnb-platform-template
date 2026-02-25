@@ -9,8 +9,9 @@ const navigation = [
     section: 'Main',
     items: [
       { name: 'Dashboard', href: '/dashboard', icon: '📊', badge: null },
+      { name: 'Autopilot', href: '/autopilot', icon: '🤖', badge: 'NEW', badgeColor: 'bg-gradient-to-r from-purple-500 to-purple-600' },
       { name: 'CRM', href: '/crm', icon: '👥', badge: null },
-      { name: 'Email Hub', href: '/email', icon: '📧', badge: 'NEW', badgeColor: 'bg-gradient-to-r from-green-500 to-green-600' },
+      { name: 'Email Hub', href: '/email', icon: '📧', badge: null },
     ],
   },
   {

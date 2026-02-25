@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Sparkles, Mail, Share2, Wand2 } from 'lucide-react'
+import { Sparkles, Mail, Share2, Wand2, Bot, ArrowRight } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 const studios = [
@@ -33,6 +33,21 @@ export default function ContentStudioPage() {
           AI-powered content generation for email campaigns and social media
         </p>
       </div>
+
+      <Link href="/autopilot">
+        <div className="mb-6 rounded-lg border border-purple-200 bg-gradient-to-r from-purple-50 to-blue-50 p-4 hover:shadow-md transition-shadow cursor-pointer">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Bot className="h-5 w-5 text-purple-600" />
+              <div>
+                <p className="font-semibold text-purple-900">Want content created automatically?</p>
+                <p className="text-sm text-purple-600">Try Business Autopilot — AI generates your weekly content calendar</p>
+              </div>
+            </div>
+            <ArrowRight className="h-5 w-5 text-purple-400" />
+          </div>
+        </div>
+      </Link>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {studios.map((studio) => (
