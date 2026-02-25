@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-02)
 
 **Core value:** A complete, working end-to-end business automation platform that can be cloned and deployed for a new client within 48-72 hours.
-**Current focus:** Production credentials configured. Social OAuth + PayFast passphrase remaining.
+**Current focus:** Brand colour unification complete. Vercel deploy secrets configured. Production credentials + social OAuth remaining.
 
 ## Current Position
 
-Phase: ALL 7 PHASES COMPLETE + v2 Evolution + Audit fixes + DB migrations + Dashboard fixes
+Phase: ALL 7 PHASES COMPLETE + v2 Evolution + Audit fixes + DB migrations + Dashboard fixes + Brand rebrand
 Plan: 16/16 plans complete + all migrations applied to Supabase
 Status: DEPLOYED TO PRODUCTION. Live at https://draggonnb-mvp.vercel.app
-Last activity: 2026-02-10 -- Session 23: Production credentials configured (PayFast, Resend, Supabase service role)
+Last activity: 2026-02-25 -- Session 24: Brand colour unification across all pages + Vercel deploy secrets fix
 Progress: [████████████] 100% COMPLETE (social OAuth + PayFast passphrase remaining)
 
 ## Accumulated Context
@@ -44,9 +44,28 @@ Key architectural decisions:
 
 ## Session Continuity
 
-Last session: 2026-02-10 (Session 23)
-Stopped at: PayFast + Resend + Supabase service role + email tracking credentials configured in .env.local and Vercel.
-Resume with: PayFast passphrase, switch to production mode, Facebook/LinkedIn OAuth credentials.
+Last session: 2026-02-25 (Session 24)
+Stopped at: Brand colour rebrand complete across all 19 files. Vercel deploy secrets (VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID) confirmed configured by user.
+Resume with: Merge PR to main, verify Vercel deploy with new colours. PayFast passphrase, Facebook/LinkedIn OAuth credentials still outstanding.
+
+### Session 24 Summary (2026-02-25)
+**What was accomplished:**
+1. Diagnosed Vercel CLI deploy failure -- `--token=` was empty because VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID secrets were not set in GitHub repo settings. User configured them.
+2. Brand colour unification across 19 files (the landing page was rebranded in a prior PR but all other pages still used old blue/electric/neon colours):
+   - Public pages: qualify, checkout, payment/success -- all slate/blue replaced with brand-charcoal/brand-crimson
+   - Dashboard pages: dashboard hero, CRM (4 pages), email (6 pages), autopilot (2 pages), content-generator, accommodation inquiries
+   - CSS utilities in globals.css: gradient-electric, gradient-hero, gradient-ai, gradient-mesh, btn-futuristic, gradient-text, hover-glow (3 variants), neon-border, tab-futuristic, input-futuristic, badge-info, pulse-glow animation -- all updated from electric-blue/neon-cyan/electric-purple to brand-crimson/brand-gold/brand-charcoal
+3. No new TypeScript errors introduced (pre-existing test module resolution errors only)
+4. Pushed to branch `claude/review-changes-mm1ym0lovqom0y8c-K79JF`
+
+**Git commits this session:**
+- `895f783` Replace old blue/electric/neon colours with brand-crimson/charcoal/gold across all pages
+
+**Still needed:**
+- Merge PR to main and verify Vercel deploy
+- PayFast passphrase (from PayFast dashboard)
+- PAYFAST_MODE switch to production (when ready)
+- Facebook/LinkedIn OAuth credentials
 
 ### Session 23 Summary (2026-02-10)
 **What was accomplished:**
