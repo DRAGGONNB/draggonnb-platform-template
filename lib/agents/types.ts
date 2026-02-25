@@ -14,6 +14,7 @@ export type AgentType =
   | 'social_responder'
   | 'customer_support'
   | 'content_autopilot'
+  | 'business_autopilot'
   | 'client_onboarding'
 
 export type AgentStatus = 'active' | 'completed' | 'failed'
@@ -161,3 +162,56 @@ export interface OnboardingPlan {
   quick_wins: string[]
   thirty_day_goals: string[]
 }
+
+// ============================================================================
+// BUSINESS AUTOPILOT
+// ============================================================================
+
+export interface AutopilotCalendarEntry {
+  type: 'social'
+  day: string
+  platform: string
+  content: string
+  hashtags: string[]
+  image_prompt: string
+  cta: string
+  seo_keywords_used: string[]
+  content_pillar: string
+  best_post_time: string
+}
+
+export interface AutopilotEmailEntry {
+  type: 'email'
+  day: string
+  goal: string
+  name: string
+  subject_lines: string[]
+  preview_text: string
+  short_body: string
+  long_body: string
+  cta: string
+  cta_url_placeholder: string
+  segment_suggestion: {
+    description: string
+    subscription_tier?: string[]
+    tags?: string[]
+  }
+  content_pillar: string
+  follow_up_suggestion: string
+}
+
+export type AutopilotEntry = AutopilotCalendarEntry | AutopilotEmailEntry
+
+export interface AutopilotCalendar {
+  week: string
+  entries: AutopilotEntry[]
+  theme: string
+  notes: string
+}
+
+export type AutopilotCapability =
+  | 'GENERATE_CALENDAR'
+  | 'GENERATE_EMAIL_CAMPAIGN'
+  | 'REFINE_POST'
+  | 'SCORE_LEAD'
+  | 'SUGGEST_CAMPAIGN'

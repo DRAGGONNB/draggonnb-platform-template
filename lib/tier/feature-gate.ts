@@ -50,6 +50,7 @@ export type Feature =
   | 'lead_pipeline'
   | 'white_label'
   | 'ai_agents'
+  | 'business_autopilot'
   | 'api_access'
   | 'advanced_analytics'
   | 'custom_integrations'
@@ -60,6 +61,7 @@ export type UsageMetric =
   | 'ai_generations'
   | 'email_sends'
   | 'agent_invocations'
+  | 'autopilot_runs'
 
 export interface FeatureCheckResult {
   allowed: boolean
@@ -81,19 +83,22 @@ export const TIER_LIMITS: Record<string, Record<UsageMetric, number>> = {
     social_posts: 30,
     ai_generations: 50,
     email_sends: 1000,
-    agent_invocations: 0,
+    agent_invocations: 10,
+    autopilot_runs: 2,
   },
   growth: {
     social_posts: 100,
     ai_generations: 200,
     email_sends: 10000,
-    agent_invocations: 0,
+    agent_invocations: 50,
+    autopilot_runs: 4,
   },
   scale: {
     social_posts: Infinity,
     ai_generations: Infinity,
     email_sends: Infinity,
     agent_invocations: 1000,
+    autopilot_runs: Infinity,
   },
 }
 
@@ -110,7 +115,8 @@ const FEATURE_MIN_TIER: Record<Feature, string> = {
   lead_pipeline: 'growth',
   advanced_analytics: 'growth',
   white_label: 'scale',
-  ai_agents: 'scale',
+  ai_agents: 'core',
+  business_autopilot: 'core',
   api_access: 'scale',
   custom_integrations: 'scale',
   accommodation_module: 'growth',
@@ -180,6 +186,7 @@ export async function checkUsage(
     ai_generations: 'ai_generations_monthly',
     email_sends: 'emails_sent_monthly',
     agent_invocations: 'agent_invocations_monthly',
+    autopilot_runs: 'autopilot_runs_monthly',
   }
 
   const current = (usage as Record<string, number>)[metricColumn[metric]] || 0
@@ -214,6 +221,7 @@ export async function incrementUsage(
     ai_generations: 'ai_generations_monthly',
     email_sends: 'emails_sent_monthly',
     agent_invocations: 'agent_invocations_monthly',
+    autopilot_runs: 'autopilot_runs_monthly',
   }
 
   const column = metricColumn[metric]

@@ -2,9 +2,10 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { Search, Bell, HelpCircle, UserPlus, FileText, Mail, Sparkles } from 'lucide-react'
+import { Search, Bell, HelpCircle, UserPlus, FileText, Mail, Sparkles, Bot } from 'lucide-react'
 
 const newActions = [
+  { label: 'Autopilot', href: '/autopilot', icon: Bot },
   { label: 'New Contact', href: '/crm/contacts?action=new', icon: UserPlus },
   { label: 'New Deal', href: '/crm/deals?action=new', icon: FileText },
   { label: 'New Campaign', href: '/email/campaigns', icon: Mail },
@@ -13,6 +14,8 @@ const newActions = [
 
 const breadcrumbMap: Record<string, string[]> = {
   '/dashboard': ['Dashboard', 'Overview'],
+  '/autopilot': ['Autopilot', 'Calendar'],
+  '/autopilot/settings': ['Autopilot', 'Settings'],
   '/crm': ['CRM', 'Overview'],
   '/crm/contacts': ['CRM', 'Contacts'],
   '/crm/deals': ['CRM', 'Deals'],
