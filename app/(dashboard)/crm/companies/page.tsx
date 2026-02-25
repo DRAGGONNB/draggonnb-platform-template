@@ -300,7 +300,7 @@ export default function CompaniesPage() {
                             href={company.website}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
+                            className="flex items-center gap-1 text-sm text-brand-crimson-600 hover:underline"
                           >
                             <Globe className="h-3 w-3" />
                             {company.website.replace(/^https?:\/\//, '').split('/')[0]}

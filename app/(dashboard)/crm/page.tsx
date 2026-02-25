@@ -70,7 +70,7 @@ export default async function CRMPage() {
             <div className="text-4xl mb-4">👥</div>
             <h3 className="text-xl font-semibold mb-2">Contacts</h3>
             <p className="text-gray-600 text-sm">Manage your contact database</p>
-            <div className="mt-4 text-blue-600 font-medium text-sm group-hover:underline">View Contacts →</div>
+            <div className="mt-4 text-brand-crimson-600 font-medium text-sm group-hover:underline">View Contacts →</div>
           </Card>
         </Link>
 
@@ -79,7 +79,7 @@ export default async function CRMPage() {
             <div className="text-4xl mb-4">💼</div>
             <h3 className="text-xl font-semibold mb-2">Deals</h3>
             <p className="text-gray-600 text-sm">Track your sales pipeline</p>
-            <div className="mt-4 text-blue-600 font-medium text-sm group-hover:underline">View Deals →</div>
+            <div className="mt-4 text-brand-crimson-600 font-medium text-sm group-hover:underline">View Deals →</div>
           </Card>
         </Link>
 
@@ -88,7 +88,7 @@ export default async function CRMPage() {
             <div className="text-4xl mb-4">🏢</div>
             <h3 className="text-xl font-semibold mb-2">Companies</h3>
             <p className="text-gray-600 text-sm">Manage company accounts</p>
-            <div className="mt-4 text-blue-600 font-medium text-sm group-hover:underline">View Companies →</div>
+            <div className="mt-4 text-brand-crimson-600 font-medium text-sm group-hover:underline">View Companies →</div>
           </Card>
         </Link>
       </div>
@@ -105,7 +105,7 @@ export default async function CRMPage() {
         <Card className="p-4">
           <div className="text-sm text-gray-600">Active Deals</div>
           <div className="text-2xl font-bold mt-1">{stats.deals}</div>
-          <div className="text-xs text-blue-600 mt-1">R{stats.pipelineValue.toLocaleString()} pipeline</div>
+          <div className="text-xs text-brand-crimson-600 mt-1">R{stats.pipelineValue.toLocaleString()} pipeline</div>
         </Card>
         <Card className="p-4">
           <div className="text-sm text-gray-600">Companies</div>

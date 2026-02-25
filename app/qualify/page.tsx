@@ -45,7 +45,7 @@ const companySizes = [
 
 export default function QualifyPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-800" />}>
+    <Suspense fallback={<div className="min-h-screen bg-gradient-to-b from-brand-charcoal-900 via-brand-charcoal-900 to-brand-charcoal-800" />}>
       <QualifyForm />
     </Suspense>
   )
@@ -122,21 +122,21 @@ function QualifyForm() {
   }
 
   const inputClasses =
-    'w-full rounded-lg border border-white/10 bg-slate-900/50 px-4 py-3 text-white placeholder-slate-500 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20'
+    'w-full rounded-lg border border-white/10 bg-brand-charcoal-900/50 px-4 py-3 text-white placeholder-brand-charcoal-400 transition-colors focus:border-brand-crimson-500 focus:outline-none focus:ring-2 focus:ring-brand-crimson-500/20'
   const selectClasses =
-    'w-full rounded-lg border border-white/10 bg-slate-900/50 px-4 py-3 text-white transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20'
-  const labelClasses = 'mb-1.5 block text-sm font-medium text-slate-300'
+    'w-full rounded-lg border border-white/10 bg-brand-charcoal-900/50 px-4 py-3 text-white transition-colors focus:border-brand-crimson-500 focus:outline-none focus:ring-2 focus:ring-brand-crimson-500/20'
+  const labelClasses = 'mb-1.5 block text-sm font-medium text-brand-charcoal-200'
 
   // Confirmation view
   if (isSuccess) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-800">
+      <div className="min-h-screen bg-gradient-to-b from-brand-charcoal-900 via-brand-charcoal-900 to-brand-charcoal-800">
         {/* Header */}
-        <header className="border-b border-white/10 bg-slate-900/80 backdrop-blur-xl">
+        <header className="border-b border-white/10 bg-brand-charcoal-900/80 backdrop-blur-xl">
           <div className="mx-auto flex max-w-7xl items-center px-4 py-4 sm:px-6 lg:px-8">
             <Link href="/" className="flex items-center gap-2">
-              <span className="text-xl font-bold gradient-text">DraggonnB</span>
-              <span className="text-sm font-medium text-slate-400">CRMM</span>
+              <span className="text-xl font-bold gradient-text-brand">DraggonnB</span>
+              <span className="text-sm font-medium text-brand-charcoal-400">CRMM</span>
             </Link>
           </div>
         </header>
@@ -152,44 +152,44 @@ function QualifyForm() {
               Your Challenges Are Being Analyzed
             </h1>
 
-            <p className="mb-10 text-lg text-slate-300">
+            <p className="mb-10 text-lg text-brand-charcoal-200">
               Our AI is reviewing your business needs right now. You&apos;ll receive a
               personalized solution proposal within 2 hours at{' '}
               <span className="font-medium text-white">{email}</span>.
             </p>
 
             {/* What happens next */}
-            <div className="mb-10 rounded-xl border border-white/10 bg-slate-800/60 p-6 text-left">
+            <div className="mb-10 rounded-xl border border-white/10 bg-brand-charcoal-800/60 p-6 text-left">
               <h2 className="mb-5 text-lg font-semibold text-white">What happens next?</h2>
               <ol className="space-y-4">
                 <li className="flex items-start gap-3">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-crimson-600 text-xs font-bold text-white">
                     1
                   </span>
-                  <p className="text-sm text-slate-300">
+                  <p className="text-sm text-brand-charcoal-200">
                     AI analyzes your 3 business challenges
                   </p>
                 </li>
                 <li className="flex items-start gap-3">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-crimson-600 text-xs font-bold text-white">
                     2
                   </span>
-                  <p className="text-sm text-slate-300">
+                  <p className="text-sm text-brand-charcoal-200">
                     We match solutions from our automation library
                   </p>
                 </li>
                 <li className="flex items-start gap-3">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-crimson-600 text-xs font-bold text-white">
                     3
                   </span>
-                  <p className="text-sm text-slate-300">
+                  <p className="text-sm text-brand-charcoal-200">
                     You receive a detailed proposal with pricing
                   </p>
                 </li>
               </ol>
             </div>
 
-            <Button asChild size="lg" className="btn-futuristic h-12 rounded-xl px-8 text-base">
+            <Button asChild size="lg" className="btn-brand h-12 rounded-xl px-8 text-base">
               <Link href="/">
                 Back to Home
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -203,13 +203,13 @@ function QualifyForm() {
 
   // Form view
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-800">
+    <div className="min-h-screen bg-gradient-to-b from-brand-charcoal-900 via-brand-charcoal-900 to-brand-charcoal-800">
       {/* Header */}
-      <header className="border-b border-white/10 bg-slate-900/80 backdrop-blur-xl">
+      <header className="border-b border-white/10 bg-brand-charcoal-900/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center px-4 py-4 sm:px-6 lg:px-8">
           <Link href="/" className="flex items-center gap-2">
-            <span className="text-xl font-bold gradient-text">DraggonnB</span>
-            <span className="text-sm font-medium text-slate-400">CRMM</span>
+            <span className="text-xl font-bold gradient-text-brand">DraggonnB</span>
+            <span className="text-sm font-medium text-brand-charcoal-400">CRMM</span>
           </Link>
         </div>
       </header>
@@ -217,20 +217,20 @@ function QualifyForm() {
       <main className="px-4 py-16 sm:px-6 lg:px-8">
         <div className="relative mx-auto max-w-2xl">
           {/* Background glow */}
-          <div className="pointer-events-none absolute -top-40 left-1/2 h-[400px] w-[400px] -translate-x-1/2 rounded-full bg-blue-500/20 blur-[120px]" />
+          <div className="pointer-events-none absolute -top-40 left-1/2 h-[400px] w-[400px] -translate-x-1/2 rounded-full bg-brand-crimson-500/15 blur-[120px]" />
 
           {/* Card */}
-          <div className="relative rounded-2xl border border-white/10 bg-slate-800/60 p-8 shadow-2xl backdrop-blur-sm sm:p-10">
+          <div className="relative rounded-2xl border border-white/10 bg-brand-charcoal-800/60 p-8 shadow-2xl backdrop-blur-sm sm:p-10">
             {/* Title */}
             <div className="mb-8 text-center">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-brand-crimson-500 to-brand-crimson-700 shadow-lg">
                 <Brain className="h-7 w-7 text-white" />
               </div>
               <h1 className="mb-2 text-2xl font-bold text-white sm:text-3xl">
                 Tell Us About Your{' '}
-                <span className="gradient-text">Business Challenges</span>
+                <span className="gradient-text-brand">Business Challenges</span>
               </h1>
-              <p className="text-sm text-slate-400 sm:text-base">
+              <p className="text-sm text-brand-charcoal-400 sm:text-base">
                 Our AI will analyze your needs and propose a custom automation solution
                 tailored to your business.
               </p>
@@ -373,10 +373,10 @@ function QualifyForm() {
               {/* Business challenges */}
               <div>
                 <div className="mb-4 flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-blue-400" />
+                  <Sparkles className="h-5 w-5 text-brand-crimson-400" />
                   <h2 className="text-lg font-semibold text-white">Your Business Challenges</h2>
                 </div>
-                <p className="mb-4 text-sm text-slate-400">
+                <p className="mb-4 text-sm text-brand-charcoal-400">
                   Describe up to 3 areas where your business is struggling. Our AI will use these
                   to craft a tailored automation proposal.
                 </p>
@@ -442,7 +442,7 @@ function QualifyForm() {
                 type="submit"
                 size="lg"
                 disabled={isSubmitting}
-                className="btn-futuristic h-12 w-full rounded-xl text-base"
+                className="btn-brand h-12 w-full rounded-xl text-base"
               >
                 {isSubmitting ? (
                   <>
