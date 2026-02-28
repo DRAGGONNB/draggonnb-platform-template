@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import {
   Users,
-  Handshake,
+  Briefcase,
   Mail,
   FileText,
   Plus,
@@ -108,7 +108,7 @@ export default async function DashboardPage() {
 
   const quickActions = [
     { label: 'New Contact', href: '/crm/contacts?action=new', icon: UserPlus, color: 'bg-blue-50 text-blue-600 hover:bg-blue-100' },
-    { label: 'New Deal', href: '/crm/deals?action=new', icon: Handshake, color: 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100' },
+    { label: 'New Deal', href: '/crm/deals?action=new', icon: Briefcase, color: 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100' },
     { label: 'Send Email', href: '/email/campaigns', icon: Send, color: 'bg-purple-50 text-purple-600 hover:bg-purple-100' },
     { label: 'Generate Content', href: '/content-generator', icon: Sparkles, color: 'bg-amber-50 text-amber-600 hover:bg-amber-100' },
     { label: 'View Reports', href: '/email/analytics', icon: BarChart3, color: 'bg-rose-50 text-rose-600 hover:bg-rose-100' },
@@ -172,7 +172,7 @@ export default async function DashboardPage() {
                 <p className="mt-1 text-3xl font-bold text-gray-900">{activeDealsCount}</p>
               </div>
               <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-50">
-                <Handshake className="h-5 w-5 text-emerald-600" />
+                <Briefcase className="h-5 w-5 text-emerald-600" />
               </div>
             </div>
             <div className="mt-3 flex items-center text-xs text-gray-500">

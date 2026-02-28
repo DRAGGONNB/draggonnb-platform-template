@@ -41,7 +41,7 @@ import {
   MoreHorizontal,
   Filter,
   ExternalLink,
-  Handshake,
+  Briefcase,
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -406,7 +406,7 @@ export default function CompaniesPage() {
                       <TableCell>
                         {(company.deals_value ?? 0) > 0 ? (
                           <div className="flex items-center gap-1.5 text-sm font-medium text-gray-900">
-                            <Handshake className="h-3.5 w-3.5 text-emerald-500" />
+                            <Briefcase className="h-3.5 w-3.5 text-emerald-500" />
                             R{(company.deals_value ?? 0).toLocaleString()}
                           </div>
                         ) : (

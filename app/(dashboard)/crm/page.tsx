@@ -7,7 +7,7 @@ import { redirect } from 'next/navigation'
 import {
   Users,
   Building2,
-  Handshake,
+  Briefcase,
   ArrowRight,
   Plus,
   TrendingUp,
@@ -225,7 +225,7 @@ export default async function CRMPage() {
                   <p className="mt-1 text-3xl font-bold text-gray-900">{stats.deals}</p>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-50">
-                  <Handshake className="h-6 w-6 text-emerald-600" />
+                  <Briefcase className="h-6 w-6 text-emerald-600" />
                 </div>
               </div>
               <div className="mt-3 text-xs text-gray-500">
@@ -313,7 +313,7 @@ export default async function CRMPage() {
                 {stats.recentDeals.map((deal) => (
                   <div key={deal.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
                     <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-50">
-                      <Handshake className="h-4 w-4 text-emerald-600" />
+                      <Briefcase className="h-4 w-4 text-emerald-600" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-gray-900">{deal.name}</p>
@@ -330,7 +330,7 @@ export default async function CRMPage() {
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-8 text-center">
-                <Handshake className="mb-2 h-8 w-8 text-gray-300" />
+                <Briefcase className="mb-2 h-8 w-8 text-gray-300" />
                 <p className="text-sm font-medium text-gray-500">No deals yet</p>
                 <p className="text-xs text-gray-400">Create a deal to track your pipeline</p>
               </div>

@@ -26,7 +26,7 @@ import {
   ArrowLeft,
   Loader2,
   TrendingUp,
-  Handshake,
+  Briefcase,
   Target,
   Building2,
   Calendar,
@@ -283,7 +283,7 @@ export default function DealsPage() {
         <Card className="shadow-sm">
           <div className="flex items-center gap-4 p-5">
             <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-50">
-              <Handshake className="h-5 w-5 text-emerald-600" />
+              <Briefcase className="h-5 w-5 text-emerald-600" />
             </div>
             <div>
               <p className="text-sm font-medium text-gray-500">Active Deals</p>
