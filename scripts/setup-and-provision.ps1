@@ -1,11 +1,13 @@
 #
-# DraggonnB - One-shot setup & provisioning (PowerShell)
+# DraggonnB - One-shot setup & provisioning (PowerShell 5.1+)
 #
 # Usage:
 #   $env:SUPABASE_ACCESS_TOKEN = "sbp_..."
 #   .\scripts\setup-and-provision.ps1
 #
 $ErrorActionPreference = "Stop"
+
+function Coalesce($a, $b) { if ($a) { $a } else { $b } }
 
 Write-Host "=== DraggonnB Setup & Provisioning ===" -ForegroundColor Cyan
 Write-Host ""
@@ -93,6 +95,15 @@ if (Test-Path $envFile) {
 
 $timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
 
+$n8nKey = Coalesce $env:N8N_API_KEY "REPLACE_ME"
+$resendKey = Coalesce $env:RESEND_API_KEY "REPLACE_ME"
+$waToken = Coalesce $env:WHATSAPP_ACCESS_TOKEN ""
+$waPhoneId = Coalesce $env:WHATSAPP_PHONE_NUMBER_ID ""
+$waVerify = Coalesce $env:WHATSAPP_VERIFY_TOKEN ""
+$pfMerchantId = Coalesce $env:PAYFAST_MERCHANT_ID ""
+$pfMerchantKey = Coalesce $env:PAYFAST_MERCHANT_KEY ""
+$pfPassphrase = Coalesce $env:PAYFAST_PASSPHRASE ""
+
 $envContent = @"
 # DraggonnB Platform Environment
 # Generated: $timestamp
@@ -104,21 +115,21 @@ SUPABASE_SERVICE_ROLE_KEY=$serviceRoleKey
 
 # N8N Automation
 N8N_HOST=n8n.srv1114684.hstgr.cloud
-N8N_API_KEY=$($env:N8N_API_KEY ?? 'REPLACE_ME')
+N8N_API_KEY=$n8nKey
 
 # Email (Resend)
-RESEND_API_KEY=$($env:RESEND_API_KEY ?? 'REPLACE_ME')
+RESEND_API_KEY=$resendKey
 RESEND_FROM_EMAIL=noreply@draggonnb.online
 
 # WhatsApp (optional)
-WHATSAPP_ACCESS_TOKEN=$($env:WHATSAPP_ACCESS_TOKEN ?? '')
-WHATSAPP_PHONE_NUMBER_ID=$($env:WHATSAPP_PHONE_NUMBER_ID ?? '')
-WHATSAPP_VERIFY_TOKEN=$($env:WHATSAPP_VERIFY_TOKEN ?? '')
+WHATSAPP_ACCESS_TOKEN=$waToken
+WHATSAPP_PHONE_NUMBER_ID=$waPhoneId
+WHATSAPP_VERIFY_TOKEN=$waVerify
 
 # PayFast
-PAYFAST_MERCHANT_ID=$($env:PAYFAST_MERCHANT_ID ?? '')
-PAYFAST_MERCHANT_KEY=$($env:PAYFAST_MERCHANT_KEY ?? '')
-PAYFAST_PASSPHRASE=$($env:PAYFAST_PASSPHRASE ?? '')
+PAYFAST_MERCHANT_ID=$pfMerchantId
+PAYFAST_MERCHANT_KEY=$pfMerchantKey
+PAYFAST_PASSPHRASE=$pfPassphrase
 PAYFAST_MODE=sandbox
 
 # Supabase MCP access token (for Claude Code)
