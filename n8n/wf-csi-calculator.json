@@ -1,0 +1,33 @@
+[{
+  "id": "csiCalc01",
+  "name": "DraggonnB - Weekly CSI Calculator",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "cronExpression", "expression": "0 3 * * 0" }] }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0],
+      "id": "cron-csi",
+      "name": "Weekly Sunday 03:00 SAST"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.NEXT_PUBLIC_APP_URL }}/api/ops/csi/calculate",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [250, 0],
+      "id": "trigger-csi",
+      "name": "Trigger CSI Calculation"
+    }
+  ],
+  "connections": {
+    "Weekly Sunday 03:00 SAST": { "main": [[{ "node": "Trigger CSI Calculation", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1", "timezone": "Africa/Johannesburg" }
+}]

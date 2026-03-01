@@ -1,0 +1,74 @@
+[{
+  "id": "referralCredits01",
+  "name": "DraggonnB - Referral Credit Issuance",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "cronExpression", "expression": "0 4 * * *" }] }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0],
+      "id": "cron-referrals",
+      "name": "Daily 04:00 SAST"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Find referrals that signed up 60+ days ago but haven't been qualified yet\nSELECT\n  r.id AS referral_id,\n  r.referrer_organization_id,\n  r.referee_organization_id,\n  r.referral_code,\n  r.signed_up_at,\n  o.name AS referrer_name,\n  ts.plan_id,\n  bp.slug AS plan_slug\nFROM referrals r\nJOIN organizations o ON o.id = r.referrer_organization_id\nLEFT JOIN tenant_subscriptions ts ON ts.organization_id = r.referrer_organization_id AND ts.status IN ('active', 'trialing')\nLEFT JOIN billing_plans bp ON bp.id = ts.plan_id\nWHERE r.status = 'signed_up'\n  AND r.signed_up_at IS NOT NULL\n  AND r.signed_up_at <= (NOW() - INTERVAL '60 days')\n  AND r.referee_organization_id IS NOT NULL;",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [250, 0],
+      "id": "find-qualified",
+      "name": "Find Qualified Referrals",
+      "credentials": { "postgres": { "id": "draggonnb-supabase-pg", "name": "DraggonnB Supabase PG" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(i => i.json);\nif (rows.length === 0) return [{ json: { no_referrals: true } }];\n\n// Determine credit amount based on referrer's plan tier\nconst tierCredits = {\n  core: { dimension: 'ai_generations', quantity: 50, label: 'Bronze (10%)' },\n  growth: { dimension: 'ai_generations', quantity: 100, label: 'Silver (15%)' },\n  scale: { dimension: 'ai_generations', quantity: 150, label: 'Gold (15% + extras)' },\n};\n\nconst rewards = rows.map(row => {\n  const tier = row.plan_slug || 'core';\n  const credit = tierCredits[tier] || tierCredits.core;\n  return {\n    json: {\n      referral_id: row.referral_id,\n      referrer_organization_id: row.referrer_organization_id,\n      referrer_name: row.referrer_name,\n      dimension: credit.dimension,\n      quantity: credit.quantity,\n      tier_label: credit.label,\n    }\n  };\n});\n\nreturn rewards;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 0],
+      "id": "calc-rewards",
+      "name": "Calculate Reward Credits"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [{ "id": "has-rewards", "leftValue": "={{ $json.no_referrals }}", "rightValue": true, "operator": { "type": "boolean", "operation": "notTrue" } }],
+          "combinator": "and"
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [720, 0],
+      "id": "check-rewards",
+      "name": "Has Rewards?"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Issue referral credits\nWITH credit_insert AS (\n  INSERT INTO tenant_credits (organization_id, dimension, credits_purchased, credits_remaining, source, source_metadata, expires_at, status)\n  VALUES (\n    '{{ $json.referrer_organization_id }}',\n    '{{ $json.dimension }}',\n    {{ $json.quantity }},\n    {{ $json.quantity }},\n    'referral',\n    '{\"referral_id\": \"{{ $json.referral_id }}\", \"tier_label\": \"{{ $json.tier_label }}\"}',\n    (NOW() + INTERVAL '90 days'),\n    'active'\n  )\n  RETURNING id\n)\nUPDATE referrals\nSET status = 'rewarded',\n    qualified_at = NOW(),\n    reward_credit_id = (SELECT id FROM credit_insert)\nWHERE id = '{{ $json.referral_id }}'\nRETURNING id;",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [940, -100],
+      "id": "issue-credits",
+      "name": "Issue Credits & Qualify Referral",
+      "credentials": { "postgres": { "id": "draggonnb-supabase-pg", "name": "DraggonnB Supabase PG" } }
+    }
+  ],
+  "connections": {
+    "Daily 04:00 SAST": { "main": [[{ "node": "Find Qualified Referrals", "type": "main", "index": 0 }]] },
+    "Find Qualified Referrals": { "main": [[{ "node": "Calculate Reward Credits", "type": "main", "index": 0 }]] },
+    "Calculate Reward Credits": { "main": [[{ "node": "Has Rewards?", "type": "main", "index": 0 }]] },
+    "Has Rewards?": { "main": [[{ "node": "Issue Credits & Qualify Referral", "type": "main", "index": 0 }], []] }
+  },
+  "settings": { "executionOrder": "v1", "timezone": "Africa/Johannesburg" }
+}]

@@ -1,0 +1,74 @@
+[{
+  "id": "loyaltyMilestones01",
+  "name": "DraggonnB - Loyalty Milestone Rewards",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "cronExpression", "expression": "0 5 * * 1" }] }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0],
+      "id": "cron-loyalty",
+      "name": "Weekly Monday 05:00 SAST"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Find orgs hitting milestones\nSELECT\n  o.id AS organization_id,\n  o.name,\n  o.activated_at,\n  EXTRACT(EPOCH FROM (NOW() - o.activated_at)) / 86400 AS days_active,\n  (SELECT COUNT(*) FROM usage_events ue WHERE ue.organization_id = o.id) AS total_events,\n  (SELECT COALESCE(MAX(cs.overall), 0) FROM csi_scores cs WHERE cs.organization_id = o.id) AS csi_score\nFROM organizations o\nWHERE o.subscription_status = 'active'\n  AND o.activated_at IS NOT NULL;",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [250, 0],
+      "id": "fetch-milestones",
+      "name": "Fetch Org Milestone Data",
+      "credentials": { "postgres": { "id": "draggonnb-supabase-pg", "name": "DraggonnB Supabase PG" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "const orgs = $input.all().map(i => i.json);\nconst rewards = [];\n\nfor (const org of orgs) {\n  const daysActive = Number(org.days_active || 0);\n  const totalEvents = Number(org.total_events || 0);\n  const csiScore = Number(org.csi_score || 0);\n\n  // Milestone: 100 total events\n  if (totalEvents >= 100 && totalEvents < 200) {\n    rewards.push({ json: { organization_id: org.organization_id, name: org.name, milestone: '100_events', dimension: 'ai_generations', quantity: 25, reason: '100 usage events milestone' } });\n  }\n  // Milestone: 6-month anniversary (180 days)\n  if (daysActive >= 180 && daysActive < 187) {\n    rewards.push({ json: { organization_id: org.organization_id, name: org.name, milestone: '6_month', dimension: 'ai_generations', quantity: 50, reason: '6-month anniversary' } });\n  }\n  // Milestone: CSI 90+\n  if (csiScore >= 90) {\n    rewards.push({ json: { organization_id: org.organization_id, name: org.name, milestone: 'csi_90', dimension: 'ai_generations', quantity: 30, reason: 'CSI score 90+' } });\n  }\n}\n\nif (rewards.length === 0) return [{ json: { no_milestones: true } }];\nreturn rewards;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 0],
+      "id": "check-milestones",
+      "name": "Check Milestones"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [{ "id": "has-milestones", "leftValue": "={{ $json.no_milestones }}", "rightValue": true, "operator": { "type": "boolean", "operation": "notTrue" } }],
+          "combinator": "and"
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [720, 0],
+      "id": "has-milestones",
+      "name": "Has Milestones?"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Issue loyalty credits (idempotent via source_metadata check)\nINSERT INTO tenant_credits (organization_id, dimension, credits_purchased, credits_remaining, source, source_metadata, expires_at, status)\nSELECT\n  '{{ $json.organization_id }}',\n  '{{ $json.dimension }}',\n  {{ $json.quantity }},\n  {{ $json.quantity }},\n  'loyalty',\n  '{\"milestone\": \"{{ $json.milestone }}\", \"reason\": \"{{ $json.reason }}\"}',\n  (NOW() + INTERVAL '90 days'),\n  'active'\nWHERE NOT EXISTS (\n  SELECT 1 FROM tenant_credits\n  WHERE organization_id = '{{ $json.organization_id }}'\n    AND source = 'loyalty'\n    AND source_metadata->>'milestone' = '{{ $json.milestone }}'\n)\nRETURNING id;",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [940, -100],
+      "id": "issue-loyalty",
+      "name": "Issue Loyalty Credits",
+      "credentials": { "postgres": { "id": "draggonnb-supabase-pg", "name": "DraggonnB Supabase PG" } }
+    }
+  ],
+  "connections": {
+    "Weekly Monday 05:00 SAST": { "main": [[{ "node": "Fetch Org Milestone Data", "type": "main", "index": 0 }]] },
+    "Fetch Org Milestone Data": { "main": [[{ "node": "Check Milestones", "type": "main", "index": 0 }]] },
+    "Check Milestones": { "main": [[{ "node": "Has Milestones?", "type": "main", "index": 0 }]] },
+    "Has Milestones?": { "main": [[{ "node": "Issue Loyalty Credits", "type": "main", "index": 0 }], []] }
+  },
+  "settings": { "executionOrder": "v1", "timezone": "Africa/Johannesburg" }
+}]
