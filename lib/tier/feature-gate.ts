@@ -1,8 +1,14 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { logUsage, type UsageDimension } from '@/lib/usage/meter'
 
 /**
  * Centralized Feature Gating System
  * Controls feature access and usage limits based on organization subscription tier.
+ *
+ * DUAL-WRITE BRIDGE: incrementUsage() now writes to BOTH the legacy counter table
+ * (client_usage_metrics) AND the new event-sourced usage_events table.
+ * This allows a gradual migration: existing code keeps calling incrementUsage(),
+ * and the new billing system reads from usage_events.
  *
  * NOTE: The following RPC function must exist in the database (add to migration if not present):
  *
@@ -226,7 +232,14 @@ export async function incrementUsage(
 
   const column = metricColumn[metric]
 
-  // Use RPC or raw SQL for atomic increment
+  // DUAL-WRITE: Also log to the new event-sourced usage_events table
+  logUsage({
+    organizationId,
+    dimension: metric as UsageDimension,
+    quantity: amount,
+  })
+
+  // Legacy: Use RPC or raw SQL for atomic increment on client_usage_metrics
   const { error } = await supabase.rpc('increment_usage_metric', {
     p_organization_id: organizationId,
     p_column_name: column,

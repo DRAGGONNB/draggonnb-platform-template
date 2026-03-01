@@ -89,5 +89,29 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
+  // Resolve organization context for authenticated users on protected routes
+  if (user && !error && isProtectedRoute) {
+    const { data: userRecord } = await supabase
+      .from('users')
+      .select('organization_id')
+      .eq('id', user.id)
+      .single()
+
+    if (userRecord?.organization_id) {
+      // Set org context as request headers for Server Components and API routes
+      const requestHeaders = new Headers(request.headers)
+      requestHeaders.set('x-organization-id', userRecord.organization_id)
+
+      response = NextResponse.next({
+        request: { headers: requestHeaders },
+      })
+
+      // Re-apply any cookies that were set during session refresh
+      for (const cookie of request.cookies.getAll()) {
+        response.cookies.set(cookie)
+      }
+    }
+  }
+
   return response
 }
