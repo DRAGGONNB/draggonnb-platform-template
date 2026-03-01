@@ -172,3 +172,17 @@ export function logEmailSend(
     },
   })
 }
+
+/**
+ * Convenience: log a WhatsApp utility (transactional) message event.
+ */
+export function logWhatsAppUtility(orgId: string, metadata?: Record<string, unknown>) {
+  logUsage({ organizationId: orgId, dimension: 'whatsapp_utility', metadata })
+}
+
+/**
+ * Convenience: log a WhatsApp marketing message event.
+ */
+export function logWhatsAppMarketing(orgId: string, metadata?: Record<string, unknown>) {
+  logUsage({ organizationId: orgId, dimension: 'whatsapp_marketing', metadata })
+}

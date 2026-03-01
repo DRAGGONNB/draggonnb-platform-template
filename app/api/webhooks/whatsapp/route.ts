@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import crypto from 'crypto'
 import type { WhatsAppWebhookPayload } from '@/lib/whatsapp/types'
 import { handleIncomingMessage } from '@/lib/whatsapp/intake-flow'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 // GET: Meta webhook verification
 export async function GET(request: Request) {
@@ -40,6 +41,9 @@ export async function POST(request: Request) {
 
     const payload: WhatsAppWebhookPayload = JSON.parse(rawBody)
 
+    // Admin client for inbound logging (created once per request)
+    const admin = createAdminClient()
+
     // Process each message
     for (const entry of payload.entry) {
       for (const change of entry.changes) {
@@ -47,6 +51,17 @@ export async function POST(request: Request) {
         if (!messages) continue
 
         for (const message of messages) {
+          // Log inbound message for service window tracking
+          await admin.from('whatsapp_inbound_log').insert({
+            phone_number: message.from,
+            direction: 'inbound',
+            message_type: message.type,
+            message_category: 'service', // inbound messages are always service
+            wa_message_id: message.id,
+            content_preview: message.type === 'text' ? message.text?.body?.substring(0, 100) : `[${message.type}]`,
+            metadata: {},
+          }).catch((err: Error) => console.error('Failed to log inbound WhatsApp:', err.message))
+
           // Only handle text messages for intake flow
           if (message.type === 'text' && message.text?.body) {
             await handleIncomingMessage(

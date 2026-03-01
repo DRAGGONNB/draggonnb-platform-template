@@ -155,6 +155,8 @@ export async function getUsageSummary(
     'email_sends',
     'agent_invocations',
     'autopilot_runs',
+    'whatsapp_utility',
+    'whatsapp_marketing',
   ]
 
   const results: Record<string, UsageLimitResult> = {}
