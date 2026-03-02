@@ -94,7 +94,7 @@ const navigation: NavSection[] = [
   {
     section: 'Account',
     items: [
-      { name: 'Pricing', href: '/pricing', icon: CreditCard, badge: null, badgeColor: '' },
+      { name: 'Billing', href: '/billing', icon: CreditCard, badge: null, badgeColor: '' },
     ],
   },
 ]
@@ -230,7 +230,7 @@ export function Sidebar({ usageStats }: SidebarProps) {
               </div>
             </div>
             <Link
-              href="/pricing"
+              href="/billing"
               className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg bg-brand-crimson-500 px-4 py-2 text-center text-xs font-semibold text-white shadow-sm transition-all hover:bg-brand-crimson-600 hover:shadow-md"
             >
               Upgrade Plan
