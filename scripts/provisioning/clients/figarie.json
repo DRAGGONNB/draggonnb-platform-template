@@ -1,0 +1,11 @@
+{
+  "clientId": "figarie",
+  "clientName": "FIGARIE",
+  "orgEmail": "info@draggonnb.online",
+  "tier": "core",
+  "branding": {
+    "primary_color": "#8B5CF6",
+    "secondary_color": "#4C1D95",
+    "company_name": "FIGARIE"
+  }
+}

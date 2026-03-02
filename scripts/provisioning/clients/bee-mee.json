@@ -1,0 +1,11 @@
+{
+  "clientId": "bee-mee",
+  "clientName": "Bee-Mee",
+  "orgEmail": "info@draggonnb.online",
+  "tier": "core",
+  "branding": {
+    "primary_color": "#F59E0B",
+    "secondary_color": "#92400E",
+    "company_name": "Bee-Mee"
+  }
+}

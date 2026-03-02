@@ -1,0 +1,11 @@
+{
+  "clientId": "vdj-accounting",
+  "clientName": "VDJ Accounting",
+  "orgEmail": "info@draggonnb.online",
+  "tier": "core",
+  "branding": {
+    "primary_color": "#059669",
+    "secondary_color": "#064E3B",
+    "company_name": "VDJ Accounting"
+  }
+}

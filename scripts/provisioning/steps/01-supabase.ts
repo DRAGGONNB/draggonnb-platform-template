@@ -1,7 +1,13 @@
 import { backOff } from 'exponential-backoff';
 import { randomBytes } from 'crypto';
 import { ProvisioningJob, ProvisioningResult } from '../../../lib/provisioning/types';
-import { getSupabaseManagementConfig } from '../../../lib/provisioning/config';
+// Legacy: reads management token directly (not in shared-DB flow)
+function getSupabaseManagementConfig() {
+  const token = process.env.SUPABASE_MANAGEMENT_TOKEN;
+  const orgId = process.env.SUPABASE_ORG_ID;
+  if (!token || !orgId) throw new Error('Missing Supabase Management API credentials');
+  return { token, orgId };
+}
 
 interface SupabaseProject {
   id: string;
