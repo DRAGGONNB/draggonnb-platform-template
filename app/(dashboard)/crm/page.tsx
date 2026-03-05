@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/server'
 import { getUserOrg } from '@/lib/auth/get-user-org'
-import { redirect } from 'next/navigation'
 import {
   Users,
   Building2,
@@ -38,73 +37,94 @@ interface RecentDeal {
 async function getCRMData(organizationId: string) {
   const supabase = await createClient()
 
-  const contactsCountQuery = supabase
-    .from('contacts')
-    .select('*', { count: 'exact', head: true })
-    .eq('organization_id', organizationId)
+  try {
+    const contactsCountQuery = supabase
+      .from('contacts')
+      .select('*', { count: 'exact', head: true })
+      .eq('organization_id', organizationId)
 
-  const companiesCountQuery = supabase
-    .from('companies')
-    .select('*', { count: 'exact', head: true })
-    .eq('organization_id', organizationId)
+    const companiesCountQuery = supabase
+      .from('companies')
+      .select('*', { count: 'exact', head: true })
+      .eq('organization_id', organizationId)
 
-  const dealsQuery = supabase
-    .from('deals')
-    .select('id, name, value, stage, probability, created_at')
-    .eq('organization_id', organizationId)
-    .order('created_at', { ascending: false })
+    const dealsQuery = supabase
+      .from('deals')
+      .select('id, name, value, stage, probability, created_at')
+      .eq('organization_id', organizationId)
+      .order('created_at', { ascending: false })
 
-  const recentContactsQuery = supabase
-    .from('contacts')
-    .select('id, first_name, last_name, email, company, status, created_at')
-    .eq('organization_id', organizationId)
-    .order('created_at', { ascending: false })
-    .limit(5)
+    const recentContactsQuery = supabase
+      .from('contacts')
+      .select('id, first_name, last_name, email, company, status, created_at')
+      .eq('organization_id', organizationId)
+      .order('created_at', { ascending: false })
+      .limit(5)
 
-  const weekAgo = new Date()
-  weekAgo.setDate(weekAgo.getDate() - 7)
-  const newContactsQuery = supabase
-    .from('contacts')
-    .select('*', { count: 'exact', head: true })
-    .eq('organization_id', organizationId)
-    .gte('created_at', weekAgo.toISOString())
+    const weekAgo = new Date()
+    weekAgo.setDate(weekAgo.getDate() - 7)
+    const newContactsQuery = supabase
+      .from('contacts')
+      .select('*', { count: 'exact', head: true })
+      .eq('organization_id', organizationId)
+      .gte('created_at', weekAgo.toISOString())
 
-  const [
-    { count: contactsCount },
-    { count: companiesCount },
-    { data: allDeals },
-    { data: recentContacts },
-    { count: newContactsCount },
-  ] = await Promise.all([
-    contactsCountQuery,
-    companiesCountQuery,
-    dealsQuery,
-    recentContactsQuery,
-    newContactsQuery,
-  ])
+    const [
+      { count: contactsCount },
+      { count: companiesCount },
+      { data: allDeals },
+      { data: recentContacts },
+      { count: newContactsCount },
+    ] = await Promise.all([
+      contactsCountQuery,
+      companiesCountQuery,
+      dealsQuery,
+      recentContactsQuery,
+      newContactsQuery,
+    ])
 
-  const deals = (allDeals || []) as RecentDeal[]
-  const activeDeals = deals.filter((d) => !['won', 'lost'].includes(d.stage))
-  const pipelineValue = activeDeals.reduce((sum, d) => sum + (d.value || 0), 0)
+    const deals = (allDeals || []) as RecentDeal[]
+    const activeDeals = deals.filter((d) => !['won', 'lost'].includes(d.stage))
+    const pipelineValue = activeDeals.reduce((sum, d) => sum + (d.value || 0), 0)
 
-  const stageData = [
-    { stage: 'Lead', count: deals.filter((d) => d.stage === 'lead').length, value: deals.filter((d) => d.stage === 'lead').reduce((s, d) => s + (d.value || 0), 0) },
-    { stage: 'Qualified', count: deals.filter((d) => d.stage === 'qualified').length, value: deals.filter((d) => d.stage === 'qualified').reduce((s, d) => s + (d.value || 0), 0) },
-    { stage: 'Proposal', count: deals.filter((d) => d.stage === 'proposal').length, value: deals.filter((d) => d.stage === 'proposal').reduce((s, d) => s + (d.value || 0), 0) },
-    { stage: 'Negotiation', count: deals.filter((d) => d.stage === 'negotiation').length, value: deals.filter((d) => d.stage === 'negotiation').reduce((s, d) => s + (d.value || 0), 0) },
-    { stage: 'Won', count: deals.filter((d) => d.stage === 'won').length, value: deals.filter((d) => d.stage === 'won').reduce((s, d) => s + (d.value || 0), 0) },
-    { stage: 'Lost', count: deals.filter((d) => d.stage === 'lost').length, value: deals.filter((d) => d.stage === 'lost').reduce((s, d) => s + (d.value || 0), 0) },
-  ]
+    const stageData = [
+      { stage: 'Lead', count: deals.filter((d) => d.stage === 'lead').length, value: deals.filter((d) => d.stage === 'lead').reduce((s, d) => s + (d.value || 0), 0) },
+      { stage: 'Qualified', count: deals.filter((d) => d.stage === 'qualified').length, value: deals.filter((d) => d.stage === 'qualified').reduce((s, d) => s + (d.value || 0), 0) },
+      { stage: 'Proposal', count: deals.filter((d) => d.stage === 'proposal').length, value: deals.filter((d) => d.stage === 'proposal').reduce((s, d) => s + (d.value || 0), 0) },
+      { stage: 'Negotiation', count: deals.filter((d) => d.stage === 'negotiation').length, value: deals.filter((d) => d.stage === 'negotiation').reduce((s, d) => s + (d.value || 0), 0) },
+      { stage: 'Won', count: deals.filter((d) => d.stage === 'won').length, value: deals.filter((d) => d.stage === 'won').reduce((s, d) => s + (d.value || 0), 0) },
+      { stage: 'Lost', count: deals.filter((d) => d.stage === 'lost').length, value: deals.filter((d) => d.stage === 'lost').reduce((s, d) => s + (d.value || 0), 0) },
+    ]
 
-  return {
-    contacts: contactsCount || 0,
-    companies: companiesCount || 0,
-    deals: activeDeals.length,
-    pipelineValue,
-    newContacts: newContactsCount || 0,
-    recentContacts: (recentContacts || []) as RecentContact[],
-    recentDeals: deals.slice(0, 5) as RecentDeal[],
-    stageData,
+    return {
+      contacts: contactsCount || 0,
+      companies: companiesCount || 0,
+      deals: activeDeals.length,
+      pipelineValue,
+      newContacts: newContactsCount || 0,
+      recentContacts: (recentContacts || []) as RecentContact[],
+      recentDeals: deals.slice(0, 5) as RecentDeal[],
+      stageData,
+    }
+  } catch (error) {
+    console.error('CRM data fetch error:', error)
+    return {
+      contacts: 0,
+      companies: 0,
+      deals: 0,
+      pipelineValue: 0,
+      newContacts: 0,
+      recentContacts: [] as RecentContact[],
+      recentDeals: [] as RecentDeal[],
+      stageData: [
+        { stage: 'Lead', count: 0, value: 0 },
+        { stage: 'Qualified', count: 0, value: 0 },
+        { stage: 'Proposal', count: 0, value: 0 },
+        { stage: 'Negotiation', count: 0, value: 0 },
+        { stage: 'Won', count: 0, value: 0 },
+        { stage: 'Lost', count: 0, value: 0 },
+      ],
+    }
   }
 }
 
@@ -137,7 +157,27 @@ export default async function CRMPage() {
   const { data: userOrg, error } = await getUserOrg()
 
   if (error || !userOrg) {
-    redirect('/login')
+    console.error('getUserOrg failed on CRM page:', error)
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-6">
+          <h2 className="text-lg font-semibold text-red-800">Unable to load CRM</h2>
+          <p className="mt-2 text-sm text-red-600">
+            {error === 'User not found' || error === 'No organization found for user'
+              ? 'Your account setup is incomplete. Please contact support or try signing out and back in.'
+              : 'There was a problem loading your account data. Please try refreshing the page.'}
+          </p>
+          <div className="mt-4 flex gap-3 justify-center">
+            <a
+              href="/api/auth/signout"
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+            >
+              Sign Out & Retry
+            </a>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   const stats = await getCRMData(userOrg.organizationId)

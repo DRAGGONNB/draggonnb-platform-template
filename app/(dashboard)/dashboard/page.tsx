@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
 import { getUserOrg } from '@/lib/auth/get-user-org'
-import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import {
   Users,
@@ -29,46 +28,57 @@ import { ActivityFeed } from '@/components/dashboard/ActivityFeed'
 async function getDashboardData(organizationId: string) {
   const supabase = await createClient()
 
-  const usageQuery = supabase
-    .from('client_usage_metrics')
-    .select('*')
-    .eq('organization_id', organizationId)
-    .order('metric_date', { ascending: false })
-    .limit(1)
-    .single()
+  try {
+    const usageQuery = supabase
+      .from('client_usage_metrics')
+      .select('*')
+      .eq('organization_id', organizationId)
+      .order('metric_date', { ascending: false })
+      .limit(1)
+      .single()
 
-  const contactsQuery = supabase
-    .from('contacts')
-    .select('id', { count: 'exact', head: true })
-    .eq('organization_id', organizationId)
+    const contactsQuery = supabase
+      .from('contacts')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', organizationId)
 
-  const dealsQuery = supabase
-    .from('deals')
-    .select('value, stage')
-    .eq('organization_id', organizationId)
+    const dealsQuery = supabase
+      .from('deals')
+      .select('value, stage')
+      .eq('organization_id', organizationId)
 
-  const postsQuery = supabase
-    .from('social_posts')
-    .select('id, content, status, created_at, platform')
-    .eq('organization_id', organizationId)
-    .order('created_at', { ascending: false })
-    .limit(5)
+    const postsQuery = supabase
+      .from('social_posts')
+      .select('id, content, status, created_at, platform')
+      .eq('organization_id', organizationId)
+      .order('created_at', { ascending: false })
+      .limit(5)
 
-  const [
-    { data: usageData },
-    { count: contactsCount },
-    { data: deals },
-    { data: recentPosts },
-  ] = await Promise.all([usageQuery, contactsQuery, dealsQuery, postsQuery])
+    const [
+      { data: usageData },
+      { count: contactsCount },
+      { data: deals },
+      { data: recentPosts },
+    ] = await Promise.all([usageQuery, contactsQuery, dealsQuery, postsQuery])
 
-  const activeDeals = deals?.filter((d) => !['won', 'lost'].includes(d.stage)) || []
+    const activeDeals = deals?.filter((d) => !['won', 'lost'].includes(d.stage)) || []
 
-  return {
-    usage: usageData,
-    contactsCount: contactsCount || 0,
-    deals: deals || [],
-    activeDeals,
-    recentPosts: recentPosts || [],
+    return {
+      usage: usageData,
+      contactsCount: contactsCount || 0,
+      deals: deals || [],
+      activeDeals,
+      recentPosts: recentPosts || [],
+    }
+  } catch (error) {
+    console.error('Dashboard data fetch error:', error)
+    return {
+      usage: null,
+      contactsCount: 0,
+      deals: [],
+      activeDeals: [],
+      recentPosts: [],
+    }
   }
 }
 
@@ -76,7 +86,29 @@ export default async function DashboardPage() {
   const { data: userOrg, error } = await getUserOrg()
 
   if (error || !userOrg) {
-    redirect('/login')
+    // Don't redirect to /login -- middleware already ensures auth.
+    // Redirecting here creates a loop: page -> /login -> middleware -> /dashboard -> page
+    console.error('getUserOrg failed on dashboard:', error)
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-6">
+          <h2 className="text-lg font-semibold text-red-800">Unable to load dashboard</h2>
+          <p className="mt-2 text-sm text-red-600">
+            {error === 'User not found' || error === 'No organization found for user'
+              ? 'Your account setup is incomplete. Please contact support or try signing out and back in.'
+              : 'There was a problem loading your account data. Please try refreshing the page.'}
+          </p>
+          <div className="mt-4 flex gap-3 justify-center">
+            <a
+              href="/api/auth/signout"
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+            >
+              Sign Out & Retry
+            </a>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   const data = await getDashboardData(userOrg.organizationId)

@@ -10,15 +10,6 @@ vi.mock('next/link', () => ({
   ),
 }))
 
-// Mock next/navigation - redirect throws in Next.js to halt execution
-class RedirectError extends Error {
-  constructor(public url: string) { super(`NEXT_REDIRECT: ${url}`) }
-}
-const redirectMock = vi.fn((url: string) => { throw new RedirectError(url) })
-vi.mock('next/navigation', () => ({
-  redirect: (...args: unknown[]) => redirectMock(...args),
-}))
-
 // Mock getUserOrg
 const getUserOrgMock = vi.fn()
 vi.mock('@/lib/auth/get-user-org', () => ({
@@ -68,13 +59,25 @@ describe('DashboardPage', () => {
     vi.clearAllMocks()
   })
 
-  it('redirects to login when getUserOrg returns error', async () => {
+  it('shows error state when getUserOrg returns error', async () => {
     getUserOrgMock.mockResolvedValue({ data: null, error: 'Not authenticated' })
 
     const DashboardPage = (await import('@/app/(dashboard)/dashboard/page')).default
-    await expect(DashboardPage()).rejects.toThrow('NEXT_REDIRECT')
+    const jsx = await DashboardPage()
+    render(jsx)
 
-    expect(redirectMock).toHaveBeenCalledWith('/login')
+    expect(screen.getByText('Unable to load dashboard')).toBeInTheDocument()
+    expect(screen.getByText('Sign Out & Retry')).toBeInTheDocument()
+  })
+
+  it('shows specific message for User not found error', async () => {
+    getUserOrgMock.mockResolvedValue({ data: null, error: 'User not found' })
+
+    const DashboardPage = (await import('@/app/(dashboard)/dashboard/page')).default
+    const jsx = await DashboardPage()
+    render(jsx)
+
+    expect(screen.getByText(/account setup is incomplete/)).toBeInTheDocument()
   })
 
   it('renders stat cards with dashboard data', async () => {

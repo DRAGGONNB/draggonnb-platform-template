@@ -10,15 +10,6 @@ vi.mock('next/link', () => ({
   ),
 }))
 
-// Mock next/navigation - redirect throws in Next.js to halt execution
-class RedirectError extends Error {
-  constructor(public url: string) { super(`NEXT_REDIRECT: ${url}`) }
-}
-const redirectMock = vi.fn((url: string) => { throw new RedirectError(url) })
-vi.mock('next/navigation', () => ({
-  redirect: (...args: unknown[]) => redirectMock(...args),
-}))
-
 // Mock getUserOrg
 const getUserOrgMock = vi.fn()
 vi.mock('@/lib/auth/get-user-org', () => ({
@@ -75,13 +66,15 @@ describe('CRMPage', () => {
     vi.clearAllMocks()
   })
 
-  it('redirects to login when getUserOrg returns error', async () => {
+  it('shows error state when getUserOrg returns error', async () => {
     getUserOrgMock.mockResolvedValue({ data: null, error: 'Not authenticated' })
 
     const CRMPage = (await import('@/app/(dashboard)/crm/page')).default
-    await expect(CRMPage()).rejects.toThrow('NEXT_REDIRECT')
+    const jsx = await CRMPage()
+    render(jsx)
 
-    expect(redirectMock).toHaveBeenCalledWith('/login')
+    expect(screen.getByText('Unable to load CRM')).toBeInTheDocument()
+    expect(screen.getByText('Sign Out & Retry')).toBeInTheDocument()
   })
 
   it('renders CRM Overview heading and stat cards', async () => {
