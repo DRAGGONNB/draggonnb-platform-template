@@ -19,7 +19,7 @@ vi.mock('next/navigation', () => ({
 describe('Sidebar', () => {
   it('renders the DraggonnB logo text', () => {
     render(<Sidebar />)
-    expect(screen.getByText(/DraggonnB POWER CRM/)).toBeInTheDocument()
+    expect(screen.getByText(/DraggonnB OS/)).toBeInTheDocument()
   })
 
   it('renders Main navigation items', () => {

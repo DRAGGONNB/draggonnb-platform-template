@@ -6,6 +6,10 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(),
 }))
 
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: vi.fn(),
+}))
+
 describe('getUserOrg data flow', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -79,10 +83,10 @@ describe('getUserOrg data flow', () => {
     expect(result.error).toBe('Not authenticated')
   })
 
-  it('auto-creates user record when auth user exists but users row is missing', async () => {
-    const insertMock = vi.fn().mockResolvedValue({ error: null })
-    let userQueryCount = 0
+  it('auto-creates user record via admin client when user row is missing', async () => {
+    const adminInsertMock = vi.fn().mockResolvedValue({ error: null })
 
+    // User client: auth works but users query fails
     const { createClient } = await import('@/lib/supabase/server')
     vi.mocked(createClient).mockResolvedValue({
       auth: {
@@ -97,18 +101,34 @@ describe('getUserOrg data flow', () => {
           error: null,
         }),
       },
+      from: vi.fn(() => ({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            single: vi.fn().mockResolvedValue({
+              data: null,
+              error: { code: 'PGRST116', message: 'not found' },
+            }),
+          })),
+        })),
+      })),
+    } as any)
+
+    // Admin client: handles the auto-create + re-fetch
+    let adminQueryCount = 0
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    vi.mocked(createAdminClient).mockReturnValue({
       from: vi.fn((table: string) => {
         if (table === 'users') {
           return {
             select: vi.fn(() => ({
               eq: vi.fn(() => ({
                 single: vi.fn().mockImplementation(() => {
-                  userQueryCount++
-                  if (userQueryCount === 1) {
-                    // First query: user not found
-                    return Promise.resolve({ data: null, error: { code: 'PGRST116', message: 'not found' } })
+                  adminQueryCount++
+                  if (adminQueryCount <= 2) {
+                    // First admin queries: user not found (for fallback check + initial fetch)
+                    return Promise.resolve({ data: null, error: { code: 'PGRST116' } })
                   }
-                  // Second query (after auto-create): user found
+                  // After insert: user found
                   return Promise.resolve({
                     data: {
                       id: 'user-2',
@@ -128,7 +148,7 @@ describe('getUserOrg data flow', () => {
                 }),
               })),
             })),
-            insert: insertMock,
+            insert: adminInsertMock,
           }
         }
         if (table === 'organizations') {
@@ -152,8 +172,8 @@ describe('getUserOrg data flow', () => {
     const { getUserOrg } = await import('@/lib/auth/get-user-org')
     const result = await getUserOrg()
 
-    // Should have auto-created the user record
-    expect(insertMock).toHaveBeenCalledWith(
+    // Should have auto-created the user record via admin client
+    expect(adminInsertMock).toHaveBeenCalledWith(
       expect.objectContaining({
         id: 'user-2',
         email: 'missing@test.co.za',

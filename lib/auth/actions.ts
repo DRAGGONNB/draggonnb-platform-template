@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function login(formData: FormData) {
   const supabase = await createClient()
@@ -48,9 +49,17 @@ export async function signup(formData: FormData) {
     return { error: authError.message }
   }
 
-  // Create organization record
+  // Create organization and user records using admin client to bypass RLS
   if (authData.user) {
-    const { data: orgData, error: orgError } = await supabase.from('organizations').insert({
+    let admin: ReturnType<typeof createAdminClient>
+    try {
+      admin = createAdminClient()
+    } catch {
+      // Fall back to user client if admin unavailable
+      admin = supabase as ReturnType<typeof createAdminClient>
+    }
+
+    const { data: orgData, error: orgError } = await admin.from('organizations').insert({
       name: organizationName,
       subscription_tier: 'starter',
       subscription_status: 'trial',
@@ -60,12 +69,11 @@ export async function signup(formData: FormData) {
 
     if (orgError || !orgData) {
       console.error('Organization creation error:', orgError)
-      // Note: User is created but org failed - might need cleanup logic
       return { error: 'Account created but organization setup failed. Please contact support.' }
     }
 
     // Create user record in users table with organization link
-    const { error: userError } = await supabase.from('users').insert({
+    const { error: userError } = await admin.from('users').insert({
       id: authData.user.id,
       email: data.email,
       full_name: fullName,
