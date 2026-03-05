@@ -224,3 +224,28 @@ export const createCancellationPolicySchema = z.object({
   no_show_charge_percentage: z.number().min(0).max(100).default(100),
   is_default: z.boolean().default(false),
 })
+
+// ─── Domain 8: Email & Comms Schemas ───────────────────────────────────────
+
+export const createEmailTemplateSchema = z.object({
+  property_id: z.string().uuid().optional(),
+  trigger_type: z.enum([
+    'booking_confirmation', 'booking_cancellation', 'check_in_reminder',
+    'check_out_reminder', 'payment_received', 'deposit_reminder',
+    'review_request', 'welcome', 'access_pack', 'custom',
+  ]),
+  subject: z.string().min(1, 'Subject is required').max(500),
+  body: z.string().min(1, 'Body is required'),
+  is_active: z.boolean().default(true),
+  send_days_offset: z.number().int().optional(),
+})
+
+export const createCommsTimelineSchema = z.object({
+  booking_id: z.string().uuid().optional(),
+  guest_id: z.string().uuid().optional(),
+  channel: z.enum(['email', 'whatsapp', 'sms', 'phone', 'in_person', 'system', 'other']),
+  direction: z.enum(['inbound', 'outbound', 'internal']),
+  subject: z.string().max(500).optional(),
+  content: z.string().optional(),
+  metadata: z.record(z.unknown()).optional(),
+})

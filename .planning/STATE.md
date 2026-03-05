@@ -5,15 +5,15 @@
 See: .planning/PROJECT.md (updated 2026-03-01)
 
 **Core value:** Complete multi-tenant B2B operating system for South African SMEs. Shared Supabase DB with RLS-based tenant isolation, wildcard subdomain routing, DB-backed module gating, automated provisioning.
-**Current focus:** Bug fixes complete, 241 tests passing, rebranded to DraggonnB OS. Ready for tier testing with 3 accounts.
+**Current focus:** Accommodation module at ~75% implementation. 39 DB tables live, 36 API routes, 8 UI pages. Billing module added. Ready for first accommodation client test.
 
 ## Current Position
 
-Phase: Bug fixes and testing complete, ready for tier testing
-Plan: v1 roadmap complete (7/7 phases). BOS v2 complete. Architecture restructure to shared DB + RLS complete. 4 live bugs fixed. 241 tests passing.
+Phase: Accommodation module implementation (Waves 0-3)
+Plan: v1 roadmap complete (7/7 phases). BOS v2 complete. Accommodation module 75% implemented.
 Status: DEPLOYED TO PRODUCTION. Live at https://draggonnb-mvp.vercel.app
-Last activity: 2026-03-05 -- Session 28: Fix live bugs, add component tests, rebrand to DraggonnB OS
-Progress: Dashboard and CRM rendering correctly. Signup flow creates org+user records. Supabase service role key rotated. Ready for Chris to test with 3 tier accounts.
+Last activity: 2026-03-05 -- Session 29: Accommodation module full implementation
+Progress: 39 DB tables + RLS live in Supabase. 36 API routes (30 new + 6 standardized). 4 new frontend pages + sidebar nav updated. Pushed to GitHub, Vercel deploy triggered.
 
 ## Accumulated Context
 
@@ -71,11 +71,13 @@ Progress: Dashboard and CRM rendering correctly. Signup flow creates org+user re
 
 - Save actual DraggonnB logo as public/logo.png and update src in nav.tsx + Sidebar.tsx
 - Apply migration 08_ops_dashboard.sql to Supabase (when managing 5+ clients)
-- Apply migrations 06-07 (accommodation) to Supabase (first accommodation client)
 - Configure PayFast passphrase and production mode
 - Configure Facebook/LinkedIn OAuth credentials
 - Configure Resend API key for email delivery
 - First end-to-end provisioning test with real client config
+- Accommodation: Add deposit policies API, email templates API, comms timeline API
+- Accommodation: Guest portal with access pack system
+- Accommodation: Channel manager integration (Booking.com, Airbnb sync)
 
 ### Blockers/Concerns
 
@@ -86,9 +88,42 @@ Progress: Dashboard and CRM rendering correctly. Signup flow creates org+user re
 
 ## Session Continuity
 
-Last session: 2026-03-05 (Session 28)
-Stopped at: All bugs fixed, tests passing, state files updated. Service role key rotated.
-Resume with: Chris tests with 3 tier accounts using TIER-TESTING-CHECKLIST.md. First provisioning test after tier testing passes.
+Last session: 2026-03-05 (Session 29)
+Stopped at: Accommodation module implementation complete (Waves 0-3). All changes pushed to GitHub, Vercel deploy triggered.
+Resume with: Verify Vercel build. Test accommodation flows (create property -> unit -> rate plan -> booking). First provisioning test.
+
+### Session 29 Summary (2026-03-05)
+**What was accomplished:**
+1. Applied accommodation DB migrations to Supabase (06_accommodation_core.sql, 07_accommodation_rls.sql)
+   - Fixed FK references: `REFERENCES users(id)` -> `REFERENCES auth.users(id)` (7 occurrences)
+   - Fixed RLS pattern: subquery -> `get_user_org_id()` for consistency
+   - 39 tables live with RLS policies enabled
+2. Built 30 new API routes across 5 parallel streams:
+   - Pricing: rate-plans, rate-plan-prices, discount-rules, additional-fees, cancellation-policies
+   - Bookings: bookings, booking-segments, charge-line-items, bookings/cancel
+   - Payments: payments
+   - Operations: tasks, issues, readiness
+   - Guest: guests/[id], waivers, service-catalog, addon-orders
+3. Standardized 6 existing API routes with getAccommodationAuth() + Zod validation
+4. Built 4 new frontend pages:
+   - Bookings list (status filters, search, quick actions, inline create)
+   - Property detail (tabs: Units, Rates, Settings, Images)
+   - Calendar grid (14-day availability view, color-coded bookings)
+   - Operations dashboard (tasks board, issues, unit readiness traffic light)
+5. Updated sidebar navigation: added Bookings, Calendar, Operations links
+6. TypeScript build check: zero accommodation-related errors
+7. Merged with upstream changes (billing module, tests, onboarding wizard)
+
+**Git commits this session:**
+- `f1eccb4` feat: complete accommodation module (APIs, frontend, navigation) -- 45 files, 5816 lines
+- `db82223` Merge remote changes (billing, tests, onboarding)
+
+**What to do next session:**
+1. Verify Vercel build succeeded
+2. Smoke test: property -> unit -> rate plan -> booking flow
+3. Remaining accommodation APIs: deposit policies, email templates, comms timeline
+4. Guest portal with access pack system
+5. First provisioning pipeline test
 
 ### Session 28 Summary (2026-03-05)
 **What was accomplished:**
