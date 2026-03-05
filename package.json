@@ -58,6 +58,7 @@
     "dotenv": "^16.4.1",
     "eslint": "^8.56.0",
     "eslint-config-next": "14.2.33",
+    "next-test-api-route-handler": "^5.0.3",
     "postcss": "^8.4.33",
     "tailwindcss": "^3.4.1",
     "tailwindcss-animate": "^1.0.7",
