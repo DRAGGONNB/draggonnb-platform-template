@@ -5,15 +5,15 @@
 See: .planning/PROJECT.md (updated 2026-03-01)
 
 **Core value:** Complete multi-tenant B2B operating system for South African SMEs. Shared Supabase DB with RLS-based tenant isolation, wildcard subdomain routing, DB-backed module gating, automated provisioning.
-**Current focus:** Design reverted to original dark theme with blue/purple palette. Light crimson rebrand rolled back per owner decision.
+**Current focus:** Bug fixes complete, 241 tests passing, rebranded to DraggonnB OS. Ready for tier testing with 3 accounts.
 
 ## Current Position
 
-Phase: Design revert complete, ready for provisioning
-Plan: v1 roadmap complete (7/7 phases). BOS v2 complete. Architecture restructure to shared DB + RLS complete. Design reverted to original dark theme.
+Phase: Bug fixes and testing complete, ready for tier testing
+Plan: v1 roadmap complete (7/7 phases). BOS v2 complete. Architecture restructure to shared DB + RLS complete. 4 live bugs fixed. 241 tests passing.
 Status: DEPLOYED TO PRODUCTION. Live at https://draggonnb-mvp.vercel.app
-Last activity: 2026-03-03 -- Session 27: Revert to original dark theme
-Progress: Dark theme restored. Merged to main via GitHub. Ready for first client provisioning test.
+Last activity: 2026-03-05 -- Session 28: Fix live bugs, add component tests, rebrand to DraggonnB OS
+Progress: Dashboard and CRM rendering correctly. Signup flow creates org+user records. Supabase service role key rotated. Ready for Chris to test with 3 tier accounts.
 
 ## Accumulated Context
 
@@ -28,8 +28,11 @@ Progress: Dark theme restored. Merged to main via GitHub. Ready for first client
 - Ops dashboard tables designed but deferred until 5+ clients
 - Brand identity: reverted to original dark charcoal theme with blue/purple accents
 - Landing page: dark charcoal background (original design)
-- Sidebar: emoji icons with blue active states (original design)
+- Sidebar: emoji icons with blue active states (original design), branded "DraggonnB OS"
 - AI Agents surfaced as dedicated sidebar section (Autopilot, AI Workflows, Agent Settings)
+- Protected pages use inline error states (never redirect to /login) to prevent redirect loops
+- `getUserOrg()` uses admin client fallback for RLS bypass + auto-creates missing user records
+- Supabase service role key rotated (2026-03-05) after accidental exposure
 
 ### What Was Built (Session 26 -- 2026-03-01)
 
@@ -83,9 +86,34 @@ Progress: Dark theme restored. Merged to main via GitHub. Ready for first client
 
 ## Session Continuity
 
-Last session: 2026-03-03 (Session 27)
-Stopped at: Design revert complete. Merged to main via GitHub. Vercel deploying.
-Resume with: Verify Vercel deploy succeeded. First provisioning test.
+Last session: 2026-03-05 (Session 28)
+Stopped at: All bugs fixed, tests passing, state files updated. Service role key rotated.
+Resume with: Chris tests with 3 tier accounts using TIER-TESTING-CHECKLIST.md. First provisioning test after tier testing passes.
+
+### Session 28 Summary (2026-03-05)
+**What was accomplished:**
+1. Fixed 4 live bugs: signup org linking, missing user auto-create, dashboard blank page, CRM redirect loop
+2. Root cause: `redirect('/login')` in pages created infinite loop with middleware (both redirecting authenticated users)
+3. Root cause: RLS blocked anon client from querying/creating user records; fixed with `createAdminClient()` bypass
+4. Added 59 component render tests (dashboard, CRM, autopilot, sidebar, template editor) -- total 241 tests passing
+5. Rebranded sidebar from "POWER CRM" to "DraggonnB OS"
+6. Added error boundaries (`error.tsx`) for dashboard and CRM routes
+7. Added `/api/auth/signout` route for error state "Sign Out & Retry" links
+8. Supabase service role key rotated after accidental exposure in chat
+9. Updated CLAUDE.md with auth pattern, testing section, repo name fix
+
+**Git commits this session:**
+- `5d37078` feat: add component tests for bug-fix verification
+- `c44278c` fix: resolve dashboard blank page and CRM redirect loop
+- `d61afc3` fix: use admin client for user/org auto-creation, rebrand to DraggonnB OS
+
+**Files changed:** ~30 files (pages, auth lib, tests, error boundaries, sidebar)
+
+**What to do next session:**
+1. Chris tests with 3 tier accounts (starter, growth, enterprise)
+2. Fix any issues found during tier testing
+3. First end-to-end provisioning test
+4. Save actual logo PNG to public/logo.png
 
 ### Session 27 Summary (2026-03-03)
 **What was accomplished:**
