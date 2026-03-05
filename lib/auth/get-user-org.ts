@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 export interface UserOrg {
   userId: string
@@ -19,6 +20,61 @@ export interface GetUserOrgResult {
   error: string | null
 }
 
+const USER_SELECT = `
+  id,
+  email,
+  full_name,
+  organization_id,
+  role,
+  organizations (
+    id,
+    name,
+    subscription_tier,
+    subscription_status
+  )
+`
+
+/**
+ * Auto-create a user record from auth metadata when the users table row is missing.
+ * This handles users who signed up before the signup flow was fixed to link org.
+ */
+async function ensureUserRecord(
+  supabase: SupabaseClient,
+  authUser: { id: string; email?: string; user_metadata?: Record<string, unknown> }
+): Promise<{ organizationId: string | null; error: string | null }> {
+  const email = authUser.email || ''
+  const fullName = (authUser.user_metadata?.full_name as string) || email.split('@')[0]
+
+  // Check if user owns an organization (created during signup but user row wasn't linked)
+  const { data: ownedOrg } = await supabase
+    .from('organizations')
+    .select('id')
+    .eq('owner_id', authUser.id)
+    .limit(1)
+    .single()
+
+  if (!ownedOrg) {
+    return { organizationId: null, error: 'No organization found for user' }
+  }
+
+  // Create the missing user record linked to their organization
+  const { error: insertError } = await supabase.from('users').insert({
+    id: authUser.id,
+    email,
+    full_name: fullName,
+    organization_id: ownedOrg.id,
+    role: 'admin',
+    created_at: new Date().toISOString(),
+  })
+
+  if (insertError) {
+    console.error('Failed to auto-create user record:', insertError)
+    return { organizationId: null, error: 'Failed to create user record' }
+  }
+
+  return { organizationId: ownedOrg.id, error: null }
+}
+
 /**
  * Get the current authenticated user and their organization.
  * This function should be used in server components and API routes.
@@ -35,23 +91,32 @@ export async function getUserOrg(): Promise<GetUserOrgResult> {
     }
 
     // Get user record with organization
-    const { data: userData, error: userError } = await supabase
+    let { data: userData, error: userError } = await supabase
       .from('users')
-      .select(`
-        id,
-        email,
-        full_name,
-        organization_id,
-        role,
-        organizations (
-          id,
-          name,
-          subscription_tier,
-          subscription_status
-        )
-      `)
+      .select(USER_SELECT)
       .eq('id', user.id)
       .single()
+
+    // Auto-create user record if missing (handles pre-fix signups)
+    if ((userError || !userData) && user.email) {
+      console.warn('User record missing for authenticated user, attempting auto-create:', user.id)
+      const autoResult = await ensureUserRecord(supabase, user)
+
+      if (autoResult.error) {
+        console.error('Auto-create failed:', autoResult.error)
+        return { data: null, error: 'User not found' }
+      }
+
+      // Re-fetch with org join
+      const refetch = await supabase
+        .from('users')
+        .select(USER_SELECT)
+        .eq('id', user.id)
+        .single()
+
+      userData = refetch.data
+      userError = refetch.error
+    }
 
     if (userError || !userData) {
       console.error('Error fetching user data:', userError)

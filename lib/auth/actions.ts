@@ -50,25 +50,26 @@ export async function signup(formData: FormData) {
 
   // Create organization record
   if (authData.user) {
-    const { error: orgError } = await supabase.from('organizations').insert({
+    const { data: orgData, error: orgError } = await supabase.from('organizations').insert({
       name: organizationName,
       subscription_tier: 'starter',
       subscription_status: 'trial',
       owner_id: authData.user.id,
       created_at: new Date().toISOString(),
-    })
+    }).select('id').single()
 
-    if (orgError) {
+    if (orgError || !orgData) {
       console.error('Organization creation error:', orgError)
       // Note: User is created but org failed - might need cleanup logic
       return { error: 'Account created but organization setup failed. Please contact support.' }
     }
 
-    // Create user record in users table
+    // Create user record in users table with organization link
     const { error: userError } = await supabase.from('users').insert({
       id: authData.user.id,
       email: data.email,
       full_name: fullName,
+      organization_id: orgData.id,
       role: 'admin',
       created_at: new Date().toISOString(),
     })
