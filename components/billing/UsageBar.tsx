@@ -47,7 +47,7 @@ export function UsageBar({ label, used, limit, unit = '', showCredits }: UsageBa
           {showCredits && showCredits > 0 ? (
             <Badge
               variant="secondary"
-              className="bg-brand-crimson-50 text-brand-crimson-700 hover:bg-brand-crimson-50 text-[10px] px-1.5 py-0"
+              className="bg-emerald-50 text-emerald-700 hover:bg-emerald-50 text-[10px] px-1.5 py-0"
             >
               +{showCredits} credits
             </Badge>

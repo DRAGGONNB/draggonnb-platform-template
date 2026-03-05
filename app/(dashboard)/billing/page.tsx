@@ -168,7 +168,7 @@ export default function BillingPage() {
             <CardContent>
               <div className="grid gap-3">
                 <Button variant="outline" className="w-full justify-start gap-3">
-                  <CreditCard className="h-4 w-4 text-brand-crimson-500" />
+                  <CreditCard className="h-4 w-4 text-blue-500" />
                   <span>Update Payment Method</span>
                 </Button>
                 <Button variant="outline" className="w-full justify-start gap-3">
@@ -214,19 +214,19 @@ export default function BillingPage() {
 
               {/* Active Credits Summary */}
               {activeCredits.length > 0 && (
-                <div className="mt-6 rounded-lg border border-brand-crimson-100 bg-brand-crimson-50 p-3">
-                  <p className="text-xs font-medium text-brand-crimson-700">
+                <div className="mt-6 rounded-lg border border-emerald-100 bg-emerald-50 p-3">
+                  <p className="text-xs font-medium text-emerald-700">
                     Active Credit Packs
                   </p>
                   {activeCredits.map((credit) => (
                     <div
                       key={credit.metric}
-                      className="mt-1 flex items-center justify-between text-xs text-brand-crimson-600"
+                      className="mt-1 flex items-center justify-between text-xs text-emerald-600"
                     >
                       <span>
                         {credit.remaining} {credit.metric.replace('_', ' ')} credits remaining
                       </span>
-                      <span className="text-brand-crimson-400">
+                      <span className="text-emerald-400">
                         Expires {new Date(credit.expiresAt).toLocaleDateString('en-ZA', {
                           day: 'numeric',
                           month: 'short',
