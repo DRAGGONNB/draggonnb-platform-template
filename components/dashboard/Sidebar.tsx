@@ -42,6 +42,9 @@ const navigation = [
       { name: 'Bookings', href: '/accommodation/bookings', icon: '📅', badge: null },
       { name: 'Calendar', href: '/accommodation/calendar', icon: '📆', badge: null },
       { name: 'Operations', href: '/accommodation/operations', icon: '🔧', badge: null },
+      { name: 'Automation', href: '/accommodation/automation', icon: '⚡', badge: null },
+      { name: 'Stock', href: '/accommodation/stock', icon: '📦', badge: null },
+      { name: 'Costs', href: '/accommodation/costs', icon: '💰', badge: null },
     ],
   },
   {

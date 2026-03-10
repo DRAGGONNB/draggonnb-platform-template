@@ -69,12 +69,12 @@ export async function verifyApiKey(
   }
 
   // Update last_used_at (fire-and-forget, don't block the response)
-  supabase
-    .from('api_keys')
-    .update({ last_used_at: new Date().toISOString() })
-    .eq('key_hash', keyHash)
-    .then(() => {})
-    .catch((err) => console.error('[API Key Auth] Failed to update last_used_at:', err))
+  Promise.resolve(
+    supabase
+      .from('api_keys')
+      .update({ last_used_at: new Date().toISOString() })
+      .eq('key_hash', keyHash)
+  ).catch((err: unknown) => console.error('[API Key Auth] Failed to update last_used_at:', err))
 
   return {
     organization_id: data.organization_id,
