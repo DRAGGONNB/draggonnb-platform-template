@@ -74,6 +74,7 @@ export async function verifyApiKey(
     .update({ last_used_at: new Date().toISOString() })
     .eq('key_hash', keyHash)
     .then(() => {})
+    .catch((err) => console.error('[API Key Auth] Failed to update last_used_at:', err))
 
   return {
     organization_id: data.organization_id,

@@ -8,7 +8,11 @@
 
 import crypto from 'crypto'
 
-const PORTAL_SECRET = process.env.GUEST_PORTAL_SECRET || 'guest-portal-default-key'
+const PORTAL_SECRET = process.env.GUEST_PORTAL_SECRET
+if (!PORTAL_SECRET && process.env.NODE_ENV === 'production') {
+  console.error('[Guest Portal] CRITICAL: GUEST_PORTAL_SECRET env var is not set. Guest tokens will be insecure.')
+}
+const EFFECTIVE_SECRET = PORTAL_SECRET || 'guest-portal-dev-only-key'
 const DEFAULT_EXPIRY_DAYS = 30
 
 interface TokenPayload {
@@ -45,7 +49,7 @@ function base64urlDecode(data: string): string {
  * Create HMAC-SHA256 signature for a payload string
  */
 function sign(payload: string): string {
-  const hmac = crypto.createHmac('sha256', PORTAL_SECRET)
+  const hmac = crypto.createHmac('sha256', EFFECTIVE_SECRET)
   hmac.update(payload)
   return hmac.digest('base64')
     .replace(/\+/g, '-')
