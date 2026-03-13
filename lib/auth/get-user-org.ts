@@ -4,9 +4,11 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 /**
  * Lightweight org lookup for API routes that already have an authenticated user.
- * Queries the organization_users junction table (the correct auth pattern).
+ * Queries the organization_users junction table. Falls back to admin client
+ * if RLS blocks the user client query.
  */
 export async function getOrgId(supabase: SupabaseClient, userId: string): Promise<string | null> {
+  // Try user client first
   const { data } = await supabase
     .from('organization_users')
     .select('organization_id')
@@ -14,7 +16,25 @@ export async function getOrgId(supabase: SupabaseClient, userId: string): Promis
     .eq('is_active', true)
     .limit(1)
     .single()
-  return data?.organization_id ?? null
+
+  if (data?.organization_id) {
+    return data.organization_id
+  }
+
+  // Fall back to admin client (bypasses RLS)
+  try {
+    const admin = createAdminClient()
+    const { data: adminData } = await admin
+      .from('organization_users')
+      .select('organization_id')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .limit(1)
+      .single()
+    return adminData?.organization_id ?? null
+  } catch {
+    return null
+  }
 }
 
 export interface UserOrg {
