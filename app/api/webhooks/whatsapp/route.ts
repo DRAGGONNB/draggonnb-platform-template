@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import crypto from 'crypto'
 import type { WhatsAppWebhookPayload } from '@/lib/whatsapp/types'
 import { routeMessage } from '@/lib/whatsapp/router'
+import { getOrgByPhoneNumberId } from '@/lib/meta/phone-number-map'
 
 // GET: Meta webhook verification
 export async function GET(request: Request) {
@@ -46,6 +47,11 @@ export async function POST(request: Request) {
         const messages = change.value.messages
         if (!messages) continue
 
+        const phoneNumberId = change.value.metadata?.phone_number_id
+        const orgId = phoneNumberId
+          ? await getOrgByPhoneNumberId(phoneNumberId) ?? undefined
+          : undefined
+
         for (const message of messages) {
           let text: string | null = null
 
@@ -56,7 +62,7 @@ export async function POST(request: Request) {
           }
 
           if (text) {
-            await routeMessage(message.from, text, message.id)
+            await routeMessage(message.from, text, message.id, orgId)
           }
         }
       }

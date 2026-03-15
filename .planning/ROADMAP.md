@@ -71,12 +71,31 @@ DraggonnB OS is a production-deployed multi-tenant B2B operating system for Sout
 
 ## Next Milestones
 
+### Milestone: Meta Platform Integration (Phase 08)
+**Goal:** Unified Meta (WhatsApp + Facebook + Instagram) integration with dual onboarding models
+**Plan:** `.planning/phases/08-meta-integration/08-SCOPE.md`
+**Status:** Scoped, awaiting review
+
+| Sub-Phase | Scope | Effort | Status |
+|-----------|-------|--------|--------|
+| 08.1 | Meta App Registration + Embedded Signup Backend | 2-3 sessions | Not started |
+| 08.2 | Multi-Tenant WhatsApp Client Refactor | 1-2 sessions | Not started |
+| 08.3 | Client Onboarding Wizard UI | 2-3 sessions | Not started |
+| 08.4 | Multi-Tenant Social Publishing | 1 session | Not started |
+| 08.5 | Provisioning Pipeline Update | 1 session | Not started |
+
+**Prerequisites (Chris):**
+- Register Meta App at developers.facebook.com
+- Submit for App Review (WhatsApp permissions)
+- Get DraggonnB Business Portfolio ID
+- Meta Business Verification
+
 ### Milestone: Production Credentials & Integrations
 - Configure Resend API key for email delivery
-- Configure Facebook/Instagram OAuth (social publishing)
+- ~~Configure Facebook/Instagram OAuth (social publishing)~~ -> Covered by Phase 08
 - Configure LinkedIn OAuth (social publishing)
 - Switch PayFast from sandbox to production
-- Self-host N8N on Hostinger VPS
+- Self-host N8N on Hostinger VPS (Done -- env vars configured 2026-03-15)
 
 ### Milestone: First Hospitality Client
 - Target: Swa-Zulu Safari Lodges (reference client)
@@ -89,7 +108,7 @@ DraggonnB OS is a production-deployed multi-tenant B2B operating system for Sout
 - Apply ops dashboard migration (08_ops_dashboard.sql)
 - Build ops dashboard UI for client management
 - Automate provisioning pipeline end-to-end
-- WhatsApp integration via Meta Cloud API + N8N
+- ~~WhatsApp integration via Meta Cloud API + N8N~~ -> Covered by Phase 08
 
 ---
-*Last updated: 2026-03-13 after Session 36 comprehensive audit*
+*Last updated: 2026-03-15 -- Added Phase 08 Meta Integration scope*

@@ -163,7 +163,8 @@ async function sendWhatsApp(
         msg.recipient,
         templateId,
         'en',
-        components.length > 0 ? components : undefined
+        components.length > 0 ? components : undefined,
+        msg.organization_id
       )
       const messageId = response?.messages?.[0]?.id
       return { success: true, externalId: messageId }
@@ -171,7 +172,7 @@ async function sendWhatsApp(
 
     // Fallback to plain text
     const text = buildPlainTextMessage(msg)
-    const response = await sendTextMessage(msg.recipient, text)
+    const response = await sendTextMessage(msg.recipient, text, msg.organization_id)
     const messageId = response?.messages?.[0]?.id
     return { success: true, externalId: messageId }
   } catch (error) {

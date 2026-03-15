@@ -26,11 +26,12 @@ const BOOKING_REF_PATTERN = /\b(BK|BOOK|REF)[-\s]?(\w{6,})\b/i
 export async function routeMessage(
   phone: string,
   messageText: string,
-  messageId: string
+  messageId: string,
+  orgId?: string
 ): Promise<RouteContext> {
   // Mark message as read immediately
   try {
-    await markAsRead(messageId)
+    await markAsRead(messageId, orgId)
   } catch {
     // Non-fatal
   }
@@ -39,7 +40,7 @@ export async function routeMessage(
   const bookingMatch = messageText.match(BOOKING_REF_PATTERN)
   if (bookingMatch) {
     const refId = bookingMatch[2]
-    const handled = await handleBookingLookup(phone, refId)
+    const handled = await handleBookingLookup(phone, refId, orgId)
     if (handled) {
       return { phone, messageText, messageId, route: 'booking_status' }
     }
@@ -48,12 +49,12 @@ export async function routeMessage(
   // Check if phone belongs to a known org member or contact
   const orgContext = await lookupPhoneInOrg(phone)
   if (orgContext) {
-    await handleSupportMessage(phone, messageText, orgContext.organizationId, orgContext.guestId)
+    await handleSupportMessage(phone, messageText, orgContext.organizationId, orgContext.guestId, orgId || orgContext.organizationId)
     return { phone, messageText, messageId, route: 'support', organizationId: orgContext.organizationId }
   }
 
   // Default: intake flow for unknown numbers
-  await handleIntakeMessage(phone, messageText, messageId)
+  await handleIntakeMessage(phone, messageText, messageId, orgId)
   return { phone, messageText, messageId, route: 'intake' }
 }
 
@@ -92,7 +93,7 @@ async function lookupPhoneInOrg(phone: string): Promise<{ organizationId: string
   return null
 }
 
-async function handleBookingLookup(phone: string, refId: string): Promise<boolean> {
+async function handleBookingLookup(phone: string, refId: string, orgId?: string): Promise<boolean> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!supabaseUrl || !serviceRoleKey) return false
@@ -111,7 +112,8 @@ async function handleBookingLookup(phone: string, refId: string): Promise<boolea
 
   if (!booking) {
     await sendTextMessage(phone,
-      `Sorry, I couldn't find a booking with reference "${refId}". Please double-check and try again, or contact us for help.`
+      `Sorry, I couldn't find a booking with reference "${refId}". Please double-check and try again, or contact us for help.`,
+      orgId
     )
     return true
   }
@@ -136,7 +138,8 @@ async function handleBookingLookup(phone: string, refId: string): Promise<boolea
     `Check-in: ${checkIn}\n` +
     `Check-out: ${checkOut}\n` +
     `Total: ${amount}\n\n` +
-    `Need help? Reply with your question and our team will get back to you.`
+    `Need help? Reply with your question and our team will get back to you.`,
+    orgId
   )
 
   return true
@@ -146,7 +149,8 @@ async function handleSupportMessage(
   phone: string,
   messageText: string,
   organizationId: string,
-  guestId?: string
+  guestId?: string,
+  orgId?: string
 ): Promise<void> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -194,7 +198,7 @@ async function handleSupportMessage(
         } | null
 
         if (conciergeResponse?.reply_text) {
-          await sendTextMessage(phone, conciergeResponse.reply_text)
+          await sendTextMessage(phone, conciergeResponse.reply_text, orgId)
 
           // Log outbound AI response
           await supabase.from('accommodation_comms_log').insert({
@@ -216,7 +220,8 @@ async function handleSupportMessage(
           // If agent flagged escalation, also notify staff
           if (conciergeResponse.escalate_to_human) {
             await sendTextMessage(phone,
-              `I've also notified our team about your request. Someone will follow up with you shortly.`
+              `I've also notified our team about your request. Someone will follow up with you shortly.`,
+              orgId
             )
           }
 
@@ -231,6 +236,7 @@ async function handleSupportMessage(
   // Fallback: generic response for non-guest contacts or when concierge is disabled/fails
   await sendTextMessage(phone,
     `Thanks for your message! Our team has been notified and will get back to you shortly.\n\n` +
-    `For urgent matters, please call us directly.`
+    `For urgent matters, please call us directly.`,
+    orgId
   )
 }

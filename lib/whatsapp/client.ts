@@ -1,8 +1,13 @@
 import type { SendMessageResponse } from './types'
+import { getTenantWhatsAppConfig } from '@/lib/meta/whatsapp-tenant'
 
 const WHATSAPP_API_BASE = 'https://graph.facebook.com/v19.0'
 
-function getConfig() {
+async function getConfig(orgId?: string) {
+  if (orgId) {
+    const tenantConfig = await getTenantWhatsAppConfig(orgId)
+    if (tenantConfig) return tenantConfig
+  }
   const accessToken = process.env.WHATSAPP_ACCESS_TOKEN
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID
   if (!accessToken || !phoneNumberId) {
@@ -11,8 +16,8 @@ function getConfig() {
   return { accessToken, phoneNumberId }
 }
 
-export async function sendTextMessage(to: string, text: string): Promise<SendMessageResponse> {
-  const { accessToken, phoneNumberId } = getConfig()
+export async function sendTextMessage(to: string, text: string, orgId?: string): Promise<SendMessageResponse> {
+  const { accessToken, phoneNumberId } = await getConfig(orgId)
   const response = await fetch(`${WHATSAPP_API_BASE}/${phoneNumberId}/messages`, {
     method: 'POST',
     headers: {
@@ -36,9 +41,10 @@ export async function sendTextMessage(to: string, text: string): Promise<SendMes
 export async function sendInteractiveMessage(
   to: string,
   body: string,
-  buttons: Array<{ id: string; title: string }>
+  buttons: Array<{ id: string; title: string }>,
+  orgId?: string
 ): Promise<SendMessageResponse> {
-  const { accessToken, phoneNumberId } = getConfig()
+  const { accessToken, phoneNumberId } = await getConfig(orgId)
   const response = await fetch(`${WHATSAPP_API_BASE}/${phoneNumberId}/messages`, {
     method: 'POST',
     headers: {
@@ -77,9 +83,10 @@ export async function sendTemplateMessage(
     parameters: Array<{ type: 'text' | 'currency' | 'date_time'; text?: string }>
     sub_type?: 'quick_reply' | 'url'
     index?: string
-  }>
+  }>,
+  orgId?: string
 ): Promise<SendMessageResponse> {
-  const { accessToken, phoneNumberId } = getConfig()
+  const { accessToken, phoneNumberId } = await getConfig(orgId)
 
   const template: Record<string, unknown> = {
     name: templateName,
@@ -114,9 +121,10 @@ export async function sendMediaMessage(
   mediaType: 'image' | 'document' | 'video' | 'audio',
   mediaUrl: string,
   caption?: string,
-  filename?: string
+  filename?: string,
+  orgId?: string
 ): Promise<SendMessageResponse> {
-  const { accessToken, phoneNumberId } = getConfig()
+  const { accessToken, phoneNumberId } = await getConfig(orgId)
 
   const mediaPayload: Record<string, unknown> = { link: mediaUrl }
   if (caption) mediaPayload.caption = caption
@@ -142,8 +150,8 @@ export async function sendMediaMessage(
   return response.json()
 }
 
-export async function markAsRead(messageId: string): Promise<void> {
-  const { accessToken, phoneNumberId } = getConfig()
+export async function markAsRead(messageId: string, orgId?: string): Promise<void> {
+  const { accessToken, phoneNumberId } = await getConfig(orgId)
 
   await fetch(`${WHATSAPP_API_BASE}/${phoneNumberId}/messages`, {
     method: 'POST',
@@ -159,8 +167,8 @@ export async function markAsRead(messageId: string): Promise<void> {
   })
 }
 
-export async function getBusinessProfile(): Promise<Record<string, unknown> | null> {
-  const { accessToken, phoneNumberId } = getConfig()
+export async function getBusinessProfile(orgId?: string): Promise<Record<string, unknown> | null> {
+  const { accessToken, phoneNumberId } = await getConfig(orgId)
 
   const response = await fetch(
     `${WHATSAPP_API_BASE}/${phoneNumberId}/whatsapp_business_profile?fields=about,address,description,email,profile_picture_url,websites,vertical`,

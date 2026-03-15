@@ -25,7 +25,7 @@ function getNextState(current: ConversationState): ConversationState {
   return STATE_ORDER[idx + 1]
 }
 
-export async function handleIncomingMessage(phone: string, messageText: string, messageId: string): Promise<void> {
+export async function handleIncomingMessage(phone: string, messageText: string, messageId: string, orgId?: string): Promise<void> {
   const supabase = getOpsClient()
 
   // Load or create ops_lead record
@@ -64,13 +64,13 @@ export async function handleIncomingMessage(phone: string, messageText: string, 
     })
 
     // Send welcome + first question
-    await sendTextMessage(phone, STATE_QUESTIONS.started)
+    await sendTextMessage(phone, STATE_QUESTIONS.started, orgId)
     return
   }
 
   // If already complete, send a message
   if (lead.conversation_state === 'complete') {
-    await sendTextMessage(phone, "We've already received your information! Our team is reviewing it. We'll be in touch soon.")
+    await sendTextMessage(phone, "We've already received your information! Our team is reviewing it. We'll be in touch soon.", orgId)
     return
   }
 
@@ -117,7 +117,7 @@ export async function handleIncomingMessage(phone: string, messageText: string, 
   // If we just reached 'industry' (meaning they just answered the industry question),
   // the next state is 'complete' — trigger qualification
   if (nextState === 'complete') {
-    await sendTextMessage(phone, STATE_QUESTIONS.industry)
+    await sendTextMessage(phone, STATE_QUESTIONS.industry, orgId)
 
     // Run LeadQualifierAgent
     try {
@@ -154,7 +154,7 @@ export async function handleIncomingMessage(phone: string, messageText: string, 
         issues: lead.business_issues || [],
       }, qualResult)
 
-      await sendTextMessage(phone, STATE_QUESTIONS.complete)
+      await sendTextMessage(phone, STATE_QUESTIONS.complete, orgId)
     } catch (err) {
       console.error('Lead qualification error:', err)
       // Still mark as complete even if qualification fails
@@ -162,10 +162,10 @@ export async function handleIncomingMessage(phone: string, messageText: string, 
         .from('ops_leads')
         .update({ conversation_state: 'complete' })
         .eq('id', lead.id)
-      await sendTextMessage(phone, "Thanks! We've received your info. Our team will review it and reach out soon.")
+      await sendTextMessage(phone, "Thanks! We've received your info. Our team will review it and reach out soon.", orgId)
     }
   } else {
     // Send the next question
-    await sendTextMessage(phone, STATE_QUESTIONS[nextState])
+    await sendTextMessage(phone, STATE_QUESTIONS[nextState], orgId)
   }
 }

@@ -195,6 +195,8 @@ export async function updateSession(request: NextRequest) {
     '/api/webhooks/payfast',
     '/api/guest-portal',
     '/api/accommodation/ical',
+    '/api/meta/callback',
+    '/api/meta/waba-shared',
   ]
   const isPublicApiRoute = publicApiRoutes.some(route =>
     request.nextUrl.pathname.startsWith(route)
