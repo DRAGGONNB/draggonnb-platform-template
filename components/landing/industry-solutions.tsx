@@ -51,14 +51,14 @@ export function IndustrySolutionsSection() {
     <section id="industries" className="bg-white px-4 py-24 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl">
         <div className="mb-16 text-center">
-          <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-brand-crimson-500">
+          <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-[#6B1420]">
             Industry Solutions
           </p>
-          <h2 className="mb-4 font-display text-3xl font-bold text-brand-charcoal-900 lg:text-4xl">
+          <h2 className="mb-4 font-display text-3xl font-bold text-[#2D2F33] lg:text-4xl">
             Built for{' '}
             <span className="gradient-text-brand">Your Industry</span>
           </h2>
-          <p className="mx-auto max-w-2xl text-lg text-brand-charcoal-500">
+          <p className="mx-auto max-w-2xl text-lg text-[#A8A9AD]">
             Whether you run a lodge, an accounting practice, or a retail business,
             DraggonnB adapts to how you work with industry-specific modules and workflows.
           </p>
@@ -70,13 +70,13 @@ export function IndustrySolutionsSection() {
             return (
               <div
                 key={industry.title}
-                className="group rounded-2xl border border-gray-200 bg-white p-6 shadow-md transition-all hover:shadow-lg hover:border-brand-crimson-200"
+                className="group rounded-2xl border border-[#C0C1C4]/50 bg-white p-6 shadow-md transition-all hover:shadow-lg hover:border-[#6B1420]/30"
               >
-                <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-brand-crimson-50">
-                  <Icon className="h-6 w-6 text-brand-crimson-500" />
+                <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[#6B1420]/10">
+                  <Icon className="h-6 w-6 text-[#6B1420]" />
                 </div>
-                <h3 className="mb-2 text-lg font-semibold text-brand-charcoal-900">{industry.title}</h3>
-                <p className="text-sm leading-relaxed text-brand-charcoal-500">{industry.description}</p>
+                <h3 className="mb-2 text-lg font-semibold text-[#2D2F33]">{industry.title}</h3>
+                <p className="text-sm leading-relaxed text-[#A8A9AD]">{industry.description}</p>
               </div>
             )
           })}

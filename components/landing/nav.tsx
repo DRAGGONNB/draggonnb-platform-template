@@ -40,23 +40,23 @@ export function LandingNav() {
   }, [])
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-gray-100 bg-white/95 shadow-sm backdrop-blur-sm">
+    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-[#2D2F33]/95 shadow-sm backdrop-blur-sm">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
           <Image src="/logo.png" alt="DraggonnB" width={36} height={36} className="rounded-lg" />
           <div className="flex items-baseline gap-1">
-            <span className="font-display text-xl font-bold text-brand-charcoal-900 sm:text-2xl">DRAGGON<span className="text-brand-crimson-500">NB</span></span>
-            <span className="hidden text-[10px] font-semibold uppercase tracking-widest text-brand-charcoal-400 sm:inline">OS</span>
+            <span className="font-display text-xl font-bold text-white sm:text-2xl">DRAGGON<span className="text-[#6B1420]">NB</span></span>
+            <span className="hidden text-[10px] font-semibold uppercase tracking-widest text-[#A8A9AD] sm:inline">OS</span>
           </div>
         </Link>
 
         {/* Desktop Links */}
         <div className="hidden items-center gap-8 lg:flex">
-          <a href="#modules" className="text-sm text-brand-charcoal-600 transition-colors hover:text-brand-charcoal-900">
+          <a href="#modules" className="text-sm text-[#A8A9AD] transition-colors hover:text-white">
             Platform
           </a>
-          <a href="#how-it-works" className="text-sm text-brand-charcoal-600 transition-colors hover:text-brand-charcoal-900">
+          <a href="#how-it-works" className="text-sm text-[#A8A9AD] transition-colors hover:text-white">
             How It Works
           </a>
 
@@ -67,7 +67,7 @@ export function LandingNav() {
             onMouseLeave={closeDropdown}
           >
             <button
-              className="flex items-center gap-1 text-sm text-brand-charcoal-600 transition-colors hover:text-brand-charcoal-900"
+              className="flex items-center gap-1 text-sm text-[#A8A9AD] transition-colors hover:text-white"
               aria-haspopup="true"
               aria-expanded={dropdownOpen}
             >
@@ -77,16 +77,16 @@ export function LandingNav() {
 
             {dropdownOpen && (
               <div className="absolute left-1/2 top-full pt-2 -translate-x-1/2">
-                <div className="w-56 rounded-xl border border-gray-200 bg-white p-2 shadow-2xl">
+                <div className="w-56 rounded-xl border border-white/10 bg-[#2D2F33] p-2 shadow-2xl">
                   {industryItems.map((item) => {
                     const Icon = item.icon
                     return (
                       <a
                         key={item.label}
                         href={item.href}
-                        className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-brand-charcoal-600 transition-colors hover:bg-brand-crimson-50 hover:text-brand-charcoal-900"
+                        className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[#A8A9AD] transition-colors hover:bg-white/5 hover:text-white"
                       >
-                        <Icon className="h-4 w-4 text-brand-crimson-500" />
+                        <Icon className="h-4 w-4 text-[#6B1420]" />
                         {item.label}
                       </a>
                     )
@@ -96,13 +96,13 @@ export function LandingNav() {
             )}
           </div>
 
-          <a href="#pricing" className="text-sm text-brand-charcoal-600 transition-colors hover:text-brand-charcoal-900">
+          <a href="#pricing" className="text-sm text-[#A8A9AD] transition-colors hover:text-white">
             Pricing
           </a>
-          <Link href="/login" className="text-sm text-brand-charcoal-600 transition-colors hover:text-brand-charcoal-900">
+          <Link href="/login" className="text-sm text-[#A8A9AD] transition-colors hover:text-white">
             Log In
           </Link>
-          <Button asChild size="lg" className="btn-brand rounded-lg px-6 py-2 text-sm">
+          <Button asChild size="lg" className="rounded-lg bg-[#6B1420] px-6 py-2 text-sm font-semibold text-white hover:bg-[#5A1018]">
             <Link href="/qualify">Get Started</Link>
           </Button>
         </div>
@@ -110,7 +110,7 @@ export function LandingNav() {
         {/* Mobile Menu Button */}
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="inline-flex items-center justify-center rounded-md p-2 text-brand-charcoal-600 hover:text-brand-charcoal-900 lg:hidden"
+          className="inline-flex items-center justify-center rounded-md p-2 text-[#A8A9AD] hover:text-white lg:hidden"
           aria-label="Toggle menu"
         >
           {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -119,24 +119,24 @@ export function LandingNav() {
 
       {/* Mobile Menu */}
       {mobileOpen && (
-        <div className="border-t border-gray-100 bg-white lg:hidden">
+        <div className="border-t border-white/10 bg-[#2D2F33] lg:hidden">
           <div className="flex flex-col gap-4 px-4 py-6">
             <a
               href="#modules"
               onClick={() => setMobileOpen(false)}
-              className="text-sm text-brand-charcoal-600 transition-colors hover:text-brand-charcoal-900"
+              className="text-sm text-[#A8A9AD] transition-colors hover:text-white"
             >
               Platform
             </a>
             <a
               href="#how-it-works"
               onClick={() => setMobileOpen(false)}
-              className="text-sm text-brand-charcoal-600 transition-colors hover:text-brand-charcoal-900"
+              className="text-sm text-[#A8A9AD] transition-colors hover:text-white"
             >
               How It Works
             </a>
-            <div className="my-1 h-px bg-gray-100" />
-            <p className="text-xs font-semibold uppercase tracking-wider text-brand-charcoal-400">Industries</p>
+            <div className="my-1 h-px bg-white/10" />
+            <p className="text-xs font-semibold uppercase tracking-wider text-[#A8A9AD]">Industries</p>
             {industryItems.map((item) => {
               const Icon = item.icon
               return (
@@ -144,28 +144,28 @@ export function LandingNav() {
                   key={item.label}
                   href={item.href}
                   onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-3 pl-2 text-sm text-brand-charcoal-600 transition-colors hover:text-brand-charcoal-900"
+                  className="flex items-center gap-3 pl-2 text-sm text-[#A8A9AD] transition-colors hover:text-white"
                 >
-                  <Icon className="h-4 w-4 text-brand-crimson-500" />
+                  <Icon className="h-4 w-4 text-[#6B1420]" />
                   {item.label}
                 </a>
               )
             })}
-            <div className="my-1 h-px bg-gray-100" />
+            <div className="my-1 h-px bg-white/10" />
             <a
               href="#pricing"
               onClick={() => setMobileOpen(false)}
-              className="text-sm text-brand-charcoal-600 transition-colors hover:text-brand-charcoal-900"
+              className="text-sm text-[#A8A9AD] transition-colors hover:text-white"
             >
               Pricing
             </a>
             <Link
               href="/login"
-              className="text-sm text-brand-charcoal-600 transition-colors hover:text-brand-charcoal-900"
+              className="text-sm text-[#A8A9AD] transition-colors hover:text-white"
             >
               Log In
             </Link>
-            <Button asChild size="lg" className="btn-brand w-full rounded-lg text-sm">
+            <Button asChild size="lg" className="w-full rounded-lg bg-[#6B1420] text-sm font-semibold text-white hover:bg-[#5A1018]">
               <Link href="/qualify">Get Started</Link>
             </Button>
           </div>
