@@ -1,0 +1,37 @@
+export interface EmailTemplate {
+  subject: string
+  preheader?: string
+  body: string
+  plainText: string
+}
+
+export interface WhatsAppTemplate {
+  body: string
+  buttons?: Array<{ type: 'url' | 'quick_reply'; text: string; url?: string }>
+}
+
+export interface SocialTemplate {
+  caption: string
+  hashtags: string[]
+  platform: 'linkedin' | 'facebook' | 'instagram' | 'twitter'
+}
+
+export interface BrandStyles {
+  primaryColor: string
+  secondaryColor: string
+  accentColor: string
+  logoUrl: string
+  fontFamily: string
+  companyName: string
+  websiteUrl: string
+}
+
+export const BRAND: BrandStyles = {
+  primaryColor: '#A03050',
+  secondaryColor: '#1A2030',
+  accentColor: '#C89030',
+  logoUrl: '/logo.png',
+  fontFamily: "'Inter', 'Space Grotesk', sans-serif",
+  companyName: 'DraggonnB',
+  websiteUrl: 'https://draggonnb.co.za',
+}

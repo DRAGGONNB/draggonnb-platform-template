@@ -12,7 +12,7 @@ import { LandingFooter } from '@/components/landing/footer'
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-brand-charcoal-900 via-brand-charcoal-900 to-brand-charcoal-800 text-white">
+    <div className="min-h-screen bg-white text-brand-charcoal-900">
       <LandingNav />
       <main>
         <HeroSection />

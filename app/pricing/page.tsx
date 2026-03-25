@@ -10,6 +10,7 @@ export default function PricingPage() {
   const router = useRouter()
   const [selectedTier, setSelectedTier] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [annual, setAnnual] = useState(false)
 
   const handleSelectTier = (tierId: string) => {
     setSelectedTier(tierId)
@@ -23,20 +24,36 @@ export default function PricingPage() {
     .map((id) => [id, PRICING_TIERS[id]] as const)
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-brand-charcoal-900 to-brand-charcoal-800 text-white">
+    <div className="min-h-screen bg-white text-brand-charcoal-900">
       {/* Header */}
       <div className="px-4 py-16 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-4xl text-center">
           <Link href="/" className="mb-8 inline-flex items-baseline gap-1.5">
             <span className="text-xl font-bold gradient-text-brand">DraggonnB</span>
-            <span className="text-[10px] font-semibold uppercase tracking-widest text-brand-charcoal-300">OS</span>
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-brand-charcoal-400">OS</span>
           </Link>
-          <h1 className="text-4xl font-bold tracking-tight mb-4">
+          <h1 className="text-4xl font-bold tracking-tight text-brand-charcoal-900 mb-4">
             Transparent Pricing, <span className="gradient-text-brand">Powerful Modules</span>
           </h1>
-          <p className="text-xl text-brand-charcoal-200 mb-8">
+          <p className="text-xl text-brand-charcoal-500 mb-8">
             Choose the perfect plan for your business. All plans include 14-day free trial.
           </p>
+
+          {/* Annual toggle */}
+          <div className="flex items-center justify-center gap-3">
+            <span className={`text-sm font-medium ${!annual ? 'text-brand-charcoal-900' : 'text-brand-charcoal-400'}`}>Monthly</span>
+            <button
+              onClick={() => setAnnual(!annual)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${annual ? 'bg-brand-crimson-500' : 'bg-brand-charcoal-200'}`}
+              role="switch"
+              aria-checked={annual}
+            >
+              <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${annual ? 'translate-x-6' : 'translate-x-1'}`} />
+            </button>
+            <span className={`text-sm font-medium ${annual ? 'text-brand-charcoal-900' : 'text-brand-charcoal-400'}`}>
+              Annual <span className="text-brand-crimson-500 font-semibold">(Save 10%)</span>
+            </span>
+          </div>
         </div>
       </div>
 
@@ -48,33 +65,40 @@ export default function PricingPage() {
               key={tierId}
               className={`relative flex flex-col rounded-xl border transition-all duration-300 ${
                 selectedTier === tierId
-                  ? 'border-brand-crimson-500 bg-brand-charcoal-800 ring-2 ring-brand-crimson-500'
+                  ? 'border-brand-crimson-500 bg-white ring-2 ring-brand-crimson-500'
                   : tierId === 'growth'
-                    ? 'border-brand-crimson-500/50 bg-brand-charcoal-800 shadow-lg shadow-brand-crimson-500/10'
-                    : 'border-white/10 bg-brand-charcoal-800/60 hover:border-brand-charcoal-400'
+                    ? 'border-brand-crimson-500 bg-white shadow-lg shadow-brand-crimson-500/10'
+                    : 'border-gray-200 bg-white shadow-md hover:border-brand-charcoal-200'
               }`}
             >
               {/* Popular Badge */}
               {tierId === 'growth' && (
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                  <span className="inline-block bg-gradient-to-r from-brand-crimson-600 to-brand-crimson-500 px-4 py-1 rounded-full text-sm font-semibold">
+                  <span className="inline-block bg-brand-crimson-500 px-4 py-1 rounded-full text-sm font-semibold text-white">
                     Most Popular
                   </span>
                 </div>
               )}
 
               <div className="flex-1 p-8">
-                <h3 className="text-2xl font-bold mb-2">{tier.name}</h3>
+                <h3 className="text-2xl font-bold text-brand-charcoal-900 mb-2">{tier.name}</h3>
                 <div className="mb-6">
-                  <span className="text-4xl font-bold">R{tier.price.toLocaleString()}</span>
-                  <span className="text-brand-charcoal-300 ml-2">/{tier.frequency}</span>
+                  <span className="text-4xl font-bold text-brand-charcoal-900">
+                    R{annual ? Math.round(tier.price * 10.8 / 12).toLocaleString() : tier.price.toLocaleString()}
+                  </span>
+                  <span className="text-brand-charcoal-500 ml-2">/{tier.frequency}</span>
+                  {annual && (
+                    <p className="mt-1 text-sm text-brand-crimson-500">
+                      R{Math.round(tier.price * 10.8).toLocaleString()} billed annually
+                    </p>
+                  )}
                 </div>
 
                 <ul className="space-y-4 mb-8">
                   {tier.features.map((feature, idx) => (
                     <li key={idx} className="flex items-start gap-3">
-                      <Check className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-brand-charcoal-200">{feature}</span>
+                      <Check className="w-5 h-5 text-brand-crimson-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-brand-charcoal-600">{feature}</span>
                     </li>
                   ))}
                 </ul>
@@ -87,7 +111,7 @@ export default function PricingPage() {
                   className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200 ${
                     tierId === 'growth'
                       ? 'btn-brand'
-                      : 'bg-brand-charcoal-600 hover:bg-brand-charcoal-500 disabled:bg-brand-charcoal-400 text-white border border-brand-charcoal-400'
+                      : 'bg-white hover:bg-brand-charcoal-50 text-brand-charcoal-700 border border-brand-charcoal-200 hover:border-brand-charcoal-300'
                   }`}
                 >
                   {isLoading && selectedTier === tierId ? 'Processing...' : 'Get Started'}
@@ -99,42 +123,42 @@ export default function PricingPage() {
       </div>
 
       {/* FAQ Section */}
-      <div className="px-4 py-16 sm:px-6 lg:px-8 bg-brand-charcoal-900/50">
+      <div className="px-4 py-16 sm:px-6 lg:px-8 bg-brand-charcoal-50">
         <div className="mx-auto max-w-4xl">
-          <h2 className="text-3xl font-bold text-center mb-12">Frequently Asked Questions</h2>
+          <h2 className="text-3xl font-bold text-center text-brand-charcoal-900 mb-12">Frequently Asked Questions</h2>
 
           <div className="space-y-8">
             <div>
-              <h3 className="text-xl font-semibold mb-2">Can I change my plan later?</h3>
-              <p className="text-brand-charcoal-200">
+              <h3 className="text-xl font-semibold text-brand-charcoal-900 mb-2">Can I change my plan later?</h3>
+              <p className="text-brand-charcoal-600">
                 Yes! You can upgrade or downgrade your plan at any time. Changes take effect immediately.
               </p>
             </div>
 
             <div>
-              <h3 className="text-xl font-semibold mb-2">What payment methods do you accept?</h3>
-              <p className="text-brand-charcoal-200">
+              <h3 className="text-xl font-semibold text-brand-charcoal-900 mb-2">What payment methods do you accept?</h3>
+              <p className="text-brand-charcoal-600">
                 We accept all major credit/debit cards and EFT via PayFast, South Africa&apos;s trusted payment gateway.
               </p>
             </div>
 
             <div>
-              <h3 className="text-xl font-semibold mb-2">Is there a setup fee?</h3>
-              <p className="text-brand-charcoal-200">
+              <h3 className="text-xl font-semibold text-brand-charcoal-900 mb-2">Is there a setup fee?</h3>
+              <p className="text-brand-charcoal-600">
                 No setup fees! We&apos;ll provision your account automatically within 48 hours.
               </p>
             </div>
 
             <div>
-              <h3 className="text-xl font-semibold mb-2">What if I need more than the plan limits?</h3>
-              <p className="text-brand-charcoal-200">
+              <h3 className="text-xl font-semibold text-brand-charcoal-900 mb-2">What if I need more than the plan limits?</h3>
+              <p className="text-brand-charcoal-600">
                 Upgrade to a higher tier or contact our sales team for custom Enterprise solutions.
               </p>
             </div>
 
             <div>
-              <h3 className="text-xl font-semibold mb-2">How does recurring billing work?</h3>
-              <p className="text-brand-charcoal-200">
+              <h3 className="text-xl font-semibold text-brand-charcoal-900 mb-2">How does recurring billing work?</h3>
+              <p className="text-brand-charcoal-600">
                 PayFast automatically charges your payment method monthly. You can cancel anytime with no penalties.
               </p>
             </div>
@@ -143,10 +167,10 @@ export default function PricingPage() {
       </div>
 
       {/* CTA Footer */}
-      <div className="px-4 py-12 sm:px-6 lg:px-8 bg-brand-charcoal-800">
+      <div className="px-4 py-12 sm:px-6 lg:px-8 bg-brand-charcoal-900 text-white">
         <div className="mx-auto max-w-4xl text-center">
-          <h2 className="text-2xl font-bold mb-4">Ready to get started?</h2>
-          <p className="text-brand-charcoal-200 mb-6">
+          <h2 className="text-2xl font-bold mb-4 text-white">Ready to get started?</h2>
+          <p className="text-brand-charcoal-300 mb-6">
             Join South African businesses already using DraggonnB to run their operations.
           </p>
           <div className="flex gap-4 justify-center flex-wrap">
@@ -155,7 +179,7 @@ export default function PricingPage() {
             </Link>
             <Link
               href="mailto:support@draggonnb.co.za"
-              className="px-8 py-3 border border-brand-charcoal-500 hover:border-brand-charcoal-400 rounded-lg font-semibold transition-colors"
+              className="px-8 py-3 border border-brand-charcoal-500 hover:border-brand-charcoal-400 rounded-lg font-semibold transition-colors text-white"
             >
               Contact Sales
             </Link>

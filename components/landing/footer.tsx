@@ -57,13 +57,13 @@ const socialLinks = [
 
 export function LandingFooter() {
   return (
-    <footer className="border-t border-white/10 bg-brand-charcoal-900 px-4 py-16 sm:px-6 lg:px-8">
+    <footer className="border-t border-brand-charcoal-800 bg-brand-charcoal-900 px-4 py-16 text-white sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
           {/* Brand Column */}
           <div className="lg:col-span-2">
             <Link href="/" className="mb-4 inline-flex items-baseline gap-1.5">
-              <span className="font-display text-xl font-bold gradient-text-brand">DraggonnB</span>
+              <span className="font-display text-xl font-bold text-white">DraggonnB</span>
               <span className="text-[10px] font-semibold uppercase tracking-widest text-brand-charcoal-400">CRMM</span>
             </Link>
             <p className="mb-6 max-w-xs text-sm leading-relaxed text-brand-charcoal-400">
@@ -77,7 +77,7 @@ export function LandingFooter() {
                 <a
                   key={social.label}
                   href={social.href}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-brand-charcoal-800/60 text-brand-charcoal-400 transition-all hover:border-brand-crimson-500/30 hover:bg-brand-crimson-500/10 hover:text-white"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-brand-charcoal-800/60 text-brand-charcoal-300 transition-all hover:border-brand-crimson-500/30 hover:bg-brand-crimson-500/10 hover:text-white"
                   aria-label={social.label}
                 >
                   {social.icon}
@@ -95,7 +95,7 @@ export function LandingFooter() {
                   <li key={link.label}>
                     <Link
                       href={link.href}
-                      className="text-sm text-brand-charcoal-400 transition-colors hover:text-brand-charcoal-200"
+                      className="text-sm text-brand-charcoal-300 transition-colors hover:text-white"
                     >
                       {link.label}
                     </Link>

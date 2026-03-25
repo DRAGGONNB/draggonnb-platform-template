@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { useState, useRef, useCallback } from 'react'
 import {
@@ -39,20 +40,23 @@ export function LandingNav() {
   }, [])
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-brand-charcoal-900/80 backdrop-blur-xl">
+    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-gray-100 bg-white/95 shadow-sm backdrop-blur-sm">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
         {/* Logo */}
-        <Link href="/" className="flex items-baseline gap-1.5">
-          <span className="font-display text-xl font-bold gradient-text-brand sm:text-2xl">DraggonnB</span>
-          <span className="text-[10px] font-semibold uppercase tracking-widest text-brand-charcoal-300">CRMM</span>
+        <Link href="/" className="flex items-center gap-2">
+          <Image src="/logo.png" alt="DraggonnB" width={36} height={36} className="rounded-lg" />
+          <div className="flex items-baseline gap-1">
+            <span className="font-display text-xl font-bold text-brand-charcoal-900 sm:text-2xl">DRAGGON<span className="text-brand-crimson-500">NB</span></span>
+            <span className="hidden text-[10px] font-semibold uppercase tracking-widest text-brand-charcoal-400 sm:inline">OS</span>
+          </div>
         </Link>
 
         {/* Desktop Links */}
         <div className="hidden items-center gap-8 lg:flex">
-          <a href="#modules" className="text-sm text-brand-charcoal-200 transition-colors hover:text-white">
+          <a href="#modules" className="text-sm text-brand-charcoal-600 transition-colors hover:text-brand-charcoal-900">
             Platform
           </a>
-          <a href="#how-it-works" className="text-sm text-brand-charcoal-200 transition-colors hover:text-white">
+          <a href="#how-it-works" className="text-sm text-brand-charcoal-600 transition-colors hover:text-brand-charcoal-900">
             How It Works
           </a>
 
@@ -63,7 +67,7 @@ export function LandingNav() {
             onMouseLeave={closeDropdown}
           >
             <button
-              className="flex items-center gap-1 text-sm text-brand-charcoal-200 transition-colors hover:text-white"
+              className="flex items-center gap-1 text-sm text-brand-charcoal-600 transition-colors hover:text-brand-charcoal-900"
               aria-haspopup="true"
               aria-expanded={dropdownOpen}
             >
@@ -73,16 +77,16 @@ export function LandingNav() {
 
             {dropdownOpen && (
               <div className="absolute left-1/2 top-full pt-2 -translate-x-1/2">
-                <div className="w-56 rounded-xl border border-white/10 bg-brand-charcoal-800/95 p-2 shadow-2xl backdrop-blur-xl">
+                <div className="w-56 rounded-xl border border-gray-200 bg-white p-2 shadow-2xl">
                   {industryItems.map((item) => {
                     const Icon = item.icon
                     return (
                       <a
                         key={item.label}
                         href={item.href}
-                        className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-brand-charcoal-200 transition-colors hover:bg-brand-crimson-500/10 hover:text-white"
+                        className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-brand-charcoal-600 transition-colors hover:bg-brand-crimson-50 hover:text-brand-charcoal-900"
                       >
-                        <Icon className="h-4 w-4 text-brand-crimson-400" />
+                        <Icon className="h-4 w-4 text-brand-crimson-500" />
                         {item.label}
                       </a>
                     )
@@ -92,10 +96,10 @@ export function LandingNav() {
             )}
           </div>
 
-          <a href="#pricing" className="text-sm text-brand-charcoal-200 transition-colors hover:text-white">
+          <a href="#pricing" className="text-sm text-brand-charcoal-600 transition-colors hover:text-brand-charcoal-900">
             Pricing
           </a>
-          <Link href="/login" className="text-sm text-brand-charcoal-200 transition-colors hover:text-white">
+          <Link href="/login" className="text-sm text-brand-charcoal-600 transition-colors hover:text-brand-charcoal-900">
             Log In
           </Link>
           <Button asChild size="lg" className="btn-brand rounded-lg px-6 py-2 text-sm">
@@ -106,7 +110,7 @@ export function LandingNav() {
         {/* Mobile Menu Button */}
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="inline-flex items-center justify-center rounded-md p-2 text-brand-charcoal-200 hover:text-white lg:hidden"
+          className="inline-flex items-center justify-center rounded-md p-2 text-brand-charcoal-600 hover:text-brand-charcoal-900 lg:hidden"
           aria-label="Toggle menu"
         >
           {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -115,23 +119,23 @@ export function LandingNav() {
 
       {/* Mobile Menu */}
       {mobileOpen && (
-        <div className="border-t border-white/10 bg-brand-charcoal-900/95 backdrop-blur-xl lg:hidden">
+        <div className="border-t border-gray-100 bg-white lg:hidden">
           <div className="flex flex-col gap-4 px-4 py-6">
             <a
               href="#modules"
               onClick={() => setMobileOpen(false)}
-              className="text-sm text-brand-charcoal-200 transition-colors hover:text-white"
+              className="text-sm text-brand-charcoal-600 transition-colors hover:text-brand-charcoal-900"
             >
               Platform
             </a>
             <a
               href="#how-it-works"
               onClick={() => setMobileOpen(false)}
-              className="text-sm text-brand-charcoal-200 transition-colors hover:text-white"
+              className="text-sm text-brand-charcoal-600 transition-colors hover:text-brand-charcoal-900"
             >
               How It Works
             </a>
-            <div className="my-1 h-px bg-white/10" />
+            <div className="my-1 h-px bg-gray-100" />
             <p className="text-xs font-semibold uppercase tracking-wider text-brand-charcoal-400">Industries</p>
             {industryItems.map((item) => {
               const Icon = item.icon
@@ -140,24 +144,24 @@ export function LandingNav() {
                   key={item.label}
                   href={item.href}
                   onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-3 pl-2 text-sm text-brand-charcoal-200 transition-colors hover:text-white"
+                  className="flex items-center gap-3 pl-2 text-sm text-brand-charcoal-600 transition-colors hover:text-brand-charcoal-900"
                 >
-                  <Icon className="h-4 w-4 text-brand-crimson-400" />
+                  <Icon className="h-4 w-4 text-brand-crimson-500" />
                   {item.label}
                 </a>
               )
             })}
-            <div className="my-1 h-px bg-white/10" />
+            <div className="my-1 h-px bg-gray-100" />
             <a
               href="#pricing"
               onClick={() => setMobileOpen(false)}
-              className="text-sm text-brand-charcoal-200 transition-colors hover:text-white"
+              className="text-sm text-brand-charcoal-600 transition-colors hover:text-brand-charcoal-900"
             >
               Pricing
             </a>
             <Link
               href="/login"
-              className="text-sm text-brand-charcoal-200 transition-colors hover:text-white"
+              className="text-sm text-brand-charcoal-600 transition-colors hover:text-brand-charcoal-900"
             >
               Log In
             </Link>
