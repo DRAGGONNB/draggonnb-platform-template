@@ -67,7 +67,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!body.company_name || typeof body.company_name !== 'string') {
+    // Accept both company_name and business_name (normalize to company_name for DB)
+    const companyName = body.company_name || body.business_name
+    if (!companyName || typeof companyName !== 'string') {
       return NextResponse.json(
         { error: 'Company name is required' },
         { status: 400 }
@@ -86,7 +88,7 @@ export async function POST(request: NextRequest) {
     // Sanitize and prepare lead data
     const leadData = {
       email: body.email.toLowerCase().trim(),
-      company_name: body.company_name.trim(),
+      company_name: companyName.trim(),
       contact_name: body.contact_name?.trim() || null,
       phone: body.phone?.trim() || null,
       website: body.website?.trim() || null,
@@ -136,7 +138,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (insertError || !lead) {
-      console.error('Failed to insert lead:', insertError)
+      console.error('Failed to insert lead:', insertError?.message, insertError?.details, insertError?.code)
       return NextResponse.json(
         { error: 'Failed to capture lead' },
         { status: 500 }

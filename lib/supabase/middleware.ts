@@ -230,7 +230,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // --- Protected routes ---
-  const protectedRoutes = ['/dashboard', '/crm', '/email', '/content-generator', '/accommodation', '/social', '/autopilot', '/analytics']
+  const protectedRoutes = ['/dashboard', '/crm', '/email', '/content-generator', '/accommodation', '/social', '/autopilot', '/analytics', '/billing', '/admin', '/onboarding', '/settings']
   const isProtectedRoute = protectedRoutes.some(route =>
     request.nextUrl.pathname.startsWith(route)
   )
