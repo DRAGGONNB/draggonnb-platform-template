@@ -27,11 +27,11 @@ export interface BrandStyles {
 }
 
 export const BRAND: BrandStyles = {
-  primaryColor: '#A03050',
-  secondaryColor: '#1A2030',
+  primaryColor: '#6B1420',
+  secondaryColor: '#2D2F33',
   accentColor: '#C89030',
   logoUrl: '/logo.png',
   fontFamily: "'Inter', 'Space Grotesk', sans-serif",
-  companyName: 'DraggonnB',
-  websiteUrl: 'https://draggonnb.co.za',
+  companyName: 'DraggonnB Business Automation',
+  websiteUrl: 'https://draggonnb.online',
 }
