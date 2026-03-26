@@ -70,7 +70,7 @@ export async function POST(request: Request) {
       organizationId: auth.organizationId,
       bookingId: parsed.data.booking_id,
       amount: parsed.data.amount,
-      paymentType: parsed.data.payment_type,
+      paymentType: parsed.data.payment_type as 'deposit' | 'balance' | 'additional_fee',
       guestEmail: guest.email,
       guestName: `${guest.first_name || ''} ${guest.last_name || ''}`.trim() || 'Guest',
       propertyName,

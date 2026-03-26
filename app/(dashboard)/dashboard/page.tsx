@@ -24,6 +24,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ActivityFeed } from '@/components/dashboard/ActivityFeed'
+import { OnboardingChecklist } from '@/components/dashboard/OnboardingChecklist'
 
 async function getDashboardData(organizationId: string) {
   const supabase = await createClient()
@@ -148,6 +149,9 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8">
+      {/* Onboarding Checklist */}
+      <OnboardingChecklist />
+
       {/* Welcome Banner */}
       <div className="rounded-xl border bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">

@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
       console.error('Invalid PayFast ITN signature')
       return NextResponse.json(
         { error: 'Invalid signature' },
-        { status: 401 }
+        { status: 400 }
       )
     }
 

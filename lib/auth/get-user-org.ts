@@ -7,6 +7,22 @@ import type { SupabaseClient } from '@supabase/supabase-js'
  * Queries the organization_users junction table. Falls back to admin client
  * if RLS blocks the user client query.
  */
+/**
+ * Check for service-role Bearer token (used by N8N workflows).
+ * Returns org ID from x-tenant-id header or DEFAULT_ORG_ID env var.
+ */
+export function getServiceRoleOrgId(request: Request): string | null {
+  const authHeader = request.headers.get('authorization')
+  if (!authHeader?.startsWith('Bearer ')) return null
+
+  const token = authHeader.slice(7)
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!serviceKey || token !== serviceKey) return null
+
+  // Valid service role token -- get org from header or default
+  return request.headers.get('x-tenant-id') || process.env.DEFAULT_ORG_ID || null
+}
+
 export async function getOrgId(supabase: SupabaseClient, userId: string): Promise<string | null> {
   // Try user client first
   const { data } = await supabase

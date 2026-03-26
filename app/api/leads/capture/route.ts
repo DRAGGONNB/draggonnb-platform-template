@@ -147,6 +147,25 @@ export async function POST(request: NextRequest) {
 
     console.log(`Lead captured: ${lead.id} (${leadData.email})`)
 
+    // Trigger N8N lead alert (fire and forget)
+    const n8nUrl = process.env.N8N_BASE_URL
+    if (n8nUrl) {
+      fetch(`${n8nUrl}/webhook/draggonnb-lead-captured`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          leadId: lead.id,
+          companyName: leadData.company_name,
+          contactName: leadData.contact_name || '',
+          email: leadData.email,
+          phone: leadData.phone || '',
+          industry: leadData.industry || '',
+          tier_interest: body.tier_interest || '',
+          challenges: leadData.business_issues.join(', '),
+        }),
+      }).catch((err) => console.error('N8N lead alert failed:', err))
+    }
+
     // Trigger AI qualification async (fire and forget)
     triggerQualificationAsync(lead.id).catch((err) =>
       console.error('Async qualification trigger failed:', err)
