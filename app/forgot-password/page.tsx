@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -17,6 +17,14 @@ import {
 } from '@/components/ui/card'
 
 export default function ForgotPasswordPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><p>Loading...</p></div>}>
+      <ForgotPasswordContent />
+    </Suspense>
+  )
+}
+
+function ForgotPasswordContent() {
   const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [error, setError] = useState<string | null>(null)
