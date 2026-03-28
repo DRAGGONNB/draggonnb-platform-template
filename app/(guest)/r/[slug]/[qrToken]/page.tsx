@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { LiveBillView } from '@/components/restaurant/livetab/LiveBillView'
+import { WaitingScreen } from '@/components/restaurant/livetab/WaitingScreen'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 
@@ -57,21 +58,6 @@ export default async function GuestTablePage({ params }: Props) {
       ) : (
         <WaitingScreen restaurantName={restaurant.name} tableLabel={table.label} />
       )}
-    </div>
-  )
-}
-
-function WaitingScreen({ restaurantName, tableLabel }: { restaurantName: string; tableLabel: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen px-6 text-center">
-      <div className="text-6xl mb-6">🍽️</div>
-      <h1 className="text-2xl font-bold mb-2">{restaurantName}</h1>
-      <p className="text-gray-400 mb-4">{tableLabel}</p>
-      <div className="bg-[#3A3C40] rounded-2xl p-6 max-w-sm w-full">
-        <div className="w-8 h-8 border-2 border-[#6B1420] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-sm text-gray-300">Waiting for your waiter to open the session…</p>
-        <p className="text-xs text-gray-500 mt-2">Your live bill will appear here automatically</p>
-      </div>
     </div>
   )
 }

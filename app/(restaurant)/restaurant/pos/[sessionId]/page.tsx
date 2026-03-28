@@ -147,6 +147,14 @@ export default function POSPage() {
           >
             Request Bill
           </button>
+          {(session?.status !== 'open' || items.length > 0) && (
+            <button
+              onClick={() => router.push(`/restaurant/pos/${sessionId}/bill`)}
+              className="w-full bg-[#3A3C40] text-gray-300 rounded-xl py-3 text-sm font-medium active:scale-95 transition-transform"
+            >
+              View Bill
+            </button>
+          )}
           <button
             onClick={() => router.push('/restaurant/tables')}
             className="w-full bg-[#3A3C40] text-gray-300 rounded-xl py-2 text-sm"
