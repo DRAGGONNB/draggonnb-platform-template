@@ -10,9 +10,12 @@ const navigation = [
     section: 'Main',
     items: [
       { name: 'Dashboard', href: '/dashboard', icon: '📊', badge: null },
-      { name: 'Autopilot', href: '/autopilot', icon: '🤖', badge: 'NEW', badgeColor: 'bg-gradient-to-r from-purple-500 to-purple-600' },
+      { name: 'Analytics', href: '/analytics', icon: '📈', badge: 'NEW', badgeColor: 'bg-gradient-to-r from-emerald-500 to-emerald-600' },
+      { name: 'Autopilot', href: '/autopilot', icon: '🤖', badge: null },
       { name: 'CRM', href: '/crm', icon: '👥', badge: null },
+      { name: 'Lead Scoring', href: '/crm/scoring', icon: '🔥', badge: 'NEW', badgeColor: 'bg-gradient-to-r from-orange-500 to-orange-600' },
       { name: 'Email Hub', href: '/email', icon: '📧', badge: null },
+      { name: 'Social Media', href: '/social', icon: '📱', badge: 'NEW', badgeColor: 'bg-gradient-to-r from-pink-500 to-pink-600' },
     ],
   },
   {
@@ -47,6 +50,18 @@ const navigation = [
       { name: 'Stock', href: '/accommodation/stock', icon: '📦', badge: null },
       { name: 'Costs', href: '/accommodation/costs', icon: '💰', badge: null },
       { name: 'Channels', href: '/accommodation/channels', icon: '🌐', badge: null },
+    ],
+  },
+  {
+    section: 'Security & Response',
+    items: [
+      { name: 'Elijah Dashboard', href: '/elijah', icon: '🛡️', badge: 'NEW', badgeColor: 'bg-gradient-to-r from-red-500 to-red-600' },
+      { name: 'Incidents', href: '/elijah/incidents', icon: '🚨', badge: null },
+      { name: 'Roll Call', href: '/elijah/rollcall', icon: '📋', badge: null },
+      { name: 'Fire Ops', href: '/elijah/fire', icon: '🔥', badge: null },
+      { name: 'Fire Map', href: '/elijah/fire/map', icon: '🗺️', badge: null },
+      { name: 'Patrols', href: '/elijah/patrols', icon: '🚶', badge: null },
+      { name: 'Members', href: '/elijah/members', icon: '👥', badge: null },
     ],
   },
   {

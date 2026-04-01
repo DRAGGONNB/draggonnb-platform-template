@@ -1,0 +1,115 @@
+{
+  "name": "Elijah - Fire Alert Dispatcher",
+  "nodes": [
+    {
+      "parameters": { "httpMethod": "POST", "path": "elijah-fire-alert", "responseMode": "onReceived", "responseCode": 200 },
+      "id": "webhook",
+      "name": "Fire Alert Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT fi.*, i.description, i.severity, ST_Y(i.location::geometry) AS lat, ST_X(i.location::geometry) AS lng FROM elijah_fire_incident fi JOIN elijah_incident i ON i.id = fi.incident_id WHERE fi.id = '={{ $json.body.fire_incident_id }}'",
+        "options": {}
+      },
+      "id": "get-fire-detail",
+      "name": "Get Fire Details",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [470, 300],
+      "credentials": { "postgres": { "id": "supabase-postgres", "name": "Supabase Postgres" } }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT wp.name, wp.type, wp.status, wp.capacity_litres, ST_Distance(wp.location, ST_SetSRID(ST_MakePoint({{ $json.lng }}, {{ $json.lat }}), 4326)::geography) AS distance_m FROM elijah_fire_water_point wp WHERE wp.organization_id = '={{ $json.body.organization_id }}' AND wp.status != 'empty' ORDER BY distance_m LIMIT 3",
+        "options": {}
+      },
+      "id": "nearest-water",
+      "name": "Nearest Water Points",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [690, 200],
+      "credentials": { "postgres": { "id": "supabase-postgres", "name": "Supabase Postgres" } }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT f.name, f.owner_name, f.owner_phone, f.access_code, f.access_notes, ST_Y(f.access_gate_location::geometry) AS gate_lat, ST_X(f.access_gate_location::geometry) AS gate_lng FROM elijah_fire_farm f WHERE f.id = '={{ $json.farm_id }}' AND f.id IS NOT NULL",
+        "options": {}
+      },
+      "id": "get-farm",
+      "name": "Get Farm Access",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [690, 400],
+      "credentials": { "postgres": { "id": "supabase-postgres", "name": "Supabase Postgres" } }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT g.id AS group_id, g.name AS group_name, g.type, g.contact_phone, gm.member_id, m.phone AS leader_phone, m.display_name AS leader_name FROM elijah_fire_responder_group g JOIN elijah_fire_responder_group_member gm ON gm.group_id = g.id JOIN elijah_member m ON m.id = gm.member_id WHERE g.organization_id = '={{ $json.body.organization_id }}' AND gm.role = 'leader' AND m.phone IS NOT NULL",
+        "options": {}
+      },
+      "id": "get-groups",
+      "name": "Get Responder Groups",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [910, 300],
+      "credentials": { "postgres": { "id": "supabase-postgres", "name": "Supabase Postgres" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "const fire = $('Get Fire Details').first().json;\nconst waterPoints = $('Nearest Water Points').all().map(w => w.json);\nconst farm = $('Get Farm Access').first()?.json;\nconst groups = $('Get Responder Groups').all().map(g => g.json);\n\nlet waterInfo = waterPoints.map((wp, i) => `${i+1}. ${wp.name} (${wp.type}) - ${wp.status} - ${Math.round(wp.distance_m)}m away`).join('\\n');\n\nlet farmInfo = '';\nif (farm && farm.name) {\n  farmInfo = `\\n\\nFARM: ${farm.name}\\nOwner: ${farm.owner_name} (${farm.owner_phone || 'no phone'})\\nGate code: ${farm.access_code || 'N/A'}\\nNotes: ${farm.access_notes || 'None'}`;\n  if (farm.gate_lat) farmInfo += `\\nGate: ${farm.gate_lat}, ${farm.gate_lng}`;\n}\n\nconst results = groups.map(g => ({\n  phone: g.leader_phone,\n  leader_name: g.leader_name,\n  group_name: g.group_name,\n  group_id: g.group_id,\n  message: `FIRE ALERT\\n${fire.fire_type} fire reported\\nWind: ${fire.wind_direction || 'unknown'}\\nLocation: ${fire.description}\\n\\nNearest water:\\n${waterInfo}${farmInfo}\\n\\nRespond to confirm arrival.`\n}));\n\nreturn results.map(r => ({ json: r }));"
+      },
+      "id": "build-messages",
+      "name": "Build Alert Messages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1130, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v18.0/={{ $credentials.whatsappPhoneNumberId }}/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ messaging_product: 'whatsapp', to: $json.phone, type: 'text', text: { body: $json.message } }) }}"
+      },
+      "id": "send-alert",
+      "name": "Send Fire Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1350, 300],
+      "credentials": { "httpHeaderAuth": { "id": "whatsapp-token", "name": "WhatsApp Token" } }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO elijah_fire_incident_group_dispatch (fire_incident_id, group_id, dispatched_by) VALUES ('={{ $json.body.fire_incident_id }}', '={{ $json.group_id }}', '={{ $json.body.dispatched_by }}')",
+        "options": {}
+      },
+      "id": "log-dispatch",
+      "name": "Log Dispatch",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [1570, 300],
+      "credentials": { "postgres": { "id": "supabase-postgres", "name": "Supabase Postgres" } }
+    }
+  ],
+  "connections": {
+    "Fire Alert Trigger": { "main": [[{ "node": "Get Fire Details", "type": "main", "index": 0 }]] },
+    "Get Fire Details": { "main": [[{ "node": "Nearest Water Points", "type": "main", "index": 0 }, { "node": "Get Farm Access", "type": "main", "index": 0 }, { "node": "Get Responder Groups", "type": "main", "index": 0 }]] },
+    "Get Responder Groups": { "main": [[{ "node": "Build Alert Messages", "type": "main", "index": 0 }]] },
+    "Build Alert Messages": { "main": [[{ "node": "Send Fire Alert", "type": "main", "index": 0 }]] },
+    "Send Fire Alert": { "main": [[{ "node": "Log Dispatch", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "elijah" }]
+}

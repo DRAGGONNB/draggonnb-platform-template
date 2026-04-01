@@ -1,0 +1,451 @@
+{
+  "name": "Elijah - Roll Call Scheduler",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * *"
+            }
+          ]
+        }
+      },
+      "id": "a1000000-0000-0000-0000-000000000001",
+      "name": "Daily Roll Call Trigger",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT rs.id AS schedule_id, rs.org_id, rs.section_id, rs.scheduled_time, rs.grace_minutes, rs.is_active, rs.message_template\nFROM elijah_rollcall_schedule rs\nWHERE rs.is_active = true\n  AND rs.scheduled_time::time <= NOW()::time\n  AND (\n    rs.last_run_date IS NULL\n    OR rs.last_run_date < CURRENT_DATE\n  );",
+        "additionalFields": {}
+      },
+      "id": "a1000000-0000-0000-0000-000000000002",
+      "name": "Query Active Schedules",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [460, 300],
+      "credentials": {
+        "postgres": {
+          "id": "SUPABASE_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "a1000000-0000-0000-0000-000000000003",
+      "name": "Loop Over Schedules",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT h.id AS household_id, h.name AS household_name, h.primary_contact_phone, h.primary_contact_name, h.org_id, h.section_id\nFROM elijah_household h\nWHERE h.org_id = '{{ $json.org_id }}'\n  AND (h.section_id = '{{ $json.section_id }}' OR '{{ $json.section_id }}' = '')\n  AND h.is_active = true;",
+        "additionalFields": {}
+      },
+      "id": "a1000000-0000-0000-0000-000000000004",
+      "name": "Query Households in Section",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [900, 300],
+      "credentials": {
+        "postgres": {
+          "id": "SUPABASE_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "a1000000-0000-0000-0000-000000000005",
+      "name": "Loop Over Households",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "wa_phone",
+              "value": "={{ $json.primary_contact_phone }}"
+            },
+            {
+              "name": "wa_message",
+              "value": "=Roll Call for *{{ $('Loop Over Schedules').item.json.org_id }}*\n\nHi {{ $json.primary_contact_name }}, this is your daily roll call check-in.\n\nPlease reply with one of:\n- *SAFE* - All is well\n- *HELP* - Need assistance\n- *AWAY* - Not home today\n\nYou have {{ $('Loop Over Schedules').item.json.grace_minutes }} minutes to respond."
+            },
+            {
+              "name": "schedule_id",
+              "value": "={{ $('Loop Over Schedules').item.json.schedule_id }}"
+            },
+            {
+              "name": "household_id",
+              "value": "={{ $json.household_id }}"
+            },
+            {
+              "name": "grace_minutes",
+              "value": "={{ $('Loop Over Schedules').item.json.grace_minutes }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a1000000-0000-0000-0000-000000000006",
+      "name": "Prepare WhatsApp Message",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v21.0/{{ $credentials.whatsappPhoneNumberId }}/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"to\": \"{{ $json.wa_phone }}\",\n  \"type\": \"text\",\n  \"text\": {\n    \"body\": {{ JSON.stringify($json.wa_message) }}\n  }\n}",
+        "options": {}
+      },
+      "id": "a1000000-0000-0000-0000-000000000007",
+      "name": "Send WhatsApp Roll Call",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1560, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "WHATSAPP_AUTH_CREDENTIAL_ID",
+          "name": "WhatsApp Cloud API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO elijah_rollcall_checkin (\n  schedule_id,\n  household_id,\n  org_id,\n  status,\n  sent_at\n) VALUES (\n  '{{ $json.schedule_id }}',\n  '{{ $json.household_id }}',\n  '{{ $('Loop Over Schedules').item.json.org_id }}',\n  'pending',\n  NOW()\n)\nRETURNING id;",
+        "additionalFields": {}
+      },
+      "id": "a1000000-0000-0000-0000-000000000008",
+      "name": "Insert Pending Checkin",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1780, 300],
+      "credentials": {
+        "postgres": {
+          "id": "SUPABASE_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE elijah_rollcall_schedule\nSET last_run_date = CURRENT_DATE\nWHERE id = '{{ $('Loop Over Schedules').item.json.schedule_id }}';",
+        "additionalFields": {}
+      },
+      "id": "a1000000-0000-0000-0000-000000000009",
+      "name": "Update Schedule Last Run",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [900, 520],
+      "credentials": {
+        "postgres": {
+          "id": "SUPABASE_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "unit": "minutes",
+        "amount": "={{ $('Loop Over Schedules').item.json.grace_minutes }}"
+      },
+      "id": "a1000000-0000-0000-0000-000000000010",
+      "name": "Wait Grace Period",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1120, 520]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT rc.id AS checkin_id, rc.household_id, rc.schedule_id\nFROM elijah_rollcall_checkin rc\nWHERE rc.schedule_id = '{{ $('Loop Over Schedules').item.json.schedule_id }}'\n  AND rc.status = 'pending'\n  AND rc.sent_at::date = CURRENT_DATE;",
+        "additionalFields": {}
+      },
+      "id": "a1000000-0000-0000-0000-000000000011",
+      "name": "Query Still Pending",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1340, 520],
+      "credentials": {
+        "postgres": {
+          "id": "SUPABASE_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "condition-pending-count",
+              "leftValue": "={{ $json.length }}",
+              "rightValue": "0",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a1000000-0000-0000-0000-000000000012",
+      "name": "Has Pending Households?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1560, 520]
+    },
+    {
+      "parameters": {},
+      "id": "a1000000-0000-0000-0000-000000000013",
+      "name": "Loop Pending for Escalation",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [1780, 440]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.N8N_WEBHOOK_BASE_URL }}/webhook/elijah-escalation-engine",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"schedule_id\": \"{{ $json.schedule_id }}\",\n  \"household_id\": \"{{ $json.household_id }}\",\n  \"checkin_id\": \"{{ $json.checkin_id }}\"\n}",
+        "options": {}
+      },
+      "id": "a1000000-0000-0000-0000-000000000014",
+      "name": "Trigger Escalation Engine",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2000, 440]
+    },
+    {
+      "parameters": {},
+      "id": "a1000000-0000-0000-0000-000000000015",
+      "name": "No Pending - Done",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1780, 620]
+    }
+  ],
+  "connections": {
+    "Daily Roll Call Trigger": {
+      "main": [
+        [
+          {
+            "node": "Query Active Schedules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Active Schedules": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Schedules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Schedules": {
+      "main": [
+        [
+          {
+            "node": "Query Households in Section",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Schedule Last Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Households in Section": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Households",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Households": {
+      "main": [
+        [
+          {
+            "node": "Prepare WhatsApp Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare WhatsApp Message": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp Roll Call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send WhatsApp Roll Call": {
+      "main": [
+        [
+          {
+            "node": "Insert Pending Checkin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Pending Checkin": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Households",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Schedule Last Run": {
+      "main": [
+        [
+          {
+            "node": "Wait Grace Period",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Grace Period": {
+      "main": [
+        [
+          {
+            "node": "Query Still Pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Still Pending": {
+      "main": [
+        [
+          {
+            "node": "Has Pending Households?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Pending Households?": {
+      "main": [
+        [
+          {
+            "node": "Loop Pending for Escalation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Pending - Done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Pending for Escalation": {
+      "main": [
+        [
+          {
+            "node": "Trigger Escalation Engine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger Escalation Engine": {
+      "main": [
+        [
+          {
+            "node": "Loop Pending for Escalation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "elijah"
+    },
+    {
+      "name": "rollcall"
+    }
+  ],
+  "triggerCount": 1,
+  "active": false,
+  "pinData": {},
+  "versionId": "1"
+}

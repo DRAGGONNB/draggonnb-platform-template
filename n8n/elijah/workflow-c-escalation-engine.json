@@ -1,0 +1,137 @@
+{
+  "name": "Elijah - Escalation Engine",
+  "nodes": [
+    {
+      "parameters": { "httpMethod": "POST", "path": "elijah-escalation", "responseMode": "onReceived", "responseCode": 200 },
+      "id": "webhook",
+      "name": "Escalation Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": { "amount": 5, "unit": "minutes" },
+      "id": "wait-tier1",
+      "name": "Wait 5 min (Tier 1)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [470, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT status FROM elijah_rollcall_checkin WHERE schedule_id = '={{ $json.schedule_id }}' AND household_id = '={{ $json.household_id }}' ORDER BY created_at DESC LIMIT 1",
+        "options": {}
+      },
+      "id": "check-status-t1",
+      "name": "Check Status (Tier 1)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [690, 300],
+      "credentials": { "postgres": { "id": "supabase-postgres", "name": "Supabase Postgres" } }
+    },
+    {
+      "parameters": {
+        "conditions": { "string": [{ "value1": "={{ $json.status }}", "operation": "equals", "value2": "pending" }] }
+      },
+      "id": "still-pending-t1",
+      "name": "Still Pending?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [910, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT bh.buddy_household_id, m.phone, m.display_name FROM elijah_household_buddy bh JOIN elijah_household h ON h.id = bh.buddy_household_id JOIN elijah_member m ON m.id = h.primary_contact_id WHERE bh.household_id = '={{ $json.household_id }}' AND m.phone IS NOT NULL LIMIT 1",
+        "options": {}
+      },
+      "id": "get-buddy",
+      "name": "Get Buddy Household",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [1130, 200],
+      "credentials": { "postgres": { "id": "supabase-postgres", "name": "Supabase Postgres" } }
+    },
+    {
+      "parameters": { "amount": 5, "unit": "minutes" },
+      "id": "wait-tier2",
+      "name": "Wait 5 min (Tier 2)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1350, 200]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT status FROM elijah_rollcall_checkin WHERE schedule_id = '={{ $json.schedule_id }}' AND household_id = '={{ $json.household_id }}' ORDER BY created_at DESC LIMIT 1",
+        "options": {}
+      },
+      "id": "check-status-t2",
+      "name": "Check Status (Tier 2)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [1570, 200],
+      "credentials": { "postgres": { "id": "supabase-postgres", "name": "Supabase Postgres" } }
+    },
+    {
+      "parameters": {
+        "conditions": { "string": [{ "value1": "={{ $json.status }}", "operation": "equals", "value2": "pending" }] }
+      },
+      "id": "still-pending-t2",
+      "name": "Still Pending (Tier 2)?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1790, 200]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT m.phone, m.display_name FROM elijah_member m JOIN elijah_member_role r ON r.member_id = m.id WHERE r.role = 'dispatcher' AND m.organization_id = '={{ $json.organization_id }}' AND m.phone IS NOT NULL",
+        "options": {}
+      },
+      "id": "get-dispatchers",
+      "name": "Get Dispatchers (Tier 3)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [2010, 100],
+      "credentials": { "postgres": { "id": "supabase-postgres", "name": "Supabase Postgres" } }
+    },
+    {
+      "parameters": { "amount": 5, "unit": "minutes" },
+      "id": "wait-tier3",
+      "name": "Wait 5 min (Tier 3)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [2230, 100]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO elijah_incident (organization_id, type, severity, status, description, reported_by) SELECT '={{ $json.organization_id }}', 'other', 'high', 'open', 'Welfare check - household at ' || h.address || ' did not respond to roll call after 4 escalation tiers', (SELECT id FROM elijah_member WHERE organization_id = '={{ $json.organization_id }}' LIMIT 1) FROM elijah_household h WHERE h.id = '={{ $json.household_id }}'",
+        "options": {}
+      },
+      "id": "create-welfare-incident",
+      "name": "Create Welfare Check Incident (Tier 4)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [2450, 100],
+      "credentials": { "postgres": { "id": "supabase-postgres", "name": "Supabase Postgres" } }
+    }
+  ],
+  "connections": {
+    "Escalation Trigger": { "main": [[{ "node": "Wait 5 min (Tier 1)", "type": "main", "index": 0 }]] },
+    "Wait 5 min (Tier 1)": { "main": [[{ "node": "Check Status (Tier 1)", "type": "main", "index": 0 }]] },
+    "Check Status (Tier 1)": { "main": [[{ "node": "Still Pending?", "type": "main", "index": 0 }]] },
+    "Still Pending?": { "main": [[{ "node": "Get Buddy Household", "type": "main", "index": 0 }], []] },
+    "Get Buddy Household": { "main": [[{ "node": "Wait 5 min (Tier 2)", "type": "main", "index": 0 }]] },
+    "Wait 5 min (Tier 2)": { "main": [[{ "node": "Check Status (Tier 2)", "type": "main", "index": 0 }]] },
+    "Check Status (Tier 2)": { "main": [[{ "node": "Still Pending (Tier 2)?", "type": "main", "index": 0 }]] },
+    "Still Pending (Tier 2)?": { "main": [[{ "node": "Get Dispatchers (Tier 3)", "type": "main", "index": 0 }], []] },
+    "Get Dispatchers (Tier 3)": { "main": [[{ "node": "Wait 5 min (Tier 3)", "type": "main", "index": 0 }]] },
+    "Wait 5 min (Tier 3)": { "main": [[{ "node": "Create Welfare Check Incident (Tier 4)", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "elijah" }]
+}

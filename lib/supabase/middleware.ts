@@ -36,6 +36,8 @@ const MODULE_ROUTE_MAP: Record<string, string> = {
   '/api/events': 'events',
   '/security': 'security_ops',
   '/api/security': 'security_ops',
+  '/elijah': 'security_ops',
+  '/api/elijah': 'security_ops',
 }
 
 // Hostnames that are NOT subdomains (the platform itself)
@@ -230,7 +232,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // --- Protected routes ---
-  const protectedRoutes = ['/dashboard', '/crm', '/email', '/content-generator', '/accommodation', '/social', '/autopilot', '/analytics', '/billing', '/admin', '/onboarding', '/settings']
+  const protectedRoutes = ['/dashboard', '/crm', '/email', '/content-generator', '/accommodation', '/social', '/autopilot', '/analytics', '/billing', '/admin', '/onboarding', '/settings', '/elijah']
   const isProtectedRoute = protectedRoutes.some(route =>
     request.nextUrl.pathname.startsWith(route)
   )

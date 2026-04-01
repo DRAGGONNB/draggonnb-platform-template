@@ -1,0 +1,82 @@
+{
+  "name": "Elijah - Incident Intake (WhatsApp)",
+  "nodes": [
+    {
+      "parameters": { "httpMethod": "POST", "path": "elijah-whatsapp-incident", "responseMode": "onReceived", "responseCode": 200 },
+      "id": "webhook",
+      "name": "WhatsApp Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body;\nconst entry = body?.entry?.[0];\nconst change = entry?.changes?.[0];\nconst message = change?.value?.messages?.[0];\nif (!message) return [];\nreturn [{ json: { from: message.from, body: message.text?.body || '', wa_message_id: message.id, timestamp: message.timestamp } }];"
+      },
+      "id": "parse-message",
+      "name": "Parse WhatsApp Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [470, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT m.id, m.organization_id, m.display_name FROM elijah_member m WHERE m.phone = '={{ $json.from }}' LIMIT 1",
+        "options": {}
+      },
+      "id": "lookup-member",
+      "name": "Lookup Member",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [690, 300],
+      "credentials": { "postgres": { "id": "supabase-postgres", "name": "Supabase Postgres" } }
+    },
+    {
+      "parameters": {
+        "conditions": { "string": [{ "value1": "={{ $json.body.toUpperCase().startsWith('REPORT') }}", "value2": "true" }] }
+      },
+      "id": "check-report",
+      "name": "Is REPORT Command?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [910, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO elijah_whatsapp_inbound (organization_id, from_phone, message_body, wa_message_id) VALUES ('={{ $json.organization_id }}', '={{ $json.from }}', '={{ $json.body }}', '={{ $json.wa_message_id }}') ON CONFLICT (wa_message_id) DO NOTHING",
+        "options": {}
+      },
+      "id": "store-inbound",
+      "name": "Store Inbound Message",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [1130, 200],
+      "credentials": { "postgres": { "id": "supabase-postgres", "name": "Supabase Postgres" } }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO elijah_incident (organization_id, type, severity, status, description, reported_by) VALUES ('={{ $json.organization_id }}', 'other', 'medium', 'open', 'Reported via WhatsApp: {{ $json.body }}', '={{ $json.id }}') RETURNING id",
+        "options": {}
+      },
+      "id": "create-incident",
+      "name": "Create Incident",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [1350, 200],
+      "credentials": { "postgres": { "id": "supabase-postgres", "name": "Supabase Postgres" } }
+    }
+  ],
+  "connections": {
+    "WhatsApp Webhook": { "main": [[{ "node": "Parse WhatsApp Message", "type": "main", "index": 0 }]] },
+    "Parse WhatsApp Message": { "main": [[{ "node": "Lookup Member", "type": "main", "index": 0 }]] },
+    "Lookup Member": { "main": [[{ "node": "Is REPORT Command?", "type": "main", "index": 0 }]] },
+    "Is REPORT Command?": { "main": [[{ "node": "Store Inbound Message", "type": "main", "index": 0 }], []] },
+    "Store Inbound Message": { "main": [[{ "node": "Create Incident", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "elijah" }]
+}
