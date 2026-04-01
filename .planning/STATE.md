@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-03-13)
 
 **Core value:** Complete multi-tenant B2B operating system for South African SMEs. Shared Supabase DB with RLS-based tenant isolation, wildcard subdomain routing, DB-backed module gating, automated provisioning.
-**Current stats:** 184 DB tables, 175 API routes, 19+ UI modules, 6 AI agents, 26 N8N workflows active, 241 tests. Build passing. tsc clean.
+**Current stats:** 217 DB tables, 198 API routes, 20+ UI modules, 6 AI agents, 30 N8N workflows (27 active), 241 tests. Build passing. tsc clean.
 
 ## Current Position
 
 Phase: Launch Readiness + First Client Prep
 Status: DEPLOYED TO PRODUCTION. Live at https://draggonnb-platform.vercel.app. Build passing. tsc clean.
-Last activity: 2026-03-28 -- Session 44: Restaurant module fully built end-to-end (DB + APIs + all UI + N8N workflows + demo seeded).
-Progress: 184 DB tables + RLS live in Supabase. 175 API routes. 19+ UI modules. 6 AI agents. 26 N8N workflows. 241 tests. Build clean.
+Last activity: 2026-04-01 -- Session 46: Elijah security & response module fully deployed (33 tables, 23 API routes, 19 UI pages, 4 n8n workflows, WhatsApp command router).
+Progress: 217 DB tables + RLS live in Supabase. 198 API routes. 20+ UI modules. 6 AI agents. 30 N8N workflows. 241 tests. Build clean.
 
 ## Accumulated Context
 
@@ -66,23 +66,25 @@ Progress: 184 DB tables + RLS live in Supabase. 175 API routes. 19+ UI modules. 
 ## Infrastructure State
 
 - **Vercel:** production READY, 21 env vars, PayFast merchant 32705333, tsc clean
-- **VPS:** Traefik + N8N (26 workflows created, need manual activation) + Gitea + OpenClaw
-- **Supabase:** 184 tables, RLS live, 8 orgs, demo restaurant seeded (Sunset Grill, org: 678634bd)
-- **GitHub:** DRAGGONNB/draggonnb-platform (main branch), latest commit: `1542da4`
-- **N8N:** 26 workflows (4 restaurant workflows INACTIVE — activate manually in N8N dashboard)
+- **VPS:** Traefik + N8N (39 workflows, 27 active) + Gitea (OpenClaw removed -- security concern)
+- **Supabase:** 217 tables (33 new elijah_ tables), RLS live, 8 orgs, demo restaurant seeded (Sunset Grill, org: 678634bd), Elijah seeded (DragoonB org: 094a610d)
+- **GitHub:** DRAGGONNB/draggonnb-platform (main branch), latest commit: `a06f0e2`
+- **N8N:** 30 workflows (27 active). 4 restaurant workflows INACTIVE. Elijah Incident Intake INACTIVE (needs WhatsApp Cloud API).
 - **VPS env:** PayFast merchant 32705333, Resend key updated, N8N Cloud ref removed
 - **Gitea:** API token expired — Chris to generate new token at localhost:3030 on VPS
 
 ## Session Continuity
 
-Last session: 2026-03-28 (Session 44 — extended)
-Stopped at: Restaurant module fully built, all UI components complete, demo seeded in Supabase, deployed and type-check clean.
+Last session: 2026-04-01 (Session 46)
+Stopped at: Elijah module fully deployed. All code pushed. Memory + state docs updated.
 Resume with:
-1. Visual QA of Restaurant module using demo URLs below
-2. Activate 4 N8N restaurant workflows in N8N dashboard (currently inactive)
-3. Add `restaurant` to `tenant_modules` for org 678634bd to enable feature gating
-4. Gitea token renewal (Chris: Gitea admin panel at localhost:3030 via SSH tunnel)
-5. Then: accommodation module visual QA + remaining deferred todos (Twitter/X, scheduled publish cron, Meta config)
+1. WhatsApp Cloud API setup (Chris working on) → then activate n8n Incident Intake workflow `KTzrMCJ7fcNe5PKN`
+2. Visual QA of Elijah module at `/elijah` (login with existing admin account)
+3. Visual QA of Restaurant module using demo URLs below
+4. Activate 4 N8N restaurant workflows in N8N dashboard (currently inactive)
+5. Run remove-openclaw.sh on VPS when SSH is available (tools/ops-hub/remove-openclaw.sh)
+6. Gitea token renewal (Chris: Gitea admin panel at localhost:3030 via SSH tunnel)
+7. Then: accommodation module visual QA + remaining deferred todos
 
 ## Demo Restaurant — Sunset Grill
 
@@ -97,6 +99,61 @@ Resume with:
 | Guest T1 | `/r/sunset-grill/876b6b13-40b8-4aaa-99ed-593e808d46b9` |
 | Guest T2 | `/r/sunset-grill/5310b828-e25d-4a2e-930b-0d67c90cef09` |
 | Guest VIP | `/r/sunset-grill/d6db13a7-366b-491e-a623-cdd66bdbad50` |
+
+### Session 46 Summary (2026-04-01) — Elijah Security & Response Module
+**What was done:**
+1. Restored Supabase project psqfgzbjbgqrmjskdavs (was already ACTIVE_HEALTHY)
+2. Applied 10 SQL migrations: 16 enums, 33 tables, full RLS, module registration, PostGIS RPCs, n8n RPCs
+3. Created 23 API routes under app/api/elijah/ (sections, households, members, incidents, patrols, rollcall, fire, water-points, farms, groups, equipment, sops, checklists)
+4. Created 19 UI pages under app/(dashboard)/elijah/ (dashboard, members, incidents, patrols, rollcall, fire map, water-points, farms, groups, equipment, sops, settings)
+5. Created 5 lib files: lib/elijah/ (types, constants, validations, api-helpers, whatsapp-commands)
+6. Added "Security & Response" sidebar nav section (7 items, gated by security_ops module)
+7. Enabled security_ops module for all tenants via tenant_modules
+8. Deployed 4 n8n workflows: Roll Call Scheduler (VrKSm0ybQCiY6DHr), Escalation Engine (DojNZlDuR3QP6dBS), Fire Alert (cWMygnR05cAaP9mB), Incident Intake (KTzrMCJ7fcNe5PKN - INACTIVE)
+9. Rewrote all n8n workflows from Postgres nodes to httpRequest + $env.SUPABASE_URL convention
+10. Created 9 Supabase RPC functions for n8n workflow support
+11. Seeded test data: 3 sections, 5 households, 4 water points, 1 farm, 1 fire group, 5 equipment, 1 schedule, 1 patrol, 2 incidents, 1 SOP
+12. Fixed whatsapp-commands.ts Supabase v2 API (.upsert instead of .insert().onConflict())
+13. Fixed module_registry INSERT to match actual schema columns
+14. Build passes with 0 errors
+15. Committed (8df46dc + a06f0e2) and pushed to origin/main
+
+**Key decisions:**
+- Organization = Community (use organization_id, dropped elijah_community table)
+- n8n workflows must use httpRequest + env vars (NOT Postgres nodes) — DraggonnB convention
+- Incident Intake is only workflow needing WhatsApp — other 3 activated without it
+- Created RPC functions to handle complex JOINs through Supabase REST API
+- WhatsApp command router ready but WhatsApp Cloud API setup deferred (Chris working on separately)
+
+**n8n workflow IDs:**
+- Roll Call Scheduler: VrKSm0ybQCiY6DHr (ACTIVE)
+- Escalation Engine: DojNZlDuR3QP6dBS (ACTIVE)
+- Fire Alert Dispatcher: cWMygnR05cAaP9mB (ACTIVE)
+- Incident Intake: KTzrMCJ7fcNe5PKN (INACTIVE - needs WhatsApp)
+
+**Elijah test data (DragoonB org: 094a610d):**
+- Chris member ID: eb489f2b-cd61-4dce-b494-89849f958bfb
+- Sections: Ridgeview Heights, Oakwood Gardens, Riverside Bend
+- Water points: Main Reservoir (10000L), Ridgeview Hydrant, Community Pool, Farm Dam
+- Farm: Groenvlei Farm (owner Jan van der Merwe)
+
+### Session 45 Summary (2026-03-30) — Org Restructure + Cleanup
+**What was done:**
+1. Full project inventory: catalogued all 10 projects, 39 N8N workflows, 6 Vercel deploys, 5 Supabase projects, 17 MCP connections
+2. GitHub repo renames to kebab-case: VDJ_Accounting -> vdj-accounting, Figarie-Luxury-Travel -> figarie-travel, lotto-checker-frontend -> check-my-lotto
+3. Updated git remotes in local repos to match renamed GitHub repos
+4. Cowork agent restructured all local files into C:\Dev\DraggonnB\ org hierarchy (platform/, clients/, products/, modules/, tools/, docs/, archive/)
+5. Created client provisioning template at clients/_template/ (CLAUDE.md + config.json + n8n/)
+6. Created MANIFEST.md at org root with complete inventory tables
+7. Removed OpenClaw from CLAUDE.md and STATE.md (replaced with Claude Cowork in role definitions)
+8. Created VPS removal script for OpenClaw at tools/ops-hub/remove-openclaw.sh
+9. OpenClaw container removal pending -- VPS SSH timed out, script ready for next connection
+
+**Key decisions:**
+- OpenClaw decommissioned (security concern -- unnecessary read-access AI layer on VPS)
+- Claude Cowork replaces OpenClaw's advisory role (parallel agents, same session)
+- All repos standardized to kebab-case naming convention
+- Org structure: platform > clients > products > modules > tools > docs > archive
 
 ### Session 44 Summary (2026-03-28) — FULL SESSION
 **What was done:**

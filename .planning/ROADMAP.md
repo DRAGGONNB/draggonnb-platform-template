@@ -2,7 +2,7 @@
 
 ## Overview
 
-DraggonnB OS is a production-deployed multi-tenant B2B operating system for South African SMEs. The v1 roadmap (7 phases), v2 BOS (5 phases), architecture restructure, UI rebrand, and accommodation module (base + automation + management UI) are all complete. Platform has 84 DB tables, 162 API routes, 16+ UI modules, and 241 tests.
+DraggonnB OS is a production-deployed multi-tenant B2B operating system for South African SMEs. The v1 roadmap (7 phases), v2 BOS (5 phases), architecture restructure, UI rebrand, accommodation module, restaurant module, and Elijah security module are all complete. Platform has 217 DB tables, 198 API routes, 20+ UI modules, 6 AI agents, 30 N8N workflows, and 241 tests. Build passing.
 
 ## Completed Work
 
@@ -53,19 +53,34 @@ DraggonnB OS is a production-deployed multi-tenant B2B operating system for Sout
 - Fixed RLS recursion on `organization_users` table
 - Dashboard and CRM pages working again
 
+### Elijah Security & Response Module (2026-04-01)
+- 33 DB tables (core, incidents, patrols, fire, whatsapp) + 16 enums + full RLS
+- 23 API routes, 19 UI pages, 5 lib files
+- Module gated as `security_ops` in module_registry
+- 4 n8n workflows (roll call scheduler, escalation engine, fire alert, incident intake)
+- 9 RPC functions for n8n integration + 3 PostGIS spatial functions
+- WhatsApp command router (SAFE, HELP, AWAY, REPORT, FIRE, WATER STATUS, START/END PATROL)
+- Seeded test data for DragoonB org
+- WhatsApp Cloud API pending (Incident Intake workflow inactive until configured)
+
 ## Current Milestone: First Client Go-Live
 
 **Goal:** Onboard first paying client end-to-end
 
 | Task | Status |
 |------|--------|
-| Save actual logo PNG to public/ | Pending |
-| DB migrations applied to Supabase | Done |
-| Build passing on Vercel | Done |
+| Logo PNG at public/logo.png | Done |
+| DB migrations applied to Supabase (168 tables) | Done |
+| Build passing on Vercel (166 pages, 0 errors) | Done |
 | Login -> dashboard flow working | Done |
+| Auth model fixed (organization_users pattern) | Done |
+| Accommodation API routes working (schemas + auth) | Done |
+| 30 N8N workflows on VPS (27 active) | Done |
+| Elijah module deployed (33 tables, 23 APIs, 19 pages) | Done |
+| PayFast merchant ID configured (32705333) | Done |
+| Resend API key configured | Done |
+| Visual QA of accommodation module (all roles) | Pending |
 | Configure PayFast production passphrase | Pending |
-| Configure Resend API key | Pending |
-| Configure N8N workflows (17 templates) | Pending |
 | First provisioning pipeline test | Pending |
 | End-to-end test: signup -> provision -> dashboard | Pending |
 
@@ -79,8 +94,8 @@ DraggonnB OS is a production-deployed multi-tenant B2B operating system for Sout
 | Sub-Phase | Scope | Effort | Status |
 |-----------|-------|--------|--------|
 | 08.1 | Meta App Registration + Embedded Signup Backend | 2-3 sessions | Not started |
-| 08.2 | Multi-Tenant WhatsApp Client Refactor | 1-2 sessions | Not started |
-| 08.3 | Client Onboarding Wizard UI | 2-3 sessions | Not started |
+| 08.2 | Multi-Tenant WhatsApp Client Refactor | 1-2 sessions | Done (session 40) |
+| 08.3 | Client Onboarding Wizard UI | 2-3 sessions | Done (session 40) |
 | 08.4 | Multi-Tenant Social Publishing | 1 session | Not started |
 | 08.5 | Provisioning Pipeline Update | 1 session | Not started |
 
@@ -95,7 +110,7 @@ DraggonnB OS is a production-deployed multi-tenant B2B operating system for Sout
 - ~~Configure Facebook/Instagram OAuth (social publishing)~~ -> Covered by Phase 08
 - Configure LinkedIn OAuth (social publishing)
 - Switch PayFast from sandbox to production
-- Self-host N8N on Hostinger VPS (Done -- env vars configured 2026-03-15)
+- Self-host N8N on Hostinger VPS (Done -- 22 workflows active)
 
 ### Milestone: First Hospitality Client
 - Target: Swa-Zulu Safari Lodges (reference client)
@@ -111,4 +126,4 @@ DraggonnB OS is a production-deployed multi-tenant B2B operating system for Sout
 - ~~WhatsApp integration via Meta Cloud API + N8N~~ -> Covered by Phase 08
 
 ---
-*Last updated: 2026-03-15 -- Added Phase 08 Meta Integration scope*
+*Last updated: 2026-04-01 -- Session 46: Elijah security & response module deployed*
