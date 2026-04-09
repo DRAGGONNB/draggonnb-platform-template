@@ -208,5 +208,33 @@
     "files_affected": [],
     "recurring": false,
     "tags": ["n8n", "workflow", "connections", "node-name", "integration"]
+  },
+  {
+    "id": "ERR-023",
+    "timestamp": "2026-04-09",
+    "session": 47,
+    "category": "build",
+    "source": "vercel",
+    "error_message": "npm error ERESOLVE could not resolve: peer react@^19.2.0 from react-konva@19.2.3",
+    "root_cause": "react-konva@19.x requires React 19 but project uses React 18. Locally installed with --legacy-peer-deps which bypasses check but Vercel npm install doesn't use that flag.",
+    "resolution": "1) Added .npmrc with legacy-peer-deps=true for Vercel. 2) Downgraded react-konva from 19.2.3 to 18.2.14 (correct version for React 18).",
+    "prevention": "When installing packages for React 18 projects, always check peer dependency requirements. react-konva major version must match React major version.",
+    "files_affected": [".npmrc", "package.json"],
+    "recurring": false,
+    "tags": ["react-konva", "peer-deps", "vercel", "build-failure", "react-version"]
+  },
+  {
+    "id": "ERR-024",
+    "timestamp": "2026-04-09",
+    "session": 47,
+    "category": "build",
+    "source": "git",
+    "error_message": "Unrelated histories: master branch (Next.js 16 + Tailwind 4) vs origin/main (Next.js 14 + Tailwind 3)",
+    "root_cause": "Master branch was initialized fresh with different framework versions. Origin/main had full project history with Next.js 14. Two incompatible codebases.",
+    "resolution": "Created restaurant-sop-upgrade branch from origin/main, cherry-picked restaurant-specific files from master onto it. Stayed on origin/main's package.json (v14 + Tailwind 3).",
+    "prevention": "Always branch from the canonical main branch. Never init a separate repo and try to merge later.",
+    "files_affected": [],
+    "recurring": false,
+    "tags": ["git", "merge-conflict", "framework-version", "unrelated-histories"]
   }
 ]

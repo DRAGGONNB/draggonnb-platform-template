@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-03-13)
 
 **Core value:** Complete multi-tenant B2B operating system for South African SMEs. Shared Supabase DB with RLS-based tenant isolation, wildcard subdomain routing, DB-backed module gating, automated provisioning.
-**Current stats:** 217 DB tables, 198 API routes, 20+ UI modules, 6 AI agents, 30 N8N workflows (27 active), 241 tests. Build passing. tsc clean.
+**Current stats:** 217+ DB tables, 198+ API routes, 20+ UI modules, 6 AI agents, 30 N8N workflows (27 active), 241 tests. Build passing. tsc clean.
 
 ## Current Position
 
-Phase: Launch Readiness + First Client Prep
+Phase: Launch Readiness + First Client Prep (Restaurant Module Upgrade)
 Status: DEPLOYED TO PRODUCTION. Live at https://draggonnb-platform.vercel.app. Build passing. tsc clean.
-Last activity: 2026-04-01 -- Session 46: Elijah security & response module fully deployed (33 tables, 23 API routes, 19 UI pages, 4 n8n workflows, WhatsApp command router).
-Progress: 217 DB tables + RLS live in Supabase. 198 API routes. 20+ UI modules. 6 AI agents. 30 N8N workflows. 241 tests. Build clean.
+Last activity: 2026-04-09 -- Session 47: Restaurant module massive upgrade -- block-based SOPs, billing/payments, floor plan editor, 6 new management pages, Vercel build fixes.
+Progress: 217+ DB tables + RLS live in Supabase. 198+ API routes. 20+ UI modules. 6 AI agents. 30 N8N workflows. 241 tests. Build clean.
 
 ## Accumulated Context
 
@@ -68,25 +68,26 @@ Progress: 217 DB tables + RLS live in Supabase. 198 API routes. 20+ UI modules. 
 - **Vercel:** production READY, 21 env vars, PayFast merchant 32705333, tsc clean
 - **VPS:** Traefik + N8N (39 workflows, 27 active) + Gitea (OpenClaw removed -- security concern)
 - **Supabase:** 217 tables (33 new elijah_ tables), RLS live, 8 orgs, demo restaurant seeded (Sunset Grill, org: 678634bd), Elijah seeded (DragoonB org: 094a610d)
-- **GitHub:** DRAGGONNB/draggonnb-platform (main branch), latest commit: `a06f0e2`
+- **GitHub:** DRAGGONNB/draggonnb-platform (main branch), latest commit: `905602d0`
 - **N8N:** 30 workflows (27 active). 4 restaurant workflows INACTIVE. Elijah Incident Intake INACTIVE (needs WhatsApp Cloud API).
 - **VPS env:** PayFast merchant 32705333, Resend key updated, N8N Cloud ref removed
 - **Gitea:** API token expired — Chris to generate new token at localhost:3030 on VPS
 
 ## Session Continuity
 
-Last session: 2026-04-01 (Session 46)
-Stopped at: Elijah module fully deployed. All code pushed. Memory + state docs updated.
+Last session: 2026-04-09 (Session 47)
+Stopped at: Restaurant module upgraded. 6 new pages built. Vercel build fixed. All code pushed.
 Resume with:
-1. WhatsApp Cloud API setup (Chris working on) → then activate n8n Incident Intake workflow `KTzrMCJ7fcNe5PKN`
-2. Visual QA of Elijah module at `/elijah` (login with existing admin account)
-3. Visual QA of Restaurant module using demo URLs below
-4. Activate 4 N8N restaurant workflows in N8N dashboard (currently inactive)
-5. Run remove-openclaw.sh on VPS when SSH is available (tools/ops-hub/remove-openclaw.sh)
-6. Gitea token renewal (Chris: Gitea admin panel at localhost:3030 via SSH tunnel)
-7. Then: accommodation module visual QA + remaining deferred todos
+1. Visual QA of restaurant module at `/restaurant/dashboard` (verify Vercel deploy works end-to-end)
+2. Seed demo data for The Lookout Deck (tables, staff with PINs, menu items, reservations, equipment)
+3. Block-based SOP execution page (Phase 4 of SOP plan) -- plan exists at `.claude/plans/graceful-beaming-dolphin.md`
+4. N8N Telegram AI SOP Creator workflow (Phase 5 of SOP plan)
+5. Guest-facing flow polish (`/t/[token]` bill view, payment, split)
+6. WhatsApp Cloud API setup → activate n8n Incident Intake workflow `KTzrMCJ7fcNe5PKN`
+7. Activate 4 N8N restaurant workflows in N8N dashboard (currently inactive)
+8. Gitea token renewal (Chris: Gitea admin panel at localhost:3030 via SSH tunnel)
 
-## Demo Restaurant — Sunset Grill
+## Demo Restaurant — The Lookout Deck (Sunset Grill)
 
 **Org:** Test Restaurant ABC (`678634bd-0f62-423d-a828-b7a1394580b5`)
 **Restaurant ID:** `0e1c61c5-42c7-4703-9047-ed3dcdf35e15`
@@ -94,11 +95,56 @@ Resume with:
 
 | Screen | URL |
 |--------|-----|
+| Dashboard | `/restaurant/dashboard` |
 | Staff Login | `/restaurant/login?r=0e1c61c5-42c7-4703-9047-ed3dcdf35e15` |
-| Floor Plan | `/restaurant/tables` (after login) |
+| Tables/Floor Plan | `/restaurant/tables` |
+| Bills | `/restaurant/bills` |
+| Menu | `/restaurant/menu` |
+| Reservations | `/restaurant/reservations` |
+| Staff | `/restaurant/staff` |
+| SOPs | `/restaurant/sops` |
+| QR Codes | `/restaurant/qr-codes` |
+| Events | `/restaurant/events` |
+| Compliance | `/restaurant/compliance/temps` |
 | Guest T1 | `/r/sunset-grill/876b6b13-40b8-4aaa-99ed-593e808d46b9` |
 | Guest T2 | `/r/sunset-grill/5310b828-e25d-4a2e-930b-0d67c90cef09` |
 | Guest VIP | `/r/sunset-grill/d6db13a7-366b-491e-a623-cdd66bdbad50` |
+
+### Session 47 Summary (2026-04-09) — Restaurant Module Massive Upgrade
+**What was done:**
+1. Resolved git conflict between master (Next.js 16 + Tailwind 4) and origin/main (Next.js 14 + Tailwind 3) -- created restaurant-sop-upgrade branch from origin/main, cherry-picked restaurant files
+2. Committed block-based SOP system + restaurant billing, payments, menu (38 files, commit ba7f15a4)
+3. Built interactive floor plan editor with Konva canvas -- drag-and-drop table positioning, snap-to-grid, shape changes (rect/circle/oval)
+4. Built table linking system -- merge 2+ tables into groups (e.g., 2x 4-seater = 8-seater), API routes for groups CRUD
+5. Applied Supabase migration: restaurant_floor_plans table, position columns on restaurant_tables, restaurant_table_groups table with RLS
+6. Built 6 new restaurant management pages:
+   - Dashboard: live stats (occupancy, revenue, covers, open bills, SOPs), 30s auto-refresh, quick links
+   - Staff: role-colored grid, filter by role, add staff modal
+   - Reservations: date navigation, status grouping (upcoming/seated/done), status actions, add booking modal
+   - QR Codes: generate/regenerate tokens, QR rendering (qrcode.react), copy link, download PNG, section filter
+   - Events: upcoming/past tabs, full event details (client, venue, budget, deposit), create modal (uses existing events table)
+   - Compliance/Temps: temperature logging with in-range/out-of-range indicators, corrective actions, add equipment modal
+7. Updated restaurant layout sidebar with all nav items (10 pages total)
+8. Fixed Vercel ERESOLVE build failure: added .npmrc with legacy-peer-deps=true
+9. Fixed react-konva version: downgraded from 19.2.3 (React 19) to 18.2.14 (React 18 compatible)
+10. Created .env.local with Supabase URL and anon key for local dev
+11. Created .claude/launch.json with dev server configs
+12. All 5 commits pushed to origin/main, Vercel deploying
+
+**Key decisions:**
+- Stayed on origin/main's package.json (Next.js 14 + Tailwind 3) since most platform code uses it
+- Used react-konva@18 for React 18 compatibility (v19 requires React 19)
+- Events page uses existing `events` table (has restaurant_id column), not a new restaurant_events table
+- Temp logs use `restaurant_temperature_logs` table, equipment uses `restaurant_equipment` table
+- Floor plan canvas uses Next.js dynamic import (SSR incompatible Konva)
+- Replaced Map<> with Record<> throughout due to TypeScript strict mode issues
+
+**Commits pushed:**
+- ba7f15a4: Block-based SOP system + restaurant billing, payments, and menu
+- 3ac3d5b2: Interactive floor plan editor with table linking
+- 4421c92a: Restaurant module: dashboard, staff, reservations, QR codes, events, compliance pages
+- ec55945b: Add .npmrc with legacy-peer-deps for Vercel builds
+- 905602d0: Fix react-konva version: downgrade to v18 for React 18 compatibility
 
 ### Session 46 Summary (2026-04-01) — Elijah Security & Response Module
 **What was done:**
