@@ -47,7 +47,7 @@
     "react-dom": "^18.2.0",
     "react-email-editor": "^1.7.11",
     "react-hook-form": "^7.50.0",
-    "react-konva": "^19.2.3",
+    "react-konva": "^18.2.14",
     "recharts": "^2.12.0",
     "resend": "^3.1.0",
     "tailwind-merge": "^2.2.1",
