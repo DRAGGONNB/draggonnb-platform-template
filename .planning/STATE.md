@@ -10,8 +10,9 @@ See: .planning/PROJECT.md (updated 2026-03-13)
 ## Current Position
 
 Phase: Launch Readiness + First Client Prep (Restaurant Module Upgrade)
-Status: DEPLOYED TO PRODUCTION. Live at https://draggonnb-platform.vercel.app. Build passing. tsc clean.
-Last activity: 2026-04-12 -- Session 48: Comprehensive test suite overhaul. 583 tests all passing across 34 files. New integration tests for restaurant (54), elijah (54), social (52), email (62), accommodation (51), platform-core (60). Fixed all pre-existing test failures (mock patterns, auth junction table, webhook security).
+Status: DEPLOYED TO PRODUCTION (via *.vercel.app). www.draggonnb.online BROKEN — Hostinger CDN intercepting www, apex A record wrong. Build passing. tsc clean.
+Last activity: 2026-04-15 -- Session 49: Launch banner + register-interest lead form shipped (commit `f0887bf9`). 3 test users seeded (tester-starter/pro/admin @draggonnb.test). `.env.local` synced via `vercel env pull`. Full Cowork test plan written at `.planning/testing/TEST-PLAN.md` for execution in a fresh session. DNS blockers documented.
+Prior: 2026-04-12 -- Session 48: Comprehensive test suite overhaul. 583 tests all passing across 34 files.
 Progress: 217+ DB tables + RLS live in Supabase. 198+ API routes. 20+ UI modules. 6 AI agents. 30 N8N workflows. 583 tests (34 files). Build clean.
 
 ## Accumulated Context
@@ -19,7 +20,7 @@ Progress: 217+ DB tables + RLS live in Supabase. 198+ API routes. 20+ UI modules
 ### Decisions
 
 - Shared DB + RLS multi-tenant (replaces per-client Supabase isolation)
-- Single Vercel deployment with wildcard subdomain routing (*.draggonnb.co.za)
+- Single Vercel deployment with wildcard subdomain routing (*.draggonnb.online)
 - DB-backed module registry + tenant_modules for feature gating
 - Hierarchical CLAUDE.md: root + 3 sub-directory build specs (agents, provisioning, API)
 - Error catalogue as JSON knowledge base (.planning/errors/catalogue.json)
@@ -49,7 +50,7 @@ Progress: 217+ DB tables + RLS live in Supabase. 198+ API routes. 20+ UI modules
 - Image upload for social posts
 - Analytics dashboard for social media
 - Manual visual QA by Chris
-- Domain DNS configuration (draggonnb.online verification)
+- Domain DNS configuration (draggonnb.online -- active, needs Vercel DNS records)
 - Phase 08.1: Create Meta config + Embedded Signup backend (blocked: Chris providing META_APP_ID, META_APP_SECRET, META_BUSINESS_PORTFOLIO_ID)
 - Phase 08.4: Token refresh + social publishing multi-tenant
 - Phase 08.5: Provisioning pipeline Meta setup step
@@ -60,7 +61,7 @@ Progress: 217+ DB tables + RLS live in Supabase. 198+ API routes. 20+ UI modules
 
 - ~~Gitea API token expired~~ RESOLVED 2026-04-12: new token generated, admin password reset
 - WhatsApp API: Phone Number ID and Access Token needed from Meta Business dashboard (deferred by Chris)
-- Domain DNS: draggonnb.online pointing needs verification
+- Domain DNS: draggonnb.online active but nameservers still on dns-parking.com -- need to point to Vercel
 - Meta App credentials needed: META_APP_ID, META_APP_SECRET, META_BUSINESS_PORTFOLIO_ID (Chris to provide)
 
 ## Infrastructure State
@@ -75,15 +76,15 @@ Progress: 217+ DB tables + RLS live in Supabase. 198+ API routes. 20+ UI modules
 
 ## Session Continuity
 
-Last session: 2026-04-12 (Session 48)
-Stopped at: Comprehensive test suite overhaul complete. 583/583 tests passing. All committed and pushed.
+Last session: 2026-04-15 (Session 49)
+Stopped at: Launch banner + register-interest lead form shipped to `restaurant-sop-upgrade` (commit `f0887bf9`). Test users + env synced. Cowork test plan written but NOT executed.
 Resume with:
-1. Visual QA of restaurant module at `/restaurant/dashboard` (verify Vercel deploy works end-to-end)
-2. Seed demo data for The Lookout Deck (tables, staff with PINs, menu items, reservations, equipment)
-3. Guest-facing flow polish (`/t/[token]` bill view, payment, split)
-4. WhatsApp Cloud API setup -> activate n8n Incident Intake workflow `KTzrMCJ7fcNe5PKN`
-5. Gitea token renewal (Chris: Gitea admin panel at localhost:3030 via SSH tunnel)
-6. Push latest code to origin/main (currently on restaurant-sop-upgrade branch)
+1. **Open a fresh session** to execute `.planning/testing/TEST-PLAN.md` (10 agents across 2 waves). Do not run in this session.
+2. Chris fixes Hostinger DNS: apex A → `76.76.21.21`, remove Horizons website from www, ensure www CNAME → `cname.vercel-dns.com`
+3. Merge `restaurant-sop-upgrade` → `main` so the launch banner deploys to production
+4. After test sweep: triage `bug-report.md`, fix P0/P1, commit fixes
+5. Once DNS flipped: smoke-test `https://www.draggonnb.online` (should show Server: Vercel, launch banner visible)
+6. Deferred: WhatsApp Cloud API, Meta OAuth (Phase 08.1), Lookout Deck demo seed data
 
 ## Demo Restaurant — The Lookout Deck (Sunset Grill)
 
