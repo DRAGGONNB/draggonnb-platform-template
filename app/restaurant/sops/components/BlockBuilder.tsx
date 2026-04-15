@@ -1,14 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, CheckCircle2, ListChecks, Camera, ScanText, Hash, Type, ShieldCheck, ArrowRight } from 'lucide-react'
+import { Plus, CheckCircle2, ListChecks, Camera, ScanText, Hash, Type, ShieldCheck, ArrowRight, type LucideIcon } from 'lucide-react'
 import { SOP_BLOCK_META, SOP_BLOCK_TYPES } from '@/lib/restaurant/constants'
 import type { SOPBlockType } from '@/lib/restaurant/types'
 import BlockBuilderItem from './BlockBuilderItem'
 import BlockConfigModal from './BlockConfigModal'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const ICON_MAP: Record<string, React.ComponentType<any>> = {
+const ICON_MAP: Record<string, LucideIcon> = {
   CheckCircle2, ListChecks, Camera, ScanText, Hash, Type, ShieldCheck, ArrowRight,
 }
 
