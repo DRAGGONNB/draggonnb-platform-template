@@ -24,7 +24,7 @@ export async function sendOnboardingSequence(job: ProvisioningJob): Promise<Prov
       from: fromAddress,
       to: job.orgEmail,
       subject: `Welcome to DraggonnB, ${job.clientName}!`,
-      reply_to: 'support@draggonnb.online',
+      reply_to: 'info@draggonnb.online',
       html: buildWelcomeEmail(job.clientName, job.tier, deploymentUrl),
     });
     if (welcomeResult.data?.id) {
@@ -41,7 +41,7 @@ export async function sendOnboardingSequence(job: ProvisioningJob): Promise<Prov
       from: fromAddress,
       to: job.orgEmail,
       subject: `Getting Started with DraggonnB - ${job.clientName}`,
-      reply_to: 'support@draggonnb.online',
+      reply_to: 'info@draggonnb.online',
       html: buildGettingStartedEmail(job.clientName, deploymentUrl),
     });
     if (gettingStartedResult.data?.id) {
@@ -58,7 +58,7 @@ export async function sendOnboardingSequence(job: ProvisioningJob): Promise<Prov
       from: fromAddress,
       to: job.orgEmail,
       subject: `Set Up Your First Automation - ${job.clientName}`,
-      reply_to: 'support@draggonnb.online',
+      reply_to: 'info@draggonnb.online',
       html: buildFirstAutomationEmail(job.clientName, deploymentUrl),
     });
     if (automationResult.data?.id) {
@@ -74,7 +74,7 @@ export async function sendOnboardingSequence(job: ProvisioningJob): Promise<Prov
   if (ownerPhone && process.env.WHATSAPP_ACCESS_TOKEN) {
     try {
       const subdomain = job.clientId;
-      const dashboardUrl = `https://${subdomain}.draggonnb.co.za/dashboard`;
+      const dashboardUrl = `https://${subdomain}.draggonnb.online/dashboard`;
       await sendTextMessage(ownerPhone,
         `Welcome to DraggonnB, ${job.clientName}!\n\n` +
         `Your ${job.tier} plan is active and ready.\n\n` +

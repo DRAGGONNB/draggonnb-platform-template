@@ -1578,7 +1578,7 @@ describe('Email Webhooks API - POST /api/email/webhooks', () => {
             created_at: new Date().toISOString(),
             data: {
               email_id: 'resend-msg-123',
-              from: 'noreply@draggonnb.app',
+              from: 'noreply@draggonnb.online',
               to: ['user@test.com'],
               subject: 'Test',
             },
@@ -1655,7 +1655,7 @@ describe('Email Webhooks API - POST /api/email/webhooks', () => {
             created_at: new Date().toISOString(),
             data: {
               email_id: 'resend-bounce-123',
-              from: 'noreply@draggonnb.app',
+              from: 'noreply@draggonnb.online',
               to: ['bounced@test.com'],
               subject: 'Test',
               bounce: { message: 'Mailbox not found', type: 'hard' },
@@ -1877,14 +1877,14 @@ describe('lib/templates/email/welcome', () => {
     const result = welcomeEmail({
       clientName: 'John Doe',
       tierName: 'Professional',
-      dashboardUrl: 'https://app.draggonnb.co.za/dashboard',
+      dashboardUrl: 'https://app.draggonnb.online/dashboard',
     })
 
     expect(result.subject).toContain('John Doe')
     expect(result.subject).toContain('Welcome')
     expect(result.body).toContain('John Doe')
     expect(result.body).toContain('Professional')
-    expect(result.body).toContain('https://app.draggonnb.co.za/dashboard')
+    expect(result.body).toContain('https://app.draggonnb.online/dashboard')
     expect(result.plainText).toContain('John Doe')
     expect(result.plainText).toContain('Professional')
     expect(result.preheader).toContain('Professional')

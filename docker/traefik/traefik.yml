@@ -82,7 +82,7 @@ certificatesResolvers:
   letsencrypt:
     acme:
       # IMPORTANT: Change to your email
-      email: admin@draggonnb.app
+      email: info@draggonnb.online
       storage: /certificates/acme.json
       # Use staging server for testing (uncomment for testing)
       # caServer: https://acme-staging-v02.api.letsencrypt.org/directory

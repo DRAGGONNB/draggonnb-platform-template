@@ -410,7 +410,7 @@ EOF
 
 - Documentation: `.planning/` directory
 - Issues: GitHub Issues
-- Email: support@draggonnb.app
+- Email: info@draggonnb.online
 
 ---
 
