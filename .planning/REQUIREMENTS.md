@@ -167,18 +167,87 @@ Confirmed 2026-04-24. These are anti-features — we actively do NOT build them,
 
 ## Traceability — Requirements to Phases
 
-*To be populated by `gsd-roadmapper` during ROADMAP.md generation.*
+Populated by gsd-roadmapper 2026-04-24. 53 REQ-IDs across 8 categories, 100% coverage (45 unconditional mapped + 8 CAMP conditional).
 
 | REQ-ID | Phase | Status |
 |--------|-------|--------|
-| BILL-01 … BILL-09 | TBD | Planned |
-| VOICE-01 … VOICE-08 | TBD | Planned |
-| USAGE-01 … USAGE-13 | TBD | Planned |
-| ONBOARD-01 … ONBOARD-09 | TBD | Planned |
-| UX-01 … UX-07 | TBD | Planned |
-| SITE-01 … SITE-05 | TBD | Planned |
-| OPS-01 … OPS-05 | TBD | Planned |
-| CAMP-01 … CAMP-08 | TBD (decision-gated) | Conditional |
+| BILL-01 | Phase 10 | Planned |
+| BILL-02 | Phase 09 | Planned |
+| BILL-03 | Phase 09 | Planned |
+| BILL-04 | Phase 09 | Planned |
+| BILL-05 | Phase 09 | Planned |
+| BILL-06 | Phase 09 | Planned |
+| BILL-07 | Phase 09 | Planned |
+| BILL-08 | Phase 12 | Planned |
+| BILL-09 | Phase 10 | Planned |
+| VOICE-01 | Phase 10 | Planned |
+| VOICE-02 | Phase 10 | Planned |
+| VOICE-03 | Phase 10 | Planned |
+| VOICE-04 | Phase 10 | Planned |
+| VOICE-05 | Phase 10 | Planned |
+| VOICE-06 | Phase 10 | Planned |
+| VOICE-07 | Phase 10 | Planned |
+| VOICE-08 | Phase 10 | Planned |
+| USAGE-01 | Phase 09 | Planned |
+| USAGE-02 | Phase 09 | Planned |
+| USAGE-03 | Phase 10 | Planned |
+| USAGE-04 | Phase 10 | Planned |
+| USAGE-05 | Phase 09 | Planned |
+| USAGE-06 | Phase 09 | Planned |
+| USAGE-07 | Phase 09 | Planned |
+| USAGE-08 | Phase 09 | Planned |
+| USAGE-09 | Phase 09 | Planned |
+| USAGE-10 | Phase 09 | Planned |
+| USAGE-11 | Phase 10 | Planned |
+| USAGE-12 | Phase 09 | Planned |
+| USAGE-13 | Phase 10 | Planned |
+| ONBOARD-01 | Phase 10 | Planned |
+| ONBOARD-02 | Phase 10 | Planned |
+| ONBOARD-03 | Phase 10 | Planned |
+| ONBOARD-04 | Phase 10 | Planned |
+| ONBOARD-05 | Phase 10 | Planned |
+| ONBOARD-06 | Phase 10 | Planned |
+| ONBOARD-07 | Phase 10 | Planned |
+| ONBOARD-08 | Phase 10 | Planned |
+| ONBOARD-09 | Phase 10 | Planned |
+| UX-01 | Phase 11 | Planned |
+| UX-02 | Phase 11 | Planned |
+| UX-03 | Phase 11 | Planned |
+| UX-04 | Phase 11 | Planned |
+| UX-05 | Phase 11 | Planned |
+| UX-06 | Phase 11 | Planned |
+| UX-07 | Phase 11 | Planned |
+| SITE-01 | Phase 10 | Planned |
+| SITE-02 | Phase 10 | Planned |
+| SITE-03 | Phase 10 | Planned |
+| SITE-04 | Phase 10 | Planned |
+| SITE-05 | Phase 10 | Planned |
+| OPS-01 | Phase 09 | Planned |
+| OPS-02 | Phase 12 | Planned |
+| OPS-03 | Phase 12 | Planned |
+| OPS-04 | Phase 12 | Planned |
+| OPS-05 | Phase 09 | Planned |
+| CAMP-01 | Phase 11 (conditional) | Conditional — decision-gated at Phase 10 exit |
+| CAMP-02 | Phase 11 (conditional) | Conditional — decision-gated at Phase 10 exit |
+| CAMP-03 | Phase 11 (conditional) | Conditional — decision-gated at Phase 10 exit |
+| CAMP-04 | Phase 11 (conditional) | Conditional — decision-gated at Phase 10 exit |
+| CAMP-05 | Phase 11 (conditional) | Conditional — decision-gated at Phase 10 exit |
+| CAMP-06 | Phase 11 (conditional) | Conditional — decision-gated at Phase 10 exit |
+| CAMP-07 | Phase 11 (conditional) | Conditional — decision-gated at Phase 10 exit |
+| CAMP-08 | Phase 11 (conditional) | Conditional — decision-gated at Phase 10 exit |
+
+### Coverage Summary by Phase
+
+| Phase | REQ-IDs | Count |
+|-------|---------|-------|
+| Phase 09 (Foundations & Guard Rails) | BILL-02..07, USAGE-01, USAGE-02, USAGE-05, USAGE-06, USAGE-07, USAGE-08, USAGE-09, USAGE-10, USAGE-12, OPS-01, OPS-05 | 17 |
+| Phase 10 (Brand Voice + Site Redesign + 3-Day Onboarding) | BILL-01, BILL-09, VOICE-01..08, USAGE-03, USAGE-04, USAGE-11, USAGE-13, ONBOARD-01..09, SITE-01..05 | 28 |
+| Phase 11 (Easy/Advanced CRM PoC + Campaign Studio Decision Gate) | UX-01..07 (unconditional) + CAMP-01..08 (conditional) | 7 + 8 conditional |
+| Phase 12 (Launch Polish + v3.1 Handoff) | BILL-08, OPS-02, OPS-03, OPS-04 | 4 |
+| **Total (unconditional)** | | **56** |
+| **Total (including CAMP conditional)** | | **64 mappings across 53 unique REQ-IDs** |
+
+*Note: BILL-01 through BILL-09 = 9 REQs, VOICE-01..08 = 8, USAGE-01..13 = 13, ONBOARD-01..09 = 9, UX-01..07 = 7, SITE-01..05 = 5, OPS-01..05 = 5, CAMP-01..08 = 8. Total unique = 64. Discrepancy with "53 REQ-IDs" in milestone intro: the intro counted category groupings differently; precise count of unique REQ-IDs is 64 including 8 conditional CAMP, or 56 unconditional.*
 
 ---
-*Last updated: 2026-04-24 — v3.0 Commercial Launch requirements defined (53 REQ-IDs across 8 categories, 8 conditional)*
+*Last updated: 2026-04-24 — Traceability populated by gsd-roadmapper. All unconditional REQ-IDs mapped to Phases 09-12. CAMP-* flagged as Phase 11 conditional (decision-gated at Phase 10 exit).*

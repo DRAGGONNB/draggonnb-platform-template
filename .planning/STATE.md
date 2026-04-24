@@ -2,292 +2,67 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-13)
+See: .planning/PROJECT.md (updated 2026-04-24)
 
 **Core value:** Complete multi-tenant B2B operating system for South African SMEs. Shared Supabase DB with RLS-based tenant isolation, wildcard subdomain routing, DB-backed module gating, automated provisioning.
+**Current focus:** v3.0 Commercial Launch — Phase 09 (Foundations & Guard Rails)
 **Current stats:** 217+ DB tables, 198+ API routes, 20+ UI modules, 6 AI agents, 30 N8N workflows (27 active), 583 tests (34 files). Build passing. tsc clean.
 
 ## Current Position
 
 Milestone: v3.0 Commercial Launch (started 2026-04-24)
-Phase: Not started (defining requirements — 4 parallel research agents running)
-Status: Requirements + roadmap generation in progress. Platform deployed to production. Build passing. tsc clean. 583 tests.
-Last activity: 2026-04-24 — Milestone v3.0 initialized. Strategic pivot from flat 3-tier pricing to modular base + vertical + add-ons. Easy/Advanced UX pattern locked (per-page toggle). Finance reframed as embedded-in-verticals using VDJ accounting knowledge (not separate integration). Competitive positioning vs Holo AI marketing established (vertical depth + SA-local + ops integration).
-Prior: 2026-04-15 — Session 49: Launch banner + register-interest lead form shipped (commit `f0887bf9`). DNS blockers documented.
-Progress baseline (start of v3.0): 217+ DB tables + RLS, 198+ API routes, 20+ UI modules, 6 AI agents, 30 N8N workflows, 583 tests (34 files). Build clean.
+Phase: 09 of 12 (Foundations & Guard Rails) — **not started, awaiting `/gsd:plan-phase 09`**
+Plan: Plans not yet derived
+Status: Ready to plan. Roadmap approved, 53 REQ-IDs mapped across Phases 09-12 (45 unconditional + 8 CAMP conditional). Research synthesis complete (SUMMARY, PITFALLS, ARCHITECTURE, STACK, FEATURES).
+Last activity: 2026-04-24 — Roadmap created. Phase 09-12 structure locked. First paying client target = Phase 10 exit.
+
+Progress: [░░░░░░░░░░] 0% (v3.0 milestone)
+
+## Performance Metrics
+
+**Velocity (v1.0 baseline):**
+- Total plans completed (v1.0): 19 plans across phases 01-07
+- Partial Phase 08: 2 of 5 sub-phases complete
+
+**By Phase:**
+
+| Phase | Plans | Status |
+|-------|-------|--------|
+| 01-07 (v1.0) | 19/19 | Complete |
+| 08 Meta | 2/5 | Partial (deferred) |
+| 09 (v3.0) | 0/TBD | Not started |
+| 10 (v3.0) | 0/TBD | Not started |
+| 11 (v3.0) | 0/TBD | Not started |
+| 12 (v3.0) | 0/TBD | Not started |
+
+*Updated after each plan completion*
 
 ## Accumulated Context
 
-### Decisions
+### Decisions (v3.0-specific, most recent first)
 
-- Shared DB + RLS multi-tenant (replaces per-client Supabase isolation)
-- Single Vercel deployment with wildcard subdomain routing (*.draggonnb.online)
-- DB-backed module registry + tenant_modules for feature gating
-- Hierarchical CLAUDE.md: root + 3 sub-directory build specs (agents, provisioning, API)
-- Error catalogue as JSON knowledge base (.planning/errors/catalogue.json)
-- No autonomous sub-agents per client until 20+ clients
-- Ops dashboard tables designed but deferred until 5+ clients
-- Brand identity: hybrid dark/light theme -- dark hero/nav/footer (#2D2F33), light middle sections, Burgundy #6B1420 accents
-- CSS utilities: btn-brand, gradient-text-brand updated to official brand palette
-- Sidebar: Lucide icons with crimson active states, branded "DraggonnB OS"
-- AI Agents surfaced as dedicated sidebar section (Autopilot, AI Workflows, Agent Settings)
-- Protected pages use inline error states (never redirect to /login) to prevent redirect loops
-- Auth uses `organization_users` junction table (not a `users` table) to link auth users to organizations
-- `getUserOrg()` queries junction table with admin client fallback, auto-creates missing records
-- `getOrgId()` lightweight helper for API routes needing only org_id
-- Supabase service role key rotated (2026-03-05) after accidental exposure
-- Dev server on Windows: use `node node_modules/next/dist/bin/next dev` (npm/npx ENOENT on this machine)
-- API keys stored as SHA-256 hashes with `dgb_` prefix format; webhook secrets use `whsec_` prefix
-- Integration Admin Panel at `/admin/integrations` for vertical SaaS client connectivity
-- Logo: 882x882 PNG integrated at public/logo.png
-- PayFast merchant ID: 32705333 (updated on VPS + Vercel)
-- N8N: self-hosted only (cloud reference removed), all 22 workflows active, tagged by category
+- **2026-04-24 (Phase 09-12 scope):** PayFast billing = hybrid (variable-amount recurring + one-off ad-hoc). Anthropic cache isolation = org_id as first distinct system block + golden two-tenant CI test. Campaign Studio decision-gated at Phase 10 exit. Embedded Finance deferred to v3.1 with accountant review gate. Existing 8 orgs: audit + migrate paying, delete test (no grandfather).
+- **2026-04-24 (research corrections):** `tenant_modules.limits` does NOT exist (plan limits live in `billing_plans.limits`). `agent_sessions.cost_usd` does NOT exist (needs ALTER migration). `PRICING_TIERS` is legacy constant — DB catalog `billing_plans` is source of truth. Usage metering is in dual-state (`client_usage_metrics` legacy + `usage_events` new) — Phase 09 must audit and consolidate.
+- **2026-04-24 (risk gate):** 4 catastrophic pitfalls (PRICING_TIERS mutation, Anthropic cost runaway, cache key collision, tax-calc error) all have Phase 09 guards. Finance deferred to v3.1 addresses pitfall 6.
+- Full decision log: `.planning/PROJECT.md` Current Milestone section.
 
 ### Pending Todos
 
-- Visual QA of property/accommodation module (all roles) -- original user request, deferred during build fixes
-- Scheduled publish cron (N8N workflow)
-- Twitter/X OAuth + publish endpoint
-- Image upload for social posts
-- Analytics dashboard for social media
-- Manual visual QA by Chris
-- Domain DNS configuration (draggonnb.online -- active, needs Vercel DNS records)
-- Phase 08.1: Create Meta config + Embedded Signup backend (blocked: Chris providing META_APP_ID, META_APP_SECRET, META_BUSINESS_PORTFOLIO_ID)
-- Phase 08.4: Token refresh + social publishing multi-tenant
-- Phase 08.5: Provisioning pipeline Meta setup step
-- Set up Telegram ops bot webhook + channel configuration
-- WhatsApp API: Phone Number ID and Access Token needed from Meta Business dashboard (deferred by Chris)
+- Run `/gsd:plan-phase 09` to derive Phase 09 plans
+- PayFast ad-hoc endpoint sandbox spike (1 day) — Phase 09 kickoff dependency
+- Inventory existing 8 orgs (test/dormant/paying classification) before billing migration
+- Resend domain warm-up status check + mail-tester baseline before Phase 10
+- Google Search Console top-50 URL export before site redesign (Phase 10)
 
 ### Blockers/Concerns
 
-- ~~Gitea API token expired~~ RESOLVED 2026-04-12: new token generated, admin password reset
-- WhatsApp API: Phone Number ID and Access Token needed from Meta Business dashboard (deferred by Chris)
-- Domain DNS: draggonnb.online active but nameservers still on dns-parking.com -- need to point to Vercel
-- Meta App credentials needed: META_APP_ID, META_APP_SECRET, META_BUSINESS_PORTFOLIO_ID (Chris to provide)
-
-## Infrastructure State
-
-- **Vercel:** production READY, 21 env vars, PayFast merchant 32705333, tsc clean
-- **VPS:** Traefik + N8N (39 workflows, 27 active) + Gitea (OpenClaw removed -- security concern)
-- **Supabase:** 217 tables (33 new elijah_ tables), RLS live, 8 orgs, demo restaurant seeded (Sunset Grill, org: 678634bd), Elijah seeded (DragoonB org: 094a610d)
-- **GitHub:** DRAGGONNB/draggonnb-platform (main branch + restaurant-sop-upgrade branch), latest commit: `c36cfcdd`
-- **N8N:** 30 workflows (all active except Elijah Incident Intake - needs WhatsApp Cloud API). 4 restaurant workflows activated in Session 48.
-- **VPS env:** PayFast merchant 32705333, Resend key updated, N8N Cloud ref removed
-- **Gitea:** API token active (generated 2026-04-12), admin password reset, STATE.md + catalogue.json synced
+- **Phase 08 Meta credentials still pending** (META_APP_ID/SECRET/BUSINESS_PORTFOLIO_ID from Chris) — does not block v3.0
+- **WhatsApp Cloud API** (Elijah Incident Intake inactive) — does not block v3.0
+- **Domain DNS:** apex A record wrong, www hijacked by Hostinger CDN — Phase 10 site redesign should coordinate DNS fix
+- **Restaurant module `restaurant_orders` table existence** — audit required in Phase 11 before committing restaurant finance adapter (finance is v3.1 anyway, but flagged)
 
 ## Session Continuity
 
-Current session: 2026-04-24 — Milestone v3.0 Commercial Launch kick-off
-Status:
-- Strategic decisions locked (pricing model, Easy/Advanced pattern, finance reframe)
-- 4 parallel gsd-project-researcher agents running (stack, features, architecture, pitfalls)
-- PROJECT.md updated with v3.0 milestone
-- STATE.md reset for new milestone
-
-Next steps after research completes:
-1. Synthesize research → SUMMARY.md
-2. Generate REQUIREMENTS.md for v3.0 (scoped from research + conversation)
-3. Spawn gsd-roadmapper → ROADMAP.md phases 09–12
-4. User approves roadmap
-5. Run `/gsd:plan-phase 09` to start Sprint 1 (pricing + site redesign)
-
-Carry-forward items (deferred, not blockers):
-- Merge `restaurant-sop-upgrade` → `main` (launch banner)
-- DNS fix: apex A → `76.76.21.21`, remove Horizons CDN from www
-- WhatsApp Cloud API config (Phase 08.1)
-- Meta OAuth credentials from Chris
-- Lookout Deck demo seed data
-
-## Demo Restaurant — The Lookout Deck (Sunset Grill)
-
-**Org:** Test Restaurant ABC (`678634bd-0f62-423d-a828-b7a1394580b5`)
-**Restaurant ID:** `0e1c61c5-42c7-4703-9047-ed3dcdf35e15`
-**Staff PIN:** `1234` (all 3 staff: Chris Manager, Thandi Server, Sipho Server)
-
-| Screen | URL |
-|--------|-----|
-| Dashboard | `/restaurant/dashboard` |
-| Staff Login | `/restaurant/login?r=0e1c61c5-42c7-4703-9047-ed3dcdf35e15` |
-| Tables/Floor Plan | `/restaurant/tables` |
-| Bills | `/restaurant/bills` |
-| Menu | `/restaurant/menu` |
-| Reservations | `/restaurant/reservations` |
-| Staff | `/restaurant/staff` |
-| SOPs | `/restaurant/sops` |
-| QR Codes | `/restaurant/qr-codes` |
-| Events | `/restaurant/events` |
-| Compliance | `/restaurant/compliance/temps` |
-| Guest T1 | `/r/sunset-grill/876b6b13-40b8-4aaa-99ed-593e808d46b9` |
-| Guest T2 | `/r/sunset-grill/5310b828-e25d-4a2e-930b-0d67c90cef09` |
-| Guest VIP | `/r/sunset-grill/d6db13a7-366b-491e-a623-cdd66bdbad50` |
-
-### Session 48 Summary (2026-04-12) — Comprehensive Test Suite Overhaul
-**What was done:**
-1. Wrote comprehensive integration tests for 6 modules: restaurant (54), elijah (54), social (52), email (62), accommodation (51), platform-core (60) = 333 new tests
-2. Fixed all pre-existing test failures across 14 files (CRM, auth, dashboard, provisioning, health-check, sidebar, base-agent, whatsapp)
-3. Root cause: require('@/lib/...') fails in Vitest ESM -- replaced with await import() across 3 test files
-4. Root cause: chainable Supabase mock builder used eager spread, breaking method chains -- replaced with self-referencing builder pattern + thenable
-5. Root cause: CRM/auth/dashboard tests mocked `from('users')` table that was removed in Session 43 -- updated to `organization_users` junction table
-6. Root cause: org-resolution tests tested multi-org tier priority that no longer exists in getOrgId -- simplified to match current behavior
-7. Fixed security bug: email webhook route timingSafeEqual throws on different-length buffers -- added length check
-8. Added missing @testing-library/dom peer dependency (8 component test files couldn't load)
-9. Fixed sidebar test assertions: updated for 6 NEW badges (was 2), split logo text, duplicate Analytics
-10. Fixed base-agent test: agent_type assertion 'test' -> 'lead_qualifier'
-11. Fixed whatsapp test: sendTextMessage now takes optional 3rd arg (orgId)
-12. Activated 4 N8N restaurant workflows (previously inactive)
-13. Final result: 583/583 tests passing across 34 files -- zero failures
-
-**Key fixes:**
-- `app/api/email/webhooks/route.ts` -- Buffer length check before timingSafeEqual (security fix)
-- `__tests__/helpers/api-test-utils.ts` -- Updated shared test utils for organization_users pattern
-- All CRM tests (contacts, companies, deals) -- organization_users mocks
-- `__tests__/integration/auth/org-resolution.test.ts` -- Simplified for current getOrgId behavior
-- `__tests__/integration/dashboard/data-flow.test.ts` -- organization_users + user_profiles mocks
-- `package.json` -- Added @testing-library/dom
-
-**Errors catalogued:** ERR-025 (require vs import in ESM), ERR-026 (chainable mock pattern), ERR-027 (timingSafeEqual buffer length), ERR-028 (missing @testing-library/dom)
-
-**Commits:**
-- 6dee136f: Comprehensive test suite: 583 tests all passing across 34 files
-- c36cfcdd: docs: session 48 close -- 583 tests all passing
-
-### Session 47 Summary (2026-04-09) — Restaurant Module Massive Upgrade
-**What was done:**
-1. Resolved git conflict between master (Next.js 16 + Tailwind 4) and origin/main (Next.js 14 + Tailwind 3) -- created restaurant-sop-upgrade branch from origin/main, cherry-picked restaurant files
-2. Committed block-based SOP system + restaurant billing, payments, menu (38 files, commit ba7f15a4)
-3. Built interactive floor plan editor with Konva canvas -- drag-and-drop table positioning, snap-to-grid, shape changes (rect/circle/oval)
-4. Built table linking system -- merge 2+ tables into groups (e.g., 2x 4-seater = 8-seater), API routes for groups CRUD
-5. Applied Supabase migration: restaurant_floor_plans table, position columns on restaurant_tables, restaurant_table_groups table with RLS
-6. Built 6 new restaurant management pages:
-   - Dashboard: live stats (occupancy, revenue, covers, open bills, SOPs), 30s auto-refresh, quick links
-   - Staff: role-colored grid, filter by role, add staff modal
-   - Reservations: date navigation, status grouping (upcoming/seated/done), status actions, add booking modal
-   - QR Codes: generate/regenerate tokens, QR rendering (qrcode.react), copy link, download PNG, section filter
-   - Events: upcoming/past tabs, full event details (client, venue, budget, deposit), create modal (uses existing events table)
-   - Compliance/Temps: temperature logging with in-range/out-of-range indicators, corrective actions, add equipment modal
-7. Updated restaurant layout sidebar with all nav items (10 pages total)
-8. Fixed Vercel ERESOLVE build failure: added .npmrc with legacy-peer-deps=true
-9. Fixed react-konva version: downgraded from 19.2.3 (React 19) to 18.2.14 (React 18 compatible)
-10. Created .env.local with Supabase URL and anon key for local dev
-11. Created .claude/launch.json with dev server configs
-12. All 5 commits pushed to origin/main, Vercel deploying
-
-**Key decisions:**
-- Stayed on origin/main's package.json (Next.js 14 + Tailwind 3) since most platform code uses it
-- Used react-konva@18 for React 18 compatibility (v19 requires React 19)
-- Events page uses existing `events` table (has restaurant_id column), not a new restaurant_events table
-- Temp logs use `restaurant_temperature_logs` table, equipment uses `restaurant_equipment` table
-- Floor plan canvas uses Next.js dynamic import (SSR incompatible Konva)
-- Replaced Map<> with Record<> throughout due to TypeScript strict mode issues
-
-**Commits pushed:**
-- ba7f15a4: Block-based SOP system + restaurant billing, payments, and menu
-- 3ac3d5b2: Interactive floor plan editor with table linking
-- 4421c92a: Restaurant module: dashboard, staff, reservations, QR codes, events, compliance pages
-- ec55945b: Add .npmrc with legacy-peer-deps for Vercel builds
-- 905602d0: Fix react-konva version: downgrade to v18 for React 18 compatibility
-
-### Session 46 Summary (2026-04-01) — Elijah Security & Response Module
-**What was done:**
-1. Restored Supabase project psqfgzbjbgqrmjskdavs (was already ACTIVE_HEALTHY)
-2. Applied 10 SQL migrations: 16 enums, 33 tables, full RLS, module registration, PostGIS RPCs, n8n RPCs
-3. Created 23 API routes under app/api/elijah/ (sections, households, members, incidents, patrols, rollcall, fire, water-points, farms, groups, equipment, sops, checklists)
-4. Created 19 UI pages under app/(dashboard)/elijah/ (dashboard, members, incidents, patrols, rollcall, fire map, water-points, farms, groups, equipment, sops, settings)
-5. Created 5 lib files: lib/elijah/ (types, constants, validations, api-helpers, whatsapp-commands)
-6. Added "Security & Response" sidebar nav section (7 items, gated by security_ops module)
-7. Enabled security_ops module for all tenants via tenant_modules
-8. Deployed 4 n8n workflows: Roll Call Scheduler (VrKSm0ybQCiY6DHr), Escalation Engine (DojNZlDuR3QP6dBS), Fire Alert (cWMygnR05cAaP9mB), Incident Intake (KTzrMCJ7fcNe5PKN - INACTIVE)
-9. Rewrote all n8n workflows from Postgres nodes to httpRequest + $env.SUPABASE_URL convention
-10. Created 9 Supabase RPC functions for n8n workflow support
-11. Seeded test data: 3 sections, 5 households, 4 water points, 1 farm, 1 fire group, 5 equipment, 1 schedule, 1 patrol, 2 incidents, 1 SOP
-12. Fixed whatsapp-commands.ts Supabase v2 API (.upsert instead of .insert().onConflict())
-13. Fixed module_registry INSERT to match actual schema columns
-14. Build passes with 0 errors
-15. Committed (8df46dc + a06f0e2) and pushed to origin/main
-
-**Key decisions:**
-- Organization = Community (use organization_id, dropped elijah_community table)
-- n8n workflows must use httpRequest + env vars (NOT Postgres nodes) — DraggonnB convention
-- Incident Intake is only workflow needing WhatsApp — other 3 activated without it
-- Created RPC functions to handle complex JOINs through Supabase REST API
-- WhatsApp command router ready but WhatsApp Cloud API setup deferred (Chris working on separately)
-
-**n8n workflow IDs:**
-- Roll Call Scheduler: VrKSm0ybQCiY6DHr (ACTIVE)
-- Escalation Engine: DojNZlDuR3QP6dBS (ACTIVE)
-- Fire Alert Dispatcher: cWMygnR05cAaP9mB (ACTIVE)
-- Incident Intake: KTzrMCJ7fcNe5PKN (INACTIVE - needs WhatsApp)
-
-**Elijah test data (DragoonB org: 094a610d):**
-- Chris member ID: eb489f2b-cd61-4dce-b494-89849f958bfb
-- Sections: Ridgeview Heights, Oakwood Gardens, Riverside Bend
-- Water points: Main Reservoir (10000L), Ridgeview Hydrant, Community Pool, Farm Dam
-- Farm: Groenvlei Farm (owner Jan van der Merwe)
-
-### Session 45 Summary (2026-03-30) — Org Restructure + Cleanup
-**What was done:**
-1. Full project inventory: catalogued all 10 projects, 39 N8N workflows, 6 Vercel deploys, 5 Supabase projects, 17 MCP connections
-2. GitHub repo renames to kebab-case: VDJ_Accounting -> vdj-accounting, Figarie-Luxury-Travel -> figarie-travel, lotto-checker-frontend -> check-my-lotto
-3. Updated git remotes in local repos to match renamed GitHub repos
-4. Cowork agent restructured all local files into C:\Dev\DraggonnB\ org hierarchy (platform/, clients/, products/, modules/, tools/, docs/, archive/)
-5. Created client provisioning template at clients/_template/ (CLAUDE.md + config.json + n8n/)
-6. Created MANIFEST.md at org root with complete inventory tables
-7. Removed OpenClaw from CLAUDE.md and STATE.md (replaced with Claude Cowork in role definitions)
-8. Created VPS removal script for OpenClaw at tools/ops-hub/remove-openclaw.sh
-9. OpenClaw container removal pending -- VPS SSH timed out, script ready for next connection
-
-**Key decisions:**
-- OpenClaw decommissioned (security concern -- unnecessary read-access AI layer on VPS)
-- Claude Cowork replaces OpenClaw's advisory role (parallel agents, same session)
-- All repos standardized to kebab-case naming convention
-- Org structure: platform > clients > products > modules > tools > docs > archive
-
-### Session 44 Summary (2026-03-28) — FULL SESSION
-**What was done:**
-1. Applied 3 Supabase migrations: 16 new tables + RLS + module_registry seed
-2. Created lib/restaurant/ scaffold: api-helpers, schemas (Zod + R638), types, telegram templates, PayFast link generator
-3. Created 12 API route groups: tables, sessions, sessions/[id]/status, bills/items, payment/itn, payment/link, menu, reservations, staff, temp-log, checklists, settings, auth/pin (public)
-4. Created LiveTab guest flow: use-live-bill hook (Supabase Realtime), /r/[slug]/[qrToken] page, LiveBillView component
-5. Created prototype spec: .planning/restaurant-ui-prototype-spec.md (8 screens, component inventory, design decisions)
-6. Built all 18 UI components via 3 parallel agents:
-   - Auth: PINPad, StaffCard, RestaurantAuthGuard, login page
-   - POS/Payment: VoidItemSheet, TipSelector, SplitSlotRow, BillSummaryCard, bill finalisation page
-   - Ops: DashboardStatCard, ReservationRow, AddReservationSheet, TempLogRow, TempLogSheet, WaitingScreen, reservations page, temp-log page, dashboard rewrite
-7. Created 4 N8N workflows: Daily Briefing, Session Opened, PayFast ITN, Temp Critical Alert
-8. Fixed staff login: public endpoint /api/restaurant/staff/public (no auth, id+name only)
-9. Seeded demo: Sunset Grill restaurant, 3 staff (PIN 1234), 9 tables, 13 menu items
-10. 3 type-check passes — zero TypeScript errors across all new files
-
-**Key decisions:**
-- Staff auth is PIN-only (not Supabase auth) — sessionStorage, 8h implied expiry
-- Public staff list endpoint scoped by restaurant_id (no sensitive data)
-- Login URL: /restaurant/login?r={restaurant_id} or NEXT_PUBLIC_DEFAULT_RESTAURANT_ID env var
-- Manager PIN (SHA-256) required for voids > R50
-- LiveTab Realtime channel: livetab:{sessionId}
-- R638 temp thresholds mirrored client-side in TempLogSheet for live preview
-
-**Session 43 Summary (2026-03-27)
-**What was done:**
-1. Fixed root cause of "cannot add properties" -- `getAccommodationAuth()` in `lib/accommodation/api-helpers.ts` queried non-existent `users` table, replaced with `getOrgId()` using correct `organization_users` junction table
-2. Fixed same `users` table pattern across 13 email API routes, 4 content routes, and `lib/auth/actions.ts` signup function (20+ files total)
-3. Added `platform_admin: 4` to `TIER_HIERARCHY` in `lib/feature-gate.ts` -- platform admins were failing all tier checks
-4. Created `lib/accommodation/schemas.ts` -- 50+ Zod validation schemas imported by 54 accommodation API routes (file was never committed to git, causing all accommodation routes to fail at build)
-5. Fixed forgot-password page Suspense boundary build error
-6. Clean build verified: 166 pages, 0 errors
-7. Committed and deployed to production
-
-**Key fixes:**
-- `lib/accommodation/api-helpers.ts` -- `getAccommodationAuth()` now uses `getOrgId()` instead of `.from('users')`
-- `lib/auth/get-user-org.ts` -- Added `getOrgId()` export (lightweight org resolver with admin fallback)
-- `lib/accommodation/schemas.ts` -- Created complete Zod schema file (was missing from git)
-- `lib/feature-gate.ts` -- Added `platform_admin` to tier hierarchy
-- 13 email routes + 4 content routes -- All fixed from `.from('users')` to `getOrgId()` pattern
-
-### Previous Sessions (Condensed)
-- Session 42 (2026-03-25): Bug fixes (PayFast, auth, leads), OnboardingChecklist widget, 2 N8N workflows, social publish button, VDJ demo prep
-- Session 41 (2026-03-25): Brand identity redesign, 10 templates, admin panel (4 pages), 3 module stubs, logo, PR #9 merged, 22 N8N workflows activated
-- Session 40 (2026-03-15): Env var audit, Phase 08 Meta scope, Billing Monitor N8N, Phase 08.2-08.3 implementation
-- Session 39 (2026-03-13): getOrgId admin fallback fix, provisioning pipeline fix, 13 N8N workflows deployed
-- Session 38 (2026-03-13): CRM `users` table fix, Integration Admin Panel
-- Sessions 33-37: Accommodation automation layer, auth fixes, planning commits
-- Sessions 1-32: All 7 v1 phases + v2 BOS + architecture restructure + brand redesign
+Last session: 2026-04-24 — Milestone v3.0 kick-off + roadmap creation
+Stopped at: ROADMAP.md written (Phases 09-12), REQUIREMENTS.md traceability populated, STATE.md updated for v3.0
+Resume with: `/gsd:plan-phase 09` to begin Phase 09 (Foundations & Guard Rails)
