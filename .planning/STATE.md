@@ -9,11 +9,12 @@ See: .planning/PROJECT.md (updated 2026-03-13)
 
 ## Current Position
 
-Phase: Launch Readiness + First Client Prep (Restaurant Module Upgrade)
-Status: DEPLOYED TO PRODUCTION (via *.vercel.app). www.draggonnb.online BROKEN — Hostinger CDN intercepting www, apex A record wrong. Build passing. tsc clean.
-Last activity: 2026-04-15 -- Session 49: Launch banner + register-interest lead form shipped (commit `f0887bf9`). 3 test users seeded (tester-starter/pro/admin @draggonnb.test). `.env.local` synced via `vercel env pull`. Full Cowork test plan written at `.planning/testing/TEST-PLAN.md` for execution in a fresh session. DNS blockers documented.
-Prior: 2026-04-12 -- Session 48: Comprehensive test suite overhaul. 583 tests all passing across 34 files.
-Progress: 217+ DB tables + RLS live in Supabase. 198+ API routes. 20+ UI modules. 6 AI agents. 30 N8N workflows. 583 tests (34 files). Build clean.
+Milestone: v3.0 Commercial Launch (started 2026-04-24)
+Phase: Not started (defining requirements — 4 parallel research agents running)
+Status: Requirements + roadmap generation in progress. Platform deployed to production. Build passing. tsc clean. 583 tests.
+Last activity: 2026-04-24 — Milestone v3.0 initialized. Strategic pivot from flat 3-tier pricing to modular base + vertical + add-ons. Easy/Advanced UX pattern locked (per-page toggle). Finance reframed as embedded-in-verticals using VDJ accounting knowledge (not separate integration). Competitive positioning vs Holo AI marketing established (vertical depth + SA-local + ops integration).
+Prior: 2026-04-15 — Session 49: Launch banner + register-interest lead form shipped (commit `f0887bf9`). DNS blockers documented.
+Progress baseline (start of v3.0): 217+ DB tables + RLS, 198+ API routes, 20+ UI modules, 6 AI agents, 30 N8N workflows, 583 tests (34 files). Build clean.
 
 ## Accumulated Context
 
@@ -76,15 +77,26 @@ Progress: 217+ DB tables + RLS live in Supabase. 198+ API routes. 20+ UI modules
 
 ## Session Continuity
 
-Last session: 2026-04-15 (Session 49)
-Stopped at: Launch banner + register-interest lead form shipped to `restaurant-sop-upgrade` (commit `f0887bf9`). Test users + env synced. Cowork test plan written but NOT executed.
-Resume with:
-1. **Open a fresh session** to execute `.planning/testing/TEST-PLAN.md` (10 agents across 2 waves). Do not run in this session.
-2. Chris fixes Hostinger DNS: apex A → `76.76.21.21`, remove Horizons website from www, ensure www CNAME → `cname.vercel-dns.com`
-3. Merge `restaurant-sop-upgrade` → `main` so the launch banner deploys to production
-4. After test sweep: triage `bug-report.md`, fix P0/P1, commit fixes
-5. Once DNS flipped: smoke-test `https://www.draggonnb.online` (should show Server: Vercel, launch banner visible)
-6. Deferred: WhatsApp Cloud API, Meta OAuth (Phase 08.1), Lookout Deck demo seed data
+Current session: 2026-04-24 — Milestone v3.0 Commercial Launch kick-off
+Status:
+- Strategic decisions locked (pricing model, Easy/Advanced pattern, finance reframe)
+- 4 parallel gsd-project-researcher agents running (stack, features, architecture, pitfalls)
+- PROJECT.md updated with v3.0 milestone
+- STATE.md reset for new milestone
+
+Next steps after research completes:
+1. Synthesize research → SUMMARY.md
+2. Generate REQUIREMENTS.md for v3.0 (scoped from research + conversation)
+3. Spawn gsd-roadmapper → ROADMAP.md phases 09–12
+4. User approves roadmap
+5. Run `/gsd:plan-phase 09` to start Sprint 1 (pricing + site redesign)
+
+Carry-forward items (deferred, not blockers):
+- Merge `restaurant-sop-upgrade` → `main` (launch banner)
+- DNS fix: apex A → `76.76.21.21`, remove Horizons CDN from www
+- WhatsApp Cloud API config (Phase 08.1)
+- Meta OAuth credentials from Chris
+- Lookout Deck demo seed data
 
 ## Demo Restaurant — The Lookout Deck (Sunset Grill)
 
