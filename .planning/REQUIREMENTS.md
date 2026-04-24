@@ -1,169 +1,184 @@
-# Requirements -- DraggonnB OS
+# Requirements — DraggonnB OS
 
-## Security & Infrastructure
+## Active Milestone: v3.0 — Commercial Launch
 
-- [x] **SEC-01**: Supabase RLS policies enabled on all tables -- users can only read/write data belonging to their organization
-- [x] **SEC-02**: Auth links users to organizations via `organization_users` junction table -- all org-scoped queries work
-- [x] **SEC-03**: Auth middleware protects all dashboard routes -- unauthenticated users get inline error states (no redirect loops)
-- [x] **SEC-04**: Admin Supabase client using service role key exists for webhook handlers and RLS bypass
-- [x] **SEC-05**: Setup API has no hardcoded default secret -- fails if `SETUP_SECRET` env var not set
-- [x] **SEC-06**: Email unsubscribe tokens signed with HMAC -- cannot be forged
-- [x] **SEC-07**: Email click tracking validates redirect URLs -- rejects non-http(s) schemes
-- [ ] **SEC-08**: PayFast passphrase required when `PAYFAST_MODE=production` -- needs production passphrase configured
-- [x] **SEC-09**: Environment variable names aligned between `.env.example` and codebase
-- [x] **SEC-10**: Supabase service role key rotated after accidental exposure (2026-03-05)
-- [x] **SEC-11**: Provisioning API restricted to platform_admin role only
+**Goal:** Transform feature-complete platform into revenue-ready product with modular pricing, Easy/Advanced UX, 3-day automated onboarding, and brand-voice-driven AI across all agents. First paying client by end of phase 10.
 
-## Authentication
-
-- [x] **AUTH-01**: User can create account with email and password
-- [x] **AUTH-02**: User can log in and stay logged in across sessions via cookie
-- [x] **AUTH-03**: User can request password reset via email
-- [x] **AUTH-04**: User can reset password with email link
-- [x] **AUTH-05**: Auth session refreshed automatically on every request via middleware
-- [x] **AUTH-06**: OAuth callback handler for social login (scaffolded, needs credentials)
-- [x] **AUTH-07**: `getUserOrg()` auto-creates missing user/org records via admin client
-- [x] **AUTH-08**: Protected pages render inline error states (never redirect to /login)
-
-## CRM Module
-
-- [x] **CRM-01**: User can create, view, edit, and delete contacts with search/filter
-- [x] **CRM-02**: User can create, view, edit, and delete companies
-- [x] **CRM-03**: User can create, view, edit, and delete deals with pipeline view
-- [x] **CRM-04**: All CRM data scoped by organization_id
-- [x] **CRM-05**: External CRM API with M2M auth and scope guards
-
-## Email Module
-
-- [x] **EMAIL-01**: User can create and manage email templates with variable substitution
-- [x] **EMAIL-02**: User can create and manage email campaigns
-- [x] **EMAIL-03**: User can create and manage email sequences with steps
-- [x] **EMAIL-04**: Email tracking (opens via pixel, clicks via link wrapping) scaffolded
-- [x] **EMAIL-05**: Per-tier email usage limits enforced
-- [ ] **EMAIL-06**: Resend API configured and emails actually send -- needs API key
-- [x] **EMAIL-07**: External email sequence enrollment endpoint with M2M auth
-
-## Payments
-
-- [x] **PAY-01**: Pricing page displays 3 tiers (Starter R1,500, Pro R3,500, Enterprise R7,500)
-- [x] **PAY-02**: Checkout flow submits PayFast subscription form
-- [x] **PAY-03**: PayFast ITN webhook validates signature, verifies with server, checks amount
-- [x] **PAY-04**: Successful payment updates organization subscription status and logs transaction
-- [x] **PAY-05**: PayFast webhook uses admin Supabase client for RLS bypass
-- [ ] **PAY-06**: PayFast production passphrase configured -- currently sandbox only
-
-## Dashboard & Analytics
-
-- [x] **DASH-01**: Dashboard page with stat cards and charts
-- [x] **DASH-02**: Sidebar navigation with all module links
-- [x] **DASH-03**: Dashboard queries Supabase for real data (with fallback empty states)
-- [x] **DASH-04**: Pipeline chart component with Recharts
-
-## Landing Page & Public UI
-
-- [x] **LP-01**: Pricing page with 3 tiers and checkout buttons
-- [x] **LP-02**: Marketing landing page with value proposition, features section, and CTA
-- [x] **LP-03**: Light theme with dark CTA section for contrast
-
-## Accommodation Module
-
-- [x] **ACCOM-01**: Properties CRUD with multi-unit support
-- [x] **ACCOM-02**: Units CRUD with amenities, capacity, pricing
-- [x] **ACCOM-03**: Bookings CRUD with status workflow (inquiry -> confirmed -> checked_in -> checked_out)
-- [x] **ACCOM-04**: Guest management with contact details and booking history
-- [x] **ACCOM-05**: Rate management with seasonal pricing and unit-specific rates
-- [x] **ACCOM-06**: Availability calendar with date range queries
-- [x] **ACCOM-07**: Inquiry management with conversion tracking
-- [x] **ACCOM-08**: Booking detail page with guest info, financial summary, status actions
-- [x] **ACCOM-09**: Guest portal with access pack system (booking details for guests)
-- [x] **ACCOM-10**: Channel manager with iCal feed management for Booking.com/Airbnb/VRBO
-
-## Accommodation Automation
-
-- [x] **AUTO-01**: Event dispatcher (`emitBookingEvent()`) triggers automation on booking status changes
-- [x] **AUTO-02**: Automation rules CRUD with enable/disable toggle
-- [x] **AUTO-03**: Message queue with retry/cancel and multi-channel sending (email, SMS, WhatsApp)
-- [x] **AUTO-04**: Communications log with expandable message rows
-- [x] **AUTO-05**: PayFast link generation for per-booking payments
-- [x] **AUTO-06**: Payment tracking with financial snapshots
-- [x] **AUTO-07**: Telegram ops bot for staff notifications and task assignments
-- [x] **AUTO-08**: 4 AI agents: QuoterAgent, ConciergeAgent, ReviewerAgent, PricerAgent
-- [x] **AUTO-09**: Per-unit cost tracking with stock inventory management
-- [x] **AUTO-10**: Profitability reports with margin calculations
-- [x] **AUTO-11**: Stock items with low/in-stock/overstocked badges and movement tracking
-- [ ] **AUTO-12**: N8N workflows configured and active (17 templates exist, need activation)
-- [ ] **AUTO-13**: Telegram ops bot webhook configured with channel setup
-- [ ] **AUTO-14**: PayFast link generator wired to existing webhook handler
-
-## AI & Agents
-
-- [x] **AI-01**: BaseAgent pattern with session tracking and Claude API integration
-- [x] **AI-02**: LeadQualifierAgent for lead scoring
-- [x] **AI-03**: ProposalGeneratorAgent for content generation
-- [x] **AI-04**: Autopilot UI with agent management
-- [x] **AI-05**: 4 accommodation-specific agents (quoter, concierge, reviewer, pricer)
-
-## Content & Social
-
-- [x] **CONTENT-01**: AI content generation via N8N webhook integration
-- [x] **CONTENT-02**: Content queue for scheduled publishing
-- [x] **SOCIAL-01**: Social account management UI scaffolded
-- [ ] **SOCIAL-02**: Facebook/Instagram Graph API connected -- needs OAuth credentials
-- [ ] **SOCIAL-03**: LinkedIn API connected -- needs OAuth credentials
-
-## Provisioning
-
-- [x] **PROV-01**: 9-step saga orchestrator with rollback support
-- [x] **PROV-02**: Organization row creation in shared DB
-- [x] **PROV-03**: Module activation via tenant_modules table
-- [x] **PROV-04**: DB-backed module registry (module_registry table)
-- [x] **PROV-05**: Provisioning API restricted to platform_admin role
-- [x] **PROV-06**: QA checks validate org records and module activation
-- [ ] **PROV-07**: First end-to-end provisioning test with real client config
-- [ ] **PROV-08**: N8N webhooks configured per client (step exists, needs N8N setup)
-
-## Testing
-
-- [x] **TEST-01**: 241 Vitest tests (unit, integration, component)
-- [x] **TEST-02**: PayFast signature validation tests
-- [x] **TEST-03**: Auth middleware and user/org auto-creation tests
-- [x] **TEST-04**: CRM API route tests
-- [x] **TEST-05**: Dashboard data flow integration tests
-- [x] **TEST-06**: Component render tests (dashboard, CRM, autopilot, sidebar)
-
-## External Integrations
-
-- [x] **EXT-01**: External CRM contacts API with M2M auth
-- [x] **EXT-02**: External CRM companies API with M2M auth
-- [x] **EXT-03**: External email sequence enrollment API
-- [x] **EXT-04**: Scope guard utility for API key permission checking
-- [x] **EXT-05**: Embed route group with social page and CSP headers
-- [x] **EXT-06**: Webhook dispatch wired into CRM contact routes
+**Scope decisions locked (2026-04-24):**
+- **PayFast billing:** Hybrid — recurring subscription (variable amount) for base + modules; one-off ad-hoc for setup fees + overage top-ups
+- **Existing orgs:** None currently paying — free to migrate/delete without grandfather constraints
+- **Anthropic cache isolation:** Tenant-scoped via `org_id` as first distinct cache block; golden two-tenant CI test
+- **Campaign Studio:** Decision-gated at end of Phase 10 — include in v3.0 only if phases 09–10 under budget
+- **Embedded Finance:** Deferred to v3.1 with accountant review gate on first 3 pilot tenants
 
 ---
 
-## v2 Requirements (Deferred)
+### Billing Composition (BILL)
 
-- Dark mode UI
-- White-label branding for Enterprise tier
-- WhatsApp Business integration (Meta Cloud API)
-- Voice AI agents
-- Admin panel (manage via Supabase dashboard for now)
-- Advanced ML-driven analytics
-- Mobile native apps (responsive web sufficient)
-- Multi-language support (English only for SA market)
-- CI/CD pipeline (manual Vercel deploys for now)
-- SEO optimization module
-- Error tracking (Sentry or similar)
-- Rate limiting on public endpoints
+- [ ] **BILL-01**: User sees modular pricing page with interactive module picker — pick Core (R599) + optional vertical (R1,199) + add-ons; live total updates as selections change
+- [ ] **BILL-02**: User signs up with a composed subscription (base + modules + add-ons) and is charged via PayFast variable-amount recurring subscription
+- [ ] **BILL-03**: User pays a one-off R1,499 setup fee at checkout via PayFast ad-hoc charge, separate from recurring subscription
+- [ ] **BILL-04**: User can add or remove a module/add-on mid-cycle; billing recalculates and PayFast subscription amount updates via cancel-and-recreate flow
+- [ ] **BILL-05**: `organizations.billing_plan_snapshot` JSONB column stores the plan composition at subscribe time; ITN validates against snapshot (not current PRICING_TIERS)
+- [ ] **BILL-06**: PayFast webhook branches by `m_payment_id` prefix — `DRG-*` (subscription), `ADDON-*` (module change), `TOPUP-*` (overage pack), `ONEOFF-*` (setup fee)
+- [ ] **BILL-07**: `pricing_changelog` table records every PRICING_TIERS change with timestamp, old/new values, and operator — history is append-only
+- [ ] **BILL-08**: Billing-reconciliation nightly cron compares PayFast subscription amount vs local composition total; alerts on drift
+- [ ] **BILL-09**: User's pricing page total displays VAT-inclusive ZAR amount with a clear "incl. 15% VAT" line
 
-## Out of Scope
+### Brand Voice (VOICE)
 
-- Stripe/international payments -- PayFast is SA market requirement
-- Custom domains per client -- Vercel subdomains sufficient for v1
-- Multi-currency -- ZAR only
-- Self-hosted Supabase -- using Supabase Cloud
-- Autonomous sub-agents per client -- deferred until 20+ clients
+- [ ] **VOICE-01**: User completes a 3-step brand voice capture wizard during onboarding — URL ingest + 5 guided questions + avoid-list
+- [ ] **VOICE-02**: Brand voice stored in `client_profiles` table (extend existing columns with `example_phrases TEXT[]` and `forbidden_topics TEXT[]`) — no new table
+- [ ] **VOICE-03**: Brand voice injected as Anthropic `systemBlocks` with `cache_control: ephemeral` into all 6 existing agents (Quoter, Concierge, Reviewer, Pricer, LeadQualifier, ProposalGenerator)
+- [ ] **VOICE-04**: `org_id` injected as distinct first system block to force tenant-scoped prompt-cache keys — prevents cross-tenant cache leak
+- [ ] **VOICE-05**: Golden CI test provisions 2 orgs with different voices, runs identical prompts, asserts different outputs AND non-zero cache reads on second-same-tenant call
+- [ ] **VOICE-06**: Brand voice system prompt padded to ≥4,096 tokens to hit Haiku 4.5 cache eligibility threshold
+- [ ] **VOICE-07**: PII scrubber sanitises brand voice input before storage (strips email, phone, ID numbers, payment info)
+- [ ] **VOICE-08**: User can re-run the brand voice wizard from settings — updated voice invalidates cached blocks on next agent call
+
+### Usage Caps & Cost Monitoring (USAGE)
+
+- [ ] **USAGE-01**: Every metered action (AI generation, social post, email send, receipt OCR) calls `guardUsage(orgId, metric)` helper BEFORE the work; blocked at 100% of plan limit
+- [ ] **USAGE-02**: `guardUsage` uses existing `record_usage_event` RPC (atomic check+insert) — no Redis, no read-then-write race
+- [ ] **USAGE-03**: User gets in-app warning banners at 50%, 75%, 90% of each metric cap; banner includes upgrade + pay-overage options
+- [ ] **USAGE-04**: User hitting 100% cap sees inline modal with 3 actions: upgrade plan / buy overage top-up / wait until reset (with exact reset date/time in tenant timezone)
+- [ ] **USAGE-05**: 50-concurrent-request unit test verifies no over-cap leakage through `guardUsage`
+- [ ] **USAGE-06**: Per-tier hard ZAR ceiling on Anthropic cost: Core R150/mo, Growth R400/mo, Scale R1,500/mo — agents auto-pause at 100% with alert
+- [ ] **USAGE-07**: Anthropic cost circuit breaker: check projected cost BEFORE API call; abort with graceful error if over ceiling
+- [ ] **USAGE-08**: `ai_usage_ledger` table records every BaseAgent call (including retries) with model, tokens, cache hits, computed cost in ZAR cents
+- [ ] **USAGE-09**: `agent_sessions` migration adds `input_tokens`, `output_tokens`, `cache_read_tokens`, `cache_write_tokens`, `cost_zar_cents`, `model` columns
+- [ ] **USAGE-10**: Nightly cron (`/api/ops/cost-rollup`) aggregates `agent_sessions` + `usage_events` into `daily_cost_rollup` table per org
+- [ ] **USAGE-11**: `/admin/cost-monitoring` page (platform_admin-guarded) shows cost-vs-revenue per tenant, 30-day trend, margin %, and flags any tenant with cost > 40% of MRR
+- [ ] **USAGE-12**: Haiku 4.5 enforced as default model across all BaseAgent subclasses — no silent Sonnet fallback; model selection logged per call
+- [ ] **USAGE-13**: Legacy `client_usage_metrics` reads/writes audited — every route either migrates to `usage_events` RPC or the legacy write is deleted
+
+### Onboarding (ONBOARD)
+
+- [ ] **ONBOARD-01**: Day 0 (signup): user completes payment, receives welcome email, sees onboarding dashboard with 4-step progress checklist
+- [ ] **ONBOARD-02**: Day 1: automated email prompts user to complete brand voice wizard; kickoff call link (Cal.com or equivalent) included
+- [ ] **ONBOARD-03**: Day 2: automated email guides user through first campaign / first action in their active module
+- [ ] **ONBOARD-04**: Day 3: automated email confirms "you're live" + lists unlocked features + invites feedback
+- [ ] **ONBOARD-05**: `onboarding_progress` table tracks per-org state: current day, completed steps, kickoff-call scheduled timestamp, drift flags
+- [ ] **ONBOARD-06**: Provisioning saga gains step 10 (`schedule-onboarding-followups`) that enqueues the 3 N8N workflows
+- [ ] **ONBOARD-07**: Provisioning saga steps 5–9 are idempotent and retryable; saga failures PAUSE (not cascade-delete) with operator Telegram alert
+- [ ] **ONBOARD-08**: Org is usable after saga steps 1–4 complete — later steps run async; user never sees "setting up..." stuck state
+- [ ] **ONBOARD-09**: "3 business days" phrased explicitly on pricing page + welcome email; weekend signups start day-0 timer Monday
+
+### Easy/Advanced UX (UX)
+
+- [ ] **UX-01**: `<ModuleHome>` shared component renders AI action cards from a declarative manifest per module — RSC-first, client islands per card
+- [ ] **UX-02**: CRM has two routes — `/dashboard/crm` (Easy view with ModuleHome) and `/dashboard/crm/advanced` (existing full kanban + filters)
+- [ ] **UX-03**: Every non-Easy module page includes "Easy view →" link in top-right; every Easy view includes "Advanced view →" link
+- [ ] **UX-04**: `user_profiles.ui_mode` stores user preference (`easy` | `advanced`); existing users default to `advanced`, new signups to `easy`
+- [ ] **UX-05**: Action card sources use event-driven queries (real-time), nightly cached suggestions (N8N), or user-triggered BaseAgent calls — NEVER per-render agent calls
+- [ ] **UX-06**: View-desync integration test: edit entity in Easy, switch to Advanced, verify edits visible; switch back without losing unsaved state
+- [ ] **UX-07**: `entity_drafts` table stores unsaved form state across view switches
+
+### Site Redesign (SITE)
+
+- [ ] **SITE-01**: Landing page hero is outcome-led ("Run your lodge on autopilot") with interactive module picker below
+- [ ] **SITE-02**: Pricing page has module-picker UI: toggle Core + vertical + add-ons, live monthly total, "what it replaces" comparison (~R4,500 in manual work)
+- [ ] **SITE-03**: 301 redirects in place for any changed URLs; Search Console baseline exported pre-launch for regression detection
+- [ ] **SITE-04**: Mobile-first verified at 360px breakpoint on every landing + pricing + signup page; Lighthouse mobile performance ≥85
+- [ ] **SITE-05**: Landing page keeps brand direction (charcoal #363940 + crimson #6B1420 + light sections) — full layout refresh, not cosmetic
+
+### Operations (OPS)
+
+- [ ] **OPS-01**: Startup Zod schema assertion in `lib/config/env.ts` fails boot if `PAYFAST_MODE=production` without `PAYFAST_PASSPHRASE`, or other required env vars are missing
+- [ ] **OPS-02**: Feature-gate audit daily cron verifies every gated capability is blocked at three layers (middleware, API route, DB RLS); alerts on misconfiguration
+- [ ] **OPS-03**: Token expiry monitor cron checks Facebook + LinkedIn OAuth tokens 7 days before expiry; alerts operator with refresh link
+- [ ] **OPS-04**: `/api/ops/env-health` endpoint returns current environment validation status (masked — no secrets leaked)
+- [ ] **OPS-05**: Multi-step migration discipline documented in `CLAUDE.md`: add column NULLABLE → deploy write code → backfill → add NOT NULL in later migration; never combine add + constraint
+
+### Campaign Studio (CAMPAIGN) — decision-gated
+
+*These requirements activate only if phases 09–10 come in under budget. Otherwise deferred to v3.1.*
+
+- [ ] **CAMP-01**: User enters a campaign intent ("promote our Sunday brunch special"); Campaign Studio drafts 5 social posts + 1 email + 1 SMS using brand voice
+- [ ] **CAMP-02**: User reviews drafts in a single approval screen; can edit inline, regenerate individual items, or approve all
+- [ ] **CAMP-03**: Approved campaign auto-schedules across selected channels via Supabase `pg_cron` + `pg_net`
+- [ ] **CAMP-04**: Publish confirmation UI shows target channel icon + account name + preview before execute; no silent posting
+- [ ] **CAMP-05**: Post-publish verify fetches the posted item and stores URL; failures surface in campaign run detail
+- [ ] **CAMP-06**: Per-tenant kill switch on campaigns (emergency stop all scheduled runs)
+- [ ] **CAMP-07**: Brand-safety Haiku check on every draft — flags off-brand, insensitive, or time-inappropriate content (e.g. festive post during public mourning)
+- [ ] **CAMP-08**: First 30 days of a new tenant: all campaigns default to draft-then-review (never auto-publish)
 
 ---
-*Last updated: 2026-03-13 after Session 36 comprehensive audit*
+
+## Previously Shipped Requirements (v1.x / v2.x)
+
+Full history lives in `.planning/ROADMAP.md` under "Completed Work". Summary:
+
+- **v1 (7 phases, Feb 2026):** Security & Auth, Core Modules, Landing, N8N Automation, Social Integration, Provisioning, Testing
+- **v2 BOS (Phases A–E):** CLAUDE.md hierarchy, Error catalogue, Build reviewer, AI ops architecture
+- **v2.1 Architecture Restructure:** Shared DB + RLS multi-tenancy, wildcard subdomain routing, DB-backed module gating
+- **v2.2 Accommodation Module:** 84 tables, 102 API routes, 12 UI pages, 4 AI agents, channel manager, guest portal
+- **v2.3 Elijah Module:** Community safety — 33 tables, 23 API routes, 4 N8N workflows
+- **v2.4 Restaurant Module:** Block-based SOPs, POS, QR menus, floor plan (Konva), 6 management pages
+
+All previously shipped requirements remain satisfied. v3.0 does not break any existing capability.
+
+---
+
+## v3.1+ Future Requirements (Deferred from v3.0)
+
+Triggered by real client signal or explicit roadmap decision:
+
+- **Easy View rollout** to remaining 5 modules (Email Sequences, Accommodation, Restaurant, Agents, Analytics) — trigger: ModuleHome pattern stable + 5+ clients onboarded
+- **Embedded Finance** (VAT201 exports, TOMSA levy tracking, SARS day-end, owner-payout statements, tips treatment) — **must ship with accountant review gate on first 3 pilot tenants before claiming "SARS-ready"**
+- **Finance-AI add-on** (Telegram receipt OCR via Claude Haiku 4.5 vision, SARS expense categorisation) — trigger: 5+ clients requesting
+- **Campaign Studio** — if slipped from v3.0 decision gate
+- **Landing page builder** inside Campaign Studio
+- **Events add-on** (layers onto F&B or Accom)
+- **White-label add-on** (logo + color + sender email) — custom domain per tenant remains v4 scope
+- **Annual billing** with 10–15% discount (lowers PayFast fees, reduces churn)
+- **WhatsApp Cloud API activation** (Elijah Incident Intake + tenant messaging) — trigger: Meta credentials from Chris
+
+---
+
+## Out of Scope (Deliberate Exclusions)
+
+Confirmed 2026-04-24. These are anti-features — we actively do NOT build them, even on request, without explicit milestone re-scoping:
+
+### Never (compete by not competing)
+
+- **Full double-entry accounting.** We are a pre-accounting layer exporting to Xero/Sage/FreshBooks — not a Xero replacement
+- **Generic AI long-form content writer** (blog posts, articles). Brand voice + campaign short-form only
+- **Custom AI agent builder.** We ship 6–8 vertical agents; revisit at 20+ clients per `CLAUDE.md` mandate
+- **Multi-tier approval workflows** (3-layer like Hootsuite Enterprise). Single-level approve/reject only — owner-operator target
+- **Full channel manager** competing with SiteMinder or NightsBridge (20+ year head start). Keep existing iCal feeds + partner integrations only
+- **"Unlimited" AI generation marketing claim.** Published caps + transparent overage pricing — Holo's "unlimited" is a liability
+- **"Kitchen sink" free tier** (HubSpot-style). 14-day trial with payment-method-on-file only
+- **Self-serve SQL / data warehouse access.** CSV export + scheduled reports cover 95% of need
+- **In-app chat widget** (Intercom-style). WhatsApp + Telegram + knowledge base + AI tier-1 bot instead
+- **Stripe / international payment gateways.** PayFast (ZAR) is the SA-market constraint
+
+### Deferred (re-evaluate in later milestone)
+
+- **Native mobile apps (iOS/Android).** PWA + Telegram bot cover the field-ops use case at ~5% of native cost. Re-evaluate at 200+ clients or when a feature literally can't run in a browser
+- **AI video generation** (Runway, Sora, Synthesia). Cost is 10–50× image gen, quality inconsistent for marketing in 2026. Partner-route to Descript / Synthesia on demand. Re-evaluate in 2027
+- **Mailchimp-level drag-drop email template builder.** Voice-driven templates + 6–8 vertical layouts cover the need. Re-evaluate if clients actually ask
+- **Multi-language UI** (Afrikaans, isiZulu, etc.). English-only for v3; SA SMEs predominantly operate in English. Re-evaluate at 50+ clients
+- **Multi-currency support.** ZAR-only until cross-border client demand is real
+- **Custom domain per tenant** (beyond *.draggonnb.online). Re-evaluate with Scale-tier paying clients
+- **Self-hosted Supabase.** Supabase Cloud is the stack constraint
+
+---
+
+## Traceability — Requirements to Phases
+
+*To be populated by `gsd-roadmapper` during ROADMAP.md generation.*
+
+| REQ-ID | Phase | Status |
+|--------|-------|--------|
+| BILL-01 … BILL-09 | TBD | Planned |
+| VOICE-01 … VOICE-08 | TBD | Planned |
+| USAGE-01 … USAGE-13 | TBD | Planned |
+| ONBOARD-01 … ONBOARD-09 | TBD | Planned |
+| UX-01 … UX-07 | TBD | Planned |
+| SITE-01 … SITE-05 | TBD | Planned |
+| OPS-01 … OPS-05 | TBD | Planned |
+| CAMP-01 … CAMP-08 | TBD (decision-gated) | Conditional |
+
+---
+*Last updated: 2026-04-24 — v3.0 Commercial Launch requirements defined (53 REQ-IDs across 8 categories, 8 conditional)*
