@@ -11,12 +11,12 @@ See: .planning/PROJECT.md (updated 2026-04-24)
 ## Current Position
 
 Milestone: v3.0 Commercial Launch (started 2026-04-24)
-Phase: 09 of 12 (Foundations & Guard Rails) — **planned, ready for `/gsd:execute-phase 09`**
-Plan: 5 plans across 3 waves, verified in 2 iterations (commit 05991d93)
-Status: Planning complete. All catastrophic-pitfall guards scoped. 4 latent bugs catalogued (ERR-029 through ERR-032). Ready for execution in fresh session.
-Last activity: 2026-04-25 — Session 50: Phase 09 research + 5 plans + 2-iteration verification. 14 plan-quality issues found and resolved.
+Phase: 09 of 12 (Foundations & Guard Rails) — **Wave 1 complete, Wave 2 next**
+Plan: 1 of 5 complete (09-01 done). Plans 09-02 + 09-03 are Wave 2 (parallel).
+Status: 09-01 executed. 6 migrations applied to live Supabase. Schema foundations in place.
+Last activity: 2026-04-25 — Session 51: Plan 09-01 executed (7 tasks, 7 commits, 20 min)
 
-Progress: [█░░░░░░░░░] 10% (v3.0 milestone — planning done; execution begins next session)
+Progress: [██░░░░░░░░] 20% (1/5 Phase 09 plans done)
 
 ## Performance Metrics
 
@@ -30,7 +30,7 @@ Progress: [█░░░░░░░░░] 10% (v3.0 milestone — planning done
 |-------|-------|--------|
 | 01-07 (v1.0) | 19/19 | Complete |
 | 08 Meta | 2/5 | Partial (deferred) |
-| **09 (v3.0)** | **0/5 planned** | **Planned, ready for execution** |
+| **09 (v3.0)** | **1/5** | **In progress (Wave 1 done)** |
 | 10 (v3.0) | 0/TBD | Not started |
 | 11 (v3.0) | 0/TBD | Not started |
 | 12 (v3.0) | 0/TBD | Not started |
@@ -41,6 +41,7 @@ Progress: [█░░░░░░░░░] 10% (v3.0 milestone — planning done
 
 ### Decisions (v3.0-specific, most recent first)
 
+- **2026-04-25 (09-01 execution):** `user_role` enum = `{admin,manager,user,client}` — no `platform_admin`. RLS admin policies use `role = 'admin'`. `agent_sessions` was not in live DB (migration 05 not applied remotely) — recreated in migration 25 with CREATE IF NOT EXISTS. `client_usage_metrics` uses `posts_created/posts_published/ai_generations_count/metric_date` — NOT `posts_monthly/ai_generations_monthly/reset_date`. All 5 assumed column names absent — ERR-032 scope broader than expected.
 - **2026-04-24 (Phase 09-12 scope):** PayFast billing = hybrid (variable-amount recurring + one-off ad-hoc). Anthropic cache isolation = org_id as first distinct system block + golden two-tenant CI test. Campaign Studio decision-gated at Phase 10 exit. Embedded Finance deferred to v3.1 with accountant review gate. Existing 8 orgs: audit + migrate paying, delete test (no grandfather).
 - **2026-04-24 (research corrections):** `tenant_modules.limits` does NOT exist (plan limits live in `billing_plans.limits`). `agent_sessions.cost_usd` does NOT exist (needs ALTER migration). `PRICING_TIERS` is legacy constant — DB catalog `billing_plans` is source of truth. Usage metering is in dual-state (`client_usage_metrics` legacy + `usage_events` new) — Phase 09 must audit and consolidate.
 - **2026-04-24 (risk gate):** 4 catastrophic pitfalls (PRICING_TIERS mutation, Anthropic cost runaway, cache key collision, tax-calc error) all have Phase 09 guards. Finance deferred to v3.1 addresses pitfall 6.
@@ -48,7 +49,9 @@ Progress: [█░░░░░░░░░] 10% (v3.0 milestone — planning done
 
 ### Pending Todos
 
-- Run `/gsd:plan-phase 09` to derive Phase 09 plans
+- Execute Plan 09-02 (billing composition engine — Wave 2)
+- Execute Plan 09-03 (usage enforcement + BaseAgent cost ledger — Wave 2, parallel with 09-02)
+- Add RLS to `agent_sessions` table (created in migration 25 without policies — original schema had none)
 - PayFast ad-hoc endpoint sandbox spike (1 day) — Phase 09 kickoff dependency
 - Inventory existing 8 orgs (test/dormant/paying classification) before billing migration
 - Resend domain warm-up status check + mail-tester baseline before Phase 10
@@ -63,7 +66,7 @@ Progress: [█░░░░░░░░░] 10% (v3.0 milestone — planning done
 
 ## Session Continuity
 
-Last session: 2026-04-25 — Session 50: Phase 09 planning complete
+Last session: 2026-04-25 — Session 51: Plan 09-01 executed (6 migrations applied, audit script done)
 
 ### Session 50 Summary (2026-04-25) — v3.0 Milestone Initialization + Phase 09 Planning
 **What was done:**
