@@ -11,12 +11,12 @@ See: .planning/PROJECT.md (updated 2026-04-24)
 ## Current Position
 
 Milestone: v3.0 Commercial Launch (started 2026-04-24)
-Phase: 09 of 12 (Foundations & Guard Rails) — **Wave 1 complete, Wave 2 next**
-Plan: 1 of 5 complete (09-01 done). Plans 09-02 + 09-03 are Wave 2 (parallel).
-Status: 09-01 executed. 6 migrations applied to live Supabase. Schema foundations in place.
-Last activity: 2026-04-25 — Session 51: Plan 09-01 executed (7 tasks, 7 commits, 20 min)
+Phase: 09 of 12 (Foundations & Guard Rails) — **Wave 2 in progress (09-02 done, 09-03 in progress)**
+Plan: 2 of 5 complete (09-01 done, 09-02 done). 09-03 executing in parallel.
+Status: 09-02 executed. ERR-030 fixed. compose() engine live. All 8 orgs backfilled. Migration 29 needs manual Supabase apply.
+Last activity: 2026-04-25 — Session 52: Plan 09-02 executed (6 tasks, 6 commits, ~90 min)
 
-Progress: [██░░░░░░░░] 20% (1/5 Phase 09 plans done)
+Progress: [████░░░░░░] 40% (2/5 Phase 09 plans done)
 
 ## Performance Metrics
 
@@ -41,6 +41,7 @@ Progress: [██░░░░░░░░] 20% (1/5 Phase 09 plans done)
 
 ### Decisions (v3.0-specific, most recent first)
 
+- **2026-04-25 (09-02 execution):** Amount mismatch on ITN: accept + flag (200 to PayFast) — insert amount_mismatch_accepted audit row. Setup fee deferred to post-first-ITN (subscription token needed). payfast-adhoc.ts sends rands — confirmed vs corrected in 09-04 spike. Migration 29 (payfast_subscription_token column) committed to repo but requires manual Supabase Dashboard SQL Editor application. New subscription detected by `!org.activated_at`.
 - **2026-04-25 (09-01 execution):** `user_role` enum = `{admin,manager,user,client}` — no `platform_admin`. RLS admin policies use `role = 'admin'`. `agent_sessions` was not in live DB (migration 05 not applied remotely) — recreated in migration 25 with CREATE IF NOT EXISTS. `client_usage_metrics` uses `posts_created/posts_published/ai_generations_count/metric_date` — NOT `posts_monthly/ai_generations_monthly/reset_date`. All 5 assumed column names absent — ERR-032 scope broader than expected.
 - **2026-04-24 (Phase 09-12 scope):** PayFast billing = hybrid (variable-amount recurring + one-off ad-hoc). Anthropic cache isolation = org_id as first distinct system block + golden two-tenant CI test. Campaign Studio decision-gated at Phase 10 exit. Embedded Finance deferred to v3.1 with accountant review gate. Existing 8 orgs: audit + migrate paying, delete test (no grandfather).
 - **2026-04-24 (research corrections):** `tenant_modules.limits` does NOT exist (plan limits live in `billing_plans.limits`). `agent_sessions.cost_usd` does NOT exist (needs ALTER migration). `PRICING_TIERS` is legacy constant — DB catalog `billing_plans` is source of truth. Usage metering is in dual-state (`client_usage_metrics` legacy + `usage_events` new) — Phase 09 must audit and consolidate.
@@ -49,8 +50,8 @@ Progress: [██░░░░░░░░] 20% (1/5 Phase 09 plans done)
 
 ### Pending Todos
 
-- Execute Plan 09-02 (billing composition engine — Wave 2)
-- Execute Plan 09-03 (usage enforcement + BaseAgent cost ledger — Wave 2, parallel with 09-02)
+- **MANUAL:** Apply migration 29 to live Supabase: `ALTER TABLE organizations ADD COLUMN IF NOT EXISTS payfast_subscription_token TEXT;` via Supabase Dashboard SQL Editor
+- Execute Plan 09-03 (usage enforcement + BaseAgent cost ledger — Wave 2, in progress)
 - Add RLS to `agent_sessions` table (created in migration 25 without policies — original schema had none)
 - PayFast ad-hoc endpoint sandbox spike (1 day) — Phase 09 kickoff dependency
 - Inventory existing 8 orgs (test/dormant/paying classification) before billing migration
@@ -66,7 +67,8 @@ Progress: [██░░░░░░░░] 20% (1/5 Phase 09 plans done)
 
 ## Session Continuity
 
-Last session: 2026-04-25 — Session 51: Plan 09-01 executed (6 migrations applied, audit script done)
+Last session: 2026-04-25 — Session 52: Plan 09-02 executed (billing composition engine, ERR-030 fix, 8 orgs backfilled)
+Resume file: None
 
 ### Session 50 Summary (2026-04-25) — v3.0 Milestone Initialization + Phase 09 Planning
 **What was done:**
