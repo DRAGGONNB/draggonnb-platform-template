@@ -292,5 +292,61 @@
     "files_affected": ["package.json"],
     "recurring": false,
     "tags": ["testing-library", "peer-dependency", "component-tests"]
+  },
+  {
+    "id": "ERR-029",
+    "timestamp": "2026-04-25",
+    "session": 50,
+    "category": "latent-defect",
+    "source": "agents",
+    "error_message": "BaseAgent DEFAULT_MODEL set to claude-sonnet-4-5-20250929 instead of Haiku 4.5 -- silent cost drain across all 6 production agents",
+    "root_cause": "lib/agents/base-agent.ts:40 hardcoded Sonnet as default at module creation; never reviewed against unit-economics targets. Every Quoter/Concierge/Reviewer/Pricer/LeadQualifier/ProposalGenerator invocation runs on Sonnet (3x Haiku cost) unless explicit model arg passed -- which no caller does.",
+    "resolution": "Phase 09 plan 09-03 task 09-03-06 step 1 flips DEFAULT_MODEL to claude-haiku-4-5-20251001 via lib/ai/model-registry.ts; selectModel() downgrades non-Scale tiers requesting Sonnet to Haiku with a warning log.",
+    "prevention": "Cost-ceiling guard (USAGE-06/07) enforces per-tier ZAR ceiling; all model selections logged per call to ai_usage_ledger; CI test asserts default is Haiku.",
+    "files_affected": ["lib/agents/base-agent.ts", "lib/ai/model-registry.ts"],
+    "recurring": false,
+    "tags": ["agents", "cost", "default-model", "unit-economics", "phase-09"]
+  },
+  {
+    "id": "ERR-030",
+    "timestamp": "2026-04-25",
+    "session": 50,
+    "category": "latent-defect",
+    "source": "payfast",
+    "error_message": "organizations.payfast_subscription_token holds pf_payment_id (per-transaction) instead of subscription token -- prevents PayFast subscription amendment via API",
+    "root_cause": "PayFast ITN webhook overwrites organizations.payfast_subscription_token with itnData.pf_payment_id (changes every transaction) instead of itnData.token (the subscription's permanent token). Discovered by Phase 09 codebase research; existing column UNIQUE constraint (migration 00) doesn't catch the semantic bug.",
+    "resolution": "Phase 09 plan 09-02 webhook update task fixes the assignment to use itnData.token. Phase 09 plan 09-05 diagnostic (check-payfast-token-state.sql) audits whether existing tokens are UUID-shaped (correct) or numeric (bug present).",
+    "prevention": "PayFast subscription-update API wrapper (lib/payments/payfast-subscription-api.ts) validates token shape before use; integration test verifies token persistence across 2 ITNs.",
+    "files_affected": ["app/api/webhooks/payfast/route.ts", "lib/payments/payfast-subscription-api.ts"],
+    "recurring": false,
+    "tags": ["payfast", "subscription-token", "webhook", "billing", "phase-09"]
+  },
+  {
+    "id": "ERR-031",
+    "timestamp": "2026-04-25",
+    "session": 50,
+    "category": "latent-defect",
+    "source": "supabase",
+    "error_message": "record_usage_event RPC has theoretical SELECT-SUM-then-INSERT race under READ COMMITTED isolation -- concurrent requests at cap boundary may both pass the check and exceed the cap",
+    "root_cause": "Migration 12 RPC reads current usage via SELECT SUM then INSERTs the new row. Under default READ COMMITTED isolation, two concurrent calls can both see the same SUM (below cap) and both INSERT successfully, leaking past the cap.",
+    "resolution": "Phase 09 plan 09-03 migration 28 hardens RPC with pg_advisory_xact_lock per (org, metric) hash, serializing concurrent calls. Plan also adds a 50-concurrent-request integration test that proves zero leakage at cap boundary.",
+    "prevention": "Advisory lock pattern documented in plan as standard for any RPC doing aggregate-then-mutate; CI test gates merges if test fails.",
+    "files_affected": ["supabase/migrations/12_usage_events.sql", "supabase/migrations/28_record_usage_event_serializable.sql"],
+    "recurring": false,
+    "tags": ["supabase", "concurrency", "race-condition", "rpc", "advisory-lock", "phase-09"]
+  },
+  {
+    "id": "ERR-032",
+    "timestamp": "2026-04-25",
+    "session": 50,
+    "category": "latent-defect",
+    "source": "supabase",
+    "error_message": "PayFast webhook writes monthly_posts_used / monthly_ai_generations_used but actual client_usage_metrics columns may be posts_monthly / ai_generations_monthly -- silent counter reset failure",
+    "root_cause": "Distinct from ERR-001: this is a different mismatch in the PayFast ITN webhook (lib/billing/subscriptions.ts handlePaymentComplete). Either the webhook write is silently no-op (column-doesn't-exist error swallowed) or both naming conventions exist via a trigger normalizing them.",
+    "resolution": "Phase 09 plan 09-05 diagnostic SQL (audit-client-usage-metrics.sql) inspects information_schema and row data to confirm which case applies. Phase 10 USAGE-13 cleanup migrates legacy reads/writes to the unified usage_events RPC.",
+    "prevention": "Phase 10 retires client_usage_metrics; usage tracking unifies on usage_events + record_usage_event RPC. Diagnostic catches discrepancy before migration runs.",
+    "files_affected": ["lib/billing/subscriptions.ts", "lib/tier/feature-gate.ts"],
+    "recurring": true,
+    "tags": ["supabase", "schema-mismatch", "client_usage_metrics", "webhook", "billing", "phase-09", "phase-10"]
   }
 ]

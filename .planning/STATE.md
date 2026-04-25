@@ -11,12 +11,12 @@ See: .planning/PROJECT.md (updated 2026-04-24)
 ## Current Position
 
 Milestone: v3.0 Commercial Launch (started 2026-04-24)
-Phase: 09 of 12 (Foundations & Guard Rails) — **not started, awaiting `/gsd:plan-phase 09`**
-Plan: Plans not yet derived
-Status: Ready to plan. Roadmap approved, 53 REQ-IDs mapped across Phases 09-12 (45 unconditional + 8 CAMP conditional). Research synthesis complete (SUMMARY, PITFALLS, ARCHITECTURE, STACK, FEATURES).
-Last activity: 2026-04-24 — Roadmap created. Phase 09-12 structure locked. First paying client target = Phase 10 exit.
+Phase: 09 of 12 (Foundations & Guard Rails) — **planned, ready for `/gsd:execute-phase 09`**
+Plan: 5 plans across 3 waves, verified in 2 iterations (commit 05991d93)
+Status: Planning complete. All catastrophic-pitfall guards scoped. 4 latent bugs catalogued (ERR-029 through ERR-032). Ready for execution in fresh session.
+Last activity: 2026-04-25 — Session 50: Phase 09 research + 5 plans + 2-iteration verification. 14 plan-quality issues found and resolved.
 
-Progress: [░░░░░░░░░░] 0% (v3.0 milestone)
+Progress: [█░░░░░░░░░] 10% (v3.0 milestone — planning done; execution begins next session)
 
 ## Performance Metrics
 
@@ -30,7 +30,7 @@ Progress: [░░░░░░░░░░] 0% (v3.0 milestone)
 |-------|-------|--------|
 | 01-07 (v1.0) | 19/19 | Complete |
 | 08 Meta | 2/5 | Partial (deferred) |
-| 09 (v3.0) | 0/TBD | Not started |
+| **09 (v3.0)** | **0/5 planned** | **Planned, ready for execution** |
 | 10 (v3.0) | 0/TBD | Not started |
 | 11 (v3.0) | 0/TBD | Not started |
 | 12 (v3.0) | 0/TBD | Not started |
@@ -63,6 +63,86 @@ Progress: [░░░░░░░░░░] 0% (v3.0 milestone)
 
 ## Session Continuity
 
-Last session: 2026-04-24 — Milestone v3.0 kick-off + roadmap creation
-Stopped at: ROADMAP.md written (Phases 09-12), REQUIREMENTS.md traceability populated, STATE.md updated for v3.0
-Resume with: `/gsd:plan-phase 09` to begin Phase 09 (Foundations & Guard Rails)
+Last session: 2026-04-25 — Session 50: Phase 09 planning complete
+
+### Session 50 Summary (2026-04-25) — v3.0 Milestone Initialization + Phase 09 Planning
+**What was done:**
+1. Strategic pivot conversation: pricing model rebuilt (R599 Core + R1,199 Vertical + add-ons + R1,499 setup), Easy/Advanced UX pattern locked (per-page toggle), VDJ accounting reframed as embedded knowledge (not integration), competitive positioning vs Holo AI established
+2. Initialized v3.0 Commercial Launch milestone via `/gsd:new-milestone`:
+   - Updated PROJECT.md with v3.0 milestone section (10 target capabilities)
+   - Created MILESTONES.md ledger (phase-numbering history)
+   - Reset STATE.md for new milestone
+   - Created `lib/finance/knowledge/` template for VDJ knowledge dump (sa-vat.md template + README)
+   - Commit f74c584f
+3. Spawned 4 parallel gsd-project-researcher agents (stack/features/architecture/pitfalls):
+   - STACK.md — Haiku 4.5 default, grammy/Upstash/fal.ai stack, ZAR cost estimates
+   - FEATURES.md — 22 table-stakes / 15 differentiators / 17 anti-features
+   - ARCHITECTURE.md — 4 critical context corrections (`tenant_modules.limits` doesn't exist, `agent_sessions.cost_usd` missing, etc.)
+   - PITFALLS.md — 25 pitfalls (15 critical, 6 moderate, 4 minor)
+4. Synthesized research into SUMMARY.md (commit e6b5eec6) — 5 cross-cutting decisions surfaced
+5. Chris locked all 5 cross-cutting decisions: hybrid PayFast, scope reality (~8-11 weeks solo), no existing paying orgs, 17 anti-features confirmed, Anthropic Option B cache isolation
+6. Generated REQUIREMENTS.md — 53 REQ-IDs across 8 categories (commit 86cb6347)
+7. Spawned gsd-roadmapper — created ROADMAP.md with 4 phases (09-12), all reqs mapped, success criteria derived (commit bf73271e)
+8. Chris approved roadmap
+9. Ran `/gsd:plan-phase 09`:
+   - Spawned gsd-phase-researcher → 09-RESEARCH.md (60KB; surfaced 4 latent bugs)
+   - Spawned gsd-planner → wrote 09-01 + 09-02; hit usage limit mid-execution
+   - Wrote 09-03, 09-04, 09-05 directly to match planner format
+   - Iteration 1: gsd-plan-checker found 14 issues (4 blocker, 7 high, 3 medium)
+   - Revised 09-02 (typo), 09-03 (ledger columns / plan_id / RPC verification / system param widening), 09-04 (drop env-health, schema alignment, aggregate RPC, plan_id, edge-runtime audit)
+   - Iteration 2: PASSED with 1 trivial inline fix
+   - Commit 05991d93
+
+**Latent bugs surfaced and catalogued (ERR-029..ERR-032):**
+- ERR-029: BaseAgent default = Sonnet (silent cost drain on all 6 production agents) → Phase 09 09-03 fix
+- ERR-030: PayFast webhook stores pf_payment_id as subscription_token (prevents amendment via API) → Phase 09 09-02 fix + 09-05 audit
+- ERR-031: record_usage_event SELECT-SUM-then-INSERT race under READ COMMITTED → Phase 09 09-03 advisory-lock migration 28
+- ERR-032: PayFast webhook writes `monthly_posts_used`/`monthly_ai_generations_used` (likely silent no-op) — different mismatch than ERR-001 → Phase 09 09-05 diagnostic audit, Phase 10 USAGE-13 cleanup
+
+**Key decisions locked:**
+- PayFast hybrid billing (recurring variable-amount + one-off ad-hoc); 1-day sandbox spike in Phase 09 to verify ad-hoc endpoint
+- Haiku 4.5 default model across all 6 BaseAgent subclasses (~98.8% gross margin on AI ops at R599 Core)
+- Anthropic cache isolation Option B: `org_id` as first distinct system block + golden two-tenant CI test
+- All 8 existing orgs: test/dormant — free to migrate/delete (no grandfather logic needed)
+- Campaign Studio decision-gated at Phase 10 exit (CAMP-01..08 conditional)
+- Embedded Finance deferred to v3.1 with accountant review gate on first 3 pilot tenants
+- 17 anti-features confirmed (no double-entry accounting, no native mobile, no video gen, etc.)
+
+**Files committed (5 commits this session):**
+- f74c584f: docs: start milestone v3.0 Commercial Launch
+- e6b5eec6: docs: v3.0 research synthesis (stack/features/architecture/pitfalls)
+- 86cb6347: docs: define milestone v3.0 requirements (53 REQ-IDs)
+- bf73271e: docs: create milestone v3.0 roadmap (phases 09-12)
+- 05991d93: docs: Phase 09 plans (research + 5 plans, verified)
+
+**No code changes this session.** Pure planning + documentation. 583 existing tests still pass (untouched). Build status unchanged.
+
+### Next Session: Execute Phase 09
+
+Resume with:
+1. **Open a fresh session** (context window reset recommended given session-50 depth)
+2. Run `/gsd:execute-phase 09` — 5 plans across 3 waves, ~6-8 dev-days estimated
+3. Pre-flight checks (cheap, do before execution):
+   - `CRON_SECRET` env var present in Vercel? (If not, 09-04 cost-rollup auth will fail in prod)
+   - PayFast sandbox credentials accessible? (Needed for 09-04 ad-hoc spike, 1-day max)
+   - `TELEGRAM_OPS_CHAT_ID` set if you want operator alerts on saga failures (09-02)
+4. Wave 1 (09-01): DB schema migrations 22-27 + audit SQL — apply via Supabase MCP
+5. Wave 2 (09-02 + 09-03 in parallel): Billing composition engine + Usage enforcement / BaseAgent rewrite
+6. Wave 3 (09-04 + 09-05 in parallel): Cost-rollup cron + env validation + PayFast spike + diagnostics
+
+**Phase 09 success criteria** (must all be TRUE before phase closes):
+1. New user subscribes to Core+Accommodation via composition API → PayFast sandbox charges composed amount → snapshot captures plan
+2. Abusive tenant cannot exceed per-tier Anthropic ceiling; 50 concurrent cap-boundary requests = zero leakage
+3. PayFast ITN branches by m_payment_id prefix and validates against snapshot
+4. Startup Zod assertion fails boot on PAYFAST_MODE=production without passphrase
+5. client_usage_metrics dual-state audit complete (no migration yet — Phase 10 cleanup)
+6. Zero end-user UI touched (no /dashboard route changes)
+
+### Carry-forward (deferred, not blockers for v3.0)
+
+- Merge `restaurant-sop-upgrade` → `main` (launch banner, Session 49 work)
+- DNS fix: apex A → `76.76.21.21`, remove Horizons CDN from www
+- WhatsApp Cloud API config (Phase 08.1)
+- Meta OAuth credentials (Phase 08.1)
+- Lookout Deck demo seed data
+- VDJ knowledge dump into `lib/finance/knowledge/` (only needed by v3.1)
