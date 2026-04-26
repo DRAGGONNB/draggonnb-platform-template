@@ -5,18 +5,18 @@
 See: .planning/PROJECT.md (updated 2026-04-24)
 
 **Core value:** Complete multi-tenant B2B operating system for South African SMEs. Shared Supabase DB with RLS-based tenant isolation, wildcard subdomain routing, DB-backed module gating, automated provisioning.
-**Current focus:** v3.0 Commercial Launch — **Phase 10 Wave 2 (Plans 02-05) running 2026-04-26.** Plan 10-02 complete: USAGE-13 closed (client_usage_metrics dropped, all 7 routes on guardUsage). Plan 10-05 complete: /admin/cost-monitoring page with 40% MRR flag. @tanstack/react-table 8.21.3 added. USAGE-11 closed.
-**Current stats:** 220+ DB tables (client_usage_metrics dropped), 198+ API routes, 20+ UI modules, 6 AI agents, 30 N8N workflows (27 active), 635+ tests. Build passing. tsc clean (legacy usage tsc errors resolved).
+**Current focus:** v3.0 Commercial Launch — **Phase 10 Wave 3 (Plan 06) complete 2026-04-26.** Public /pricing live with interactive module picker (VAT-inclusive). Landing redesigned with outcome-led hero + true trust trio (Pitfall F closed). Brand voice wizard UI live at /settings/brand-voice. Dashboard onboarding checklist API-backed.
+**Current stats:** 220+ DB tables (client_usage_metrics dropped), 198+ API routes, 20+ UI modules, 6 AI agents, 30 N8N workflows (27 active), 660+ tests (added 10 vat + 9 module-picker). Build passing. tsc clean for 10-06 surface.
 
 ## Current Position
 
 Milestone: v3.0 Commercial Launch (started 2026-04-24)
-Phase: 10 of 12 (Brand Voice + Site Redesign + 3-Day Onboarding) — IN PROGRESS (2/7 plans complete)
-Plan: 10-02 complete with SUMMARY.md committed. Migration 35 applied to live DB. USAGE-13 closed.
-Status: ERR-033 closed. ERR-034 closed. ERR-035 N/A confirmed. client_usage_metrics table dropped. increment_usage_metric RPC dropped. All 7 metered routes on guardUsage().
-Last activity: 2026-04-26 — Plan 10-02 execution: USAGE-13 legacy usage surface removal + migration 35 apply
+Phase: 10 of 12 (Brand Voice + Site Redesign + 3-Day Onboarding) — IN PROGRESS (6/7 plans complete)
+Plan: 10-06 complete with SUMMARY.md. /pricing + landing redesign + brand voice wizard + dashboard checklist live.
+Status: BILL-01, BILL-09, VOICE-01 (UI), VOICE-08 (UI), SITE-01, SITE-02, SITE-05, ONBOARD-01 (UI), Pitfall F all closed. 3 atomic feat commits + plan-metadata commit.
+Last activity: 2026-04-26 — Plan 10-06 execution: pricing page + outcome-led landing + brand voice wizard + onboarding checklist
 
-Progress: [█░░░░░░░░░] 28% (2/7 Phase 10 plans done)
+Progress: [████████░░] 86% (6/7 Phase 10 plans done)
 
 ## Performance Metrics
 
@@ -40,6 +40,8 @@ Progress: [█░░░░░░░░░] 28% (2/7 Phase 10 plans done)
 ## Accumulated Context
 
 ### Decisions (v3.0-specific, most recent first)
+
+- **2026-04-26 (10-06 execution):** VAT formula locked as `Math.round(cents * 1.15)` — pure integer cent math, no float drift. en-ZA locale renders ZAR as "R599,00" (comma decimal + NBSP thousands) — kept as-is, tests use `\s+` regex. /pricing module picker is RSC + client split: server fetches `billing_addons_catalog`, client renders interactive total. addon IDs NEVER hard-coded — picker iterates whatever the catalog returns. Trust trio "3 business days to go live / Pay in Rands / Cancel anytime" replaces Pitfall F false copy in 4 locations (sections.tsx hero strip, PricingPreview, CTASection, register-interest.tsx). Hero illustration is Lucide gear icon placeholder pending custom SVG. Legacy localStorage `OnboardingChecklist` kept in repo (unreferenced) for safety; new API-backed `app/(dashboard)/_components/onboarding-checklist.tsx` is now the dashboard checklist.
 
 - **2026-04-26 (10-02 execution):** All 7 routes were pre-migrated to guardUsage() before plan ran (prior session work). Plan 10-02 executed as audit+cleanup+apply. lib/usage/meter.ts checkUsage() is the NEW read-only RPC-based helper — NOT the deleted feature-gate.ts function. ERR-035 confirmed N/A (autopilot/generate never queried users table). Provisioning step 01 had a live INSERT to client_usage_metrics (missed in prior session) — removed as part of plan.
 - **2026-04-26 (10-01 execution):** Supabase MCP unavailable — management API PAT (`sbp_98ba...`) used for all migration applies via `scripts/migrations/phase-10/apply-migration.mjs`. `client_profiles` table absent from live DB — migration 31 includes full CREATE TABLE IF NOT EXISTS. `subscription_history` column shape derived from actual code (FLOAT amounts, transaction_id) not plan suggestions. Two `increment_usage_metric` overloads in live DB — migration 35 drops both. ILIKE required for pg_indexes.indexdef case-insensitive matching.
@@ -76,7 +78,7 @@ Progress: [█░░░░░░░░░] 28% (2/7 Phase 10 plans done)
 
 ## Session Continuity
 
-Last session: 2026-04-26 — Plan 10-02 execution: USAGE-13 closed, migration 35 applied, test suite fixed (4 deviations auto-fixed), 2 task commits (3582521e, c469ead9).
+Last session: 2026-04-26 — Plan 10-06 execution: pricing + landing + wizard + checklist surface, 3 task commits (6aed18da, 3eaa0bf2, e4067505) + plan-metadata commit. 19 new tests added (10 vat + 9 module-picker), all green.
 Resume file: None
 
 ### Session 55 Summary (2026-04-26) — Phase 10 Plan 01: Schema Migrations
