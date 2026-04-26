@@ -172,12 +172,12 @@ Populated by gsd-roadmapper 2026-04-24. 53 REQ-IDs across 8 categories, 100% cov
 | REQ-ID | Phase | Status |
 |--------|-------|--------|
 | BILL-01 | Phase 10 | Planned |
-| BILL-02 | Phase 09 | Planned |
-| BILL-03 | Phase 09 | Planned |
-| BILL-04 | Phase 09 | Planned |
-| BILL-05 | Phase 09 | Planned |
-| BILL-06 | Phase 09 | Planned |
-| BILL-07 | Phase 09 | Planned |
+| BILL-02 | Phase 09 | Complete |
+| BILL-03 | Phase 09 | Complete |
+| BILL-04 | Phase 09 | Complete |
+| BILL-05 | Phase 09 | Complete |
+| BILL-06 | Phase 09 | Complete |
+| BILL-07 | Phase 09 | Complete |
 | BILL-08 | Phase 12 | Planned |
 | BILL-09 | Phase 10 | Planned |
 | VOICE-01 | Phase 10 | Planned |
@@ -188,18 +188,18 @@ Populated by gsd-roadmapper 2026-04-24. 53 REQ-IDs across 8 categories, 100% cov
 | VOICE-06 | Phase 10 | Planned |
 | VOICE-07 | Phase 10 | Planned |
 | VOICE-08 | Phase 10 | Planned |
-| USAGE-01 | Phase 09 | Planned |
-| USAGE-02 | Phase 09 | Planned |
+| USAGE-01 | Phase 09 | Complete |
+| USAGE-02 | Phase 09 | Complete |
 | USAGE-03 | Phase 10 | Planned |
 | USAGE-04 | Phase 10 | Planned |
-| USAGE-05 | Phase 09 | Planned |
-| USAGE-06 | Phase 09 | Planned |
-| USAGE-07 | Phase 09 | Planned |
-| USAGE-08 | Phase 09 | Planned |
-| USAGE-09 | Phase 09 | Planned |
-| USAGE-10 | Phase 09 | Planned |
+| USAGE-05 | Phase 09 | Complete |
+| USAGE-06 | Phase 09 | Complete |
+| USAGE-07 | Phase 09 | Complete |
+| USAGE-08 | Phase 09 | Complete |
+| USAGE-09 | Phase 09 | Complete |
+| USAGE-10 | Phase 09 | Complete |
 | USAGE-11 | Phase 10 | Planned |
-| USAGE-12 | Phase 09 | Planned |
+| USAGE-12 | Phase 09 | Complete |
 | USAGE-13 | Phase 10 | Planned |
 | ONBOARD-01 | Phase 10 | Planned |
 | ONBOARD-02 | Phase 10 | Planned |
@@ -222,11 +222,11 @@ Populated by gsd-roadmapper 2026-04-24. 53 REQ-IDs across 8 categories, 100% cov
 | SITE-03 | Phase 10 | Planned |
 | SITE-04 | Phase 10 | Planned |
 | SITE-05 | Phase 10 | Planned |
-| OPS-01 | Phase 09 | Planned |
+| OPS-01 | Phase 09 | Complete |
 | OPS-02 | Phase 12 | Planned |
 | OPS-03 | Phase 12 | Planned |
 | OPS-04 | Phase 12 | Planned |
-| OPS-05 | Phase 09 | Planned |
+| OPS-05 | Phase 09 | Complete |
 | CAMP-01 | Phase 11 (conditional) | Conditional — decision-gated at Phase 10 exit |
 | CAMP-02 | Phase 11 (conditional) | Conditional — decision-gated at Phase 10 exit |
 | CAMP-03 | Phase 11 (conditional) | Conditional — decision-gated at Phase 10 exit |
