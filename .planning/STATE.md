@@ -11,12 +11,12 @@ See: .planning/PROJECT.md (updated 2026-04-24)
 ## Current Position
 
 Milestone: v3.0 Commercial Launch (started 2026-04-24)
-Phase: 09 of 12 (Foundations & Guard Rails) — **Wave 2 in progress (09-02 done, 09-03 in progress)**
-Plan: 2 of 5 complete (09-01 done, 09-02 done). 09-03 executing in parallel.
-Status: 09-02 executed. ERR-030 fixed. compose() engine live. All 8 orgs backfilled. Migration 29 needs manual Supabase apply.
-Last activity: 2026-04-25 — Session 52: Plan 09-02 executed (6 tasks, 6 commits, ~90 min)
+Phase: 09 of 12 (Foundations & Guard Rails) — **Wave 2 complete (09-01 done, 09-02 done, 09-03 done). Wave 3 ready.**
+Plan: 3 of 5 complete (09-01, 09-02, 09-03 done).
+Status: 09-03 executed. ERR-029 fixed. ERR-031 fixed. BaseAgent uses Haiku 4.5. Cost ledger + ceiling guard live. 33 new tests. Migration 29 still needs manual Supabase apply (from 09-02).
+Last activity: 2026-04-26 — Session 53: Plan 09-03 executed (8 tasks, 8 commits, ~45 min)
 
-Progress: [████░░░░░░] 40% (2/5 Phase 09 plans done)
+Progress: [██████░░░░] 60% (3/5 Phase 09 plans done)
 
 ## Performance Metrics
 
@@ -41,6 +41,7 @@ Progress: [████░░░░░░] 40% (2/5 Phase 09 plans done)
 
 ### Decisions (v3.0-specific, most recent first)
 
+- **2026-04-26 (09-03 execution):** Haiku 4.5 (`claude-haiku-4-5-20251001`) is unconditional default for ALL BaseAgent subclasses — Sonnet allow-listed only for scale/platform_admin. USD→ZAR hardcoded as integer `1660` (not `16.6 * 100`, float imprecision). Advisory lock uses `hashtext()` not `hashtextextended()` (32-bit key, no BigInt, same collision risk). Concurrency integration test is env-gated (`TEST_CONCURRENCY_ORG_ID`) — skipped in CI without test org. ai_usage_ledger.error TEXT carries abort detail (`aborted_ceiling: N cents over C`); no separate status column.
 - **2026-04-25 (09-02 execution):** Amount mismatch on ITN: accept + flag (200 to PayFast) — insert amount_mismatch_accepted audit row. Setup fee deferred to post-first-ITN (subscription token needed). payfast-adhoc.ts sends rands — confirmed vs corrected in 09-04 spike. Migration 29 (payfast_subscription_token column) committed to repo but requires manual Supabase Dashboard SQL Editor application. New subscription detected by `!org.activated_at`.
 - **2026-04-25 (09-01 execution):** `user_role` enum = `{admin,manager,user,client}` — no `platform_admin`. RLS admin policies use `role = 'admin'`. `agent_sessions` was not in live DB (migration 05 not applied remotely) — recreated in migration 25 with CREATE IF NOT EXISTS. `client_usage_metrics` uses `posts_created/posts_published/ai_generations_count/metric_date` — NOT `posts_monthly/ai_generations_monthly/reset_date`. All 5 assumed column names absent — ERR-032 scope broader than expected.
 - **2026-04-24 (Phase 09-12 scope):** PayFast billing = hybrid (variable-amount recurring + one-off ad-hoc). Anthropic cache isolation = org_id as first distinct system block + golden two-tenant CI test. Campaign Studio decision-gated at Phase 10 exit. Embedded Finance deferred to v3.1 with accountant review gate. Existing 8 orgs: audit + migrate paying, delete test (no grandfather).
@@ -67,7 +68,7 @@ Progress: [████░░░░░░] 40% (2/5 Phase 09 plans done)
 
 ## Session Continuity
 
-Last session: 2026-04-25 — Session 52: Plan 09-02 executed (billing composition engine, ERR-030 fix, 8 orgs backfilled)
+Last session: 2026-04-26 — Session 53: Plan 09-03 executed (BaseAgent rewrite, cost-ceiling, guardUsage, ERR-029 + ERR-031 fixed)
 Resume file: None
 
 ### Session 50 Summary (2026-04-25) — v3.0 Milestone Initialization + Phase 09 Planning
