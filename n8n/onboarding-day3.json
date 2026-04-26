@@ -1,0 +1,135 @@
+[{
+  "_deployment_note": "TEMPLATE WORKFLOW: Import to N8N instance. Set N8N_WEBHOOK_SECRET env var. Runs daily at 10:00 SAST (08:00 UTC). Finds orgs whose timer_start_day = 2 business days ago AND day3_email_sent_at IS NULL, then POSTs to /api/n8n/onboarding-day with day=3. The Code node computes 2 business days back (skipping weekends).",
+  "id": "onboarding-day3-workflow",
+  "name": "DraggonnB - Onboarding Day 3 (You're Live)",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * 1-5"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0],
+      "id": "cron-day3",
+      "name": "Daily 08:00 UTC (10:00 SAST) Mon-Fri"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Compute the date that is 2 business days before today.\n// Day 3 orgs started their timer 2 business days ago.\nconst today = new Date();\nlet businessDaysBack = 2;\nlet target = new Date(today);\nwhile (businessDaysBack > 0) {\n  target.setDate(target.getDate() - 1);\n  const dow = target.getDay();\n  if (dow !== 0 && dow !== 6) businessDaysBack--;\n}\nconst targetDay = target.toISOString().split('T')[0];\nreturn [{ json: { target_day: targetDay } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 0],
+      "id": "compute-target-day",
+      "name": "Compute Target Day (2 biz days ago)"
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/onboarding_progress?timer_start_day=eq.{{ $json.target_day }}&day3_email_sent_at=is.null&select=organization_id,timer_start_day",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 0],
+      "id": "fetch-day3-orgs",
+      "name": "Fetch Day 3 Orgs",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "draggonnb-supabase",
+          "name": "DraggonnB Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const orgs = $input.first().json;\nif (!Array.isArray(orgs) || orgs.length === 0) {\n  return [{ json: { _skip: true, message: 'No Day 3 orgs to process today' } }];\n}\nconsole.log('Day 3 orgs to process:', orgs.length);\nreturn orgs.map(org => ({ json: org }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 0],
+      "id": "split-orgs",
+      "name": "Split Orgs"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json._skip }}",
+              "value2": true
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [960, 0],
+      "id": "check-skip",
+      "name": "Has Orgs?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.NEXT_PUBLIC_APP_URL ?? 'https://draggonnb-platform.vercel.app' }}/api/n8n/onboarding-day",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-n8n-secret",
+              "value": "={{ $env.N8N_WEBHOOK_SECRET }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ orgId: $json.organization_id, day: 3 }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1200, 80],
+      "id": "send-day3-email",
+      "name": "Send Day 3 Email"
+    }
+  ],
+  "connections": {
+    "Daily 08:00 UTC (10:00 SAST) Mon-Fri": {
+      "main": [[{ "node": "Compute Target Day (2 biz days ago)", "type": "main", "index": 0 }]]
+    },
+    "Compute Target Day (2 biz days ago)": {
+      "main": [[{ "node": "Fetch Day 3 Orgs", "type": "main", "index": 0 }]]
+    },
+    "Fetch Day 3 Orgs": {
+      "main": [[{ "node": "Split Orgs", "type": "main", "index": 0 }]]
+    },
+    "Split Orgs": {
+      "main": [[{ "node": "Has Orgs?", "type": "main", "index": 0 }]]
+    },
+    "Has Orgs?": {
+      "main": [[], [{ "node": "Send Day 3 Email", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Africa/Johannesburg"
+  }
+}]
