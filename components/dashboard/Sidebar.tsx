@@ -72,6 +72,7 @@ const navigation = [
       { name: 'Modules', href: '/admin/modules', icon: '📦', badge: null },
       { name: 'Pricing Matrix', href: '/admin/pricing', icon: '💳', badge: null },
       { name: 'Integrations', href: '/admin/integrations', icon: '🔌', badge: 'NEW', badgeColor: 'bg-gradient-to-r from-green-500 to-green-600' },
+      { name: 'Cost Monitoring', href: '/admin/cost-monitoring', icon: '📉', badge: null },
     ],
   },
   {
