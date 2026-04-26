@@ -24,7 +24,9 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ActivityFeed } from '@/components/dashboard/ActivityFeed'
-import { OnboardingChecklist } from '@/components/dashboard/OnboardingChecklist'
+// 10-06 ONBOARD-01: API-backed 4-step checklist (signup / brand voice / kickoff / first action).
+// Replaces the prior localStorage-based legacy checklist.
+import { OnboardingChecklist } from '../_components/onboarding-checklist'
 
 async function getDashboardData(organizationId: string) {
   // USAGE-13: client_usage_metrics dropped in migration 35.
