@@ -89,6 +89,18 @@ function buildSupabaseMock(overrides: {
           insert: vi.fn().mockResolvedValue({ data: null, error: null }),
         }
       }
+      if (table === 'client_profiles') {
+        // loadBrandVoice() in BaseAgent queries this table for brand_voice_prompt.
+        // Return null data (no brand voice configured) — tests that need brand voice
+        // can override createAdminClient per-test.
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              single: vi.fn().mockResolvedValue({ data: null, error: null }),
+            })),
+          })),
+        }
+      }
       if (table === 'agent_sessions') {
         return {
           insert: vi.fn(() => ({
