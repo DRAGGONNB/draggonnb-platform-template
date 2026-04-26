@@ -15,18 +15,21 @@ import {
   generateUnsubscribeToken,
   isEmailTrackingSecretConfigured,
 } from '@/lib/security/email-tokens'
+import { env } from '@/lib/config/env'
 
 // ============================================================================
 // CONFIGURATION
 // ============================================================================
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY
+// env singleton validates RESEND_API_KEY shape at boot (OPS-01).
+// RESEND_API_KEY is optional in env-schema (not all tenants have email configured).
+const RESEND_API_KEY = env.RESEND_API_KEY
 const DEFAULT_FROM_EMAIL = process.env.EMAIL_FROM || 'noreply@draggonnb.app'
 const DEFAULT_FROM_NAME = process.env.EMAIL_FROM_NAME || 'DraggonnB CRMM'
 const REPLY_TO_EMAIL = process.env.EMAIL_REPLY_TO || 'support@draggonnb.app'
 
 // Base URL for tracking pixels and links
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+const APP_URL = env.NEXT_PUBLIC_APP_URL
 
 // ============================================================================
 // RESEND CLIENT
@@ -39,6 +42,7 @@ function getResendClient(): Resend {
     if (!RESEND_API_KEY) {
       throw new Error('RESEND_API_KEY environment variable is not set')
     }
+    // RESEND_API_KEY validated by env singleton at boot (re_* prefix check)
     resendClient = new Resend(RESEND_API_KEY)
   }
   return resendClient

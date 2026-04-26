@@ -1,4 +1,5 @@
 import crypto from 'crypto'
+import { env } from '@/lib/config/env'
 
 /**
  * PayFast API Types
@@ -216,22 +217,12 @@ export const PRICING_TIERS: Record<string, PricingTier> = {
  * Get PayFast configuration
  */
 export function getPayFastConfig() {
-  const merchantId = process.env.PAYFAST_MERCHANT_ID
-  const merchantKey = process.env.PAYFAST_MERCHANT_KEY
-  const passphrase = process.env.PAYFAST_PASSPHRASE
-  const mode = process.env.PAYFAST_MODE || 'sandbox'
-
-  if (!merchantId || !merchantKey) {
-    throw new Error('Missing PayFast credentials (PAYFAST_MERCHANT_ID, PAYFAST_MERCHANT_KEY)')
-  }
-
-  // Warn if production mode is enabled but passphrase is missing
-  if (mode === 'production' && !passphrase) {
-    console.warn(
-      '[PayFast] WARNING: PAYFAST_PASSPHRASE is not set but PAYFAST_MODE is production. ' +
-      'Signature validation will fail. Set PAYFAST_PASSPHRASE in your environment variables.'
-    )
-  }
+  // env singleton validates all PayFast vars at boot (OPS-01).
+  // PAYFAST_MODE=production without PAYFAST_PASSPHRASE throws at startup.
+  const merchantId = env.PAYFAST_MERCHANT_ID
+  const merchantKey = env.PAYFAST_MERCHANT_KEY
+  const passphrase = env.PAYFAST_PASSPHRASE
+  const mode = env.PAYFAST_MODE
 
   return {
     merchantId,
@@ -303,9 +294,9 @@ export function createPayFastSubscription(
   const formData: Record<string, string> = {
     merchant_id: config.merchantId,
     merchant_key: config.merchantKey,
-    return_url: `${process.env.PAYFAST_RETURN_URL || `${process.env.NEXT_PUBLIC_APP_URL}/payment/success`}?tier=${encodeURIComponent(request.metadata?.planTier || '')}`,
-    cancel_url: process.env.PAYFAST_CANCEL_URL || `${process.env.NEXT_PUBLIC_APP_URL}/pricing`,
-    notify_url: process.env.PAYFAST_NOTIFY_URL || `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/payfast`,
+    return_url: `${env.PAYFAST_RETURN_URL || `${env.NEXT_PUBLIC_APP_URL}/payment/success`}?tier=${encodeURIComponent(request.metadata?.planTier || '')}`,
+    cancel_url: env.PAYFAST_CANCEL_URL || `${env.NEXT_PUBLIC_APP_URL}/pricing`,
+    notify_url: env.PAYFAST_NOTIFY_URL || `${env.NEXT_PUBLIC_APP_URL}/api/webhooks/payfast`,
     name_first: request.organizationName.split(' ')[0] || 'Customer',
     name_last: request.organizationName.split(' ').slice(1).join(' ') || 'Account',
     email_address: request.email,

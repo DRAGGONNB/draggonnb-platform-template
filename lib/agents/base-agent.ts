@@ -18,6 +18,7 @@ import { MODEL_IDS, DEFAULT_MODEL, selectModel } from '@/lib/ai/model-registry'
 import { checkCostCeiling, projectCost, CostCeilingExceededError } from '@/lib/ai/cost-ceiling'
 import { computeCostZarCents } from '@/lib/ai/cost-calculator'
 import { getCanonicalTierName } from '@/lib/payments/payfast'
+import { env } from '@/lib/config/env'
 import type { ModelId } from '@/lib/ai/model-registry'
 import type {
   AgentConfig,
@@ -46,14 +47,8 @@ let anthropicClient: Anthropic | null = null
 
 function getAnthropicClient(): Anthropic {
   if (!anthropicClient) {
-    const apiKey = process.env.ANTHROPIC_API_KEY
-    if (!apiKey) {
-      throw new Error(
-        'ANTHROPIC_API_KEY environment variable is not set. ' +
-        'Get your key from https://console.anthropic.com/settings/keys'
-      )
-    }
-    anthropicClient = new Anthropic({ apiKey })
+    // env singleton validates ANTHROPIC_API_KEY at boot (OPS-01).
+    anthropicClient = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY })
   }
   return anthropicClient
 }
