@@ -72,8 +72,8 @@ export function RegisterInterestSection() {
           </h2>
           <p className="mx-auto max-w-xl text-lg text-[#A8A9AD]">
             Be first in line when we open the doors. Early registrants get
-            priority onboarding, a 14-day free trial, and a founding-member
-            discount locked in.
+            priority onboarding, 3 business days to go live, and a
+            founding-member discount locked in.
           </p>
         </div>
 

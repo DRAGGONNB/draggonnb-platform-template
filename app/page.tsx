@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation'
 import { LandingNav } from '@/components/landing/nav'
+import { HeroSection } from '@/components/landing/hero-section'
 import {
-  HeroSection,
+  TrustIndicators,
   ModuleShowcaseSection,
   HowItWorksSection,
   SocialProofSection,
@@ -28,6 +29,7 @@ export default function Home({
       <LandingNav />
       <main>
         <HeroSection />
+        <TrustIndicators />
         <ModuleShowcaseSection />
         <HowItWorksSection />
         <IndustrySolutionsSection />
