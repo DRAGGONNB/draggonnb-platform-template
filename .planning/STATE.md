@@ -5,18 +5,18 @@
 See: .planning/PROJECT.md (updated 2026-04-24)
 
 **Core value:** Complete multi-tenant B2B operating system for South African SMEs. Shared Supabase DB with RLS-based tenant isolation, wildcard subdomain routing, DB-backed module gating, automated provisioning.
-**Current focus:** v3.0 Commercial Launch — **Phase 10 Plan 01 SHIPPED 2026-04-26.** Migrations 31-35 (31-34 applied, 35 staged). ERR-033 closed.
-**Current stats:** 220+ DB tables, 198+ API routes, 20+ UI modules, 6 AI agents, 30 N8N workflows (27 active), 616 tests (34 files). Build passing. tsc clean. 13 Phase 10 migrations live (22-34, 35 staged).
+**Current focus:** v3.0 Commercial Launch — **Phase 10 Wave 2 (Plans 02-05) running 2026-04-26.** Plan 10-02 complete: USAGE-13 closed (client_usage_metrics dropped, all 7 routes on guardUsage). Plan 10-05 complete: /admin/cost-monitoring page with 40% MRR flag. @tanstack/react-table 8.21.3 added. USAGE-11 closed.
+**Current stats:** 220+ DB tables (client_usage_metrics dropped), 198+ API routes, 20+ UI modules, 6 AI agents, 30 N8N workflows (27 active), 635+ tests. Build passing. tsc clean (legacy usage tsc errors resolved).
 
 ## Current Position
 
 Milestone: v3.0 Commercial Launch (started 2026-04-24)
-Phase: 10 of 12 (Brand Voice + Site Redesign + 3-Day Onboarding) — IN PROGRESS (1/7 plans complete)
-Plan: 10-01 complete with SUMMARY.md committed. Migrations 31-35 shipped (31-34 applied, 35 staged for 10-02).
-Status: ERR-033 closed (subscription_history table now exists). agent_sessions FORCE RLS active (POPI gate for VOICE-03). organizations.archived_at live. provisioning_jobs.status='paused' gate active. client_profiles created in live DB with brand voice columns.
-Last activity: 2026-04-26 — Session 55: Phase 10 plan 01 execution (5 schema migrations, 4 applied to live DB, 1 staged)
+Phase: 10 of 12 (Brand Voice + Site Redesign + 3-Day Onboarding) — IN PROGRESS (2/7 plans complete)
+Plan: 10-02 complete with SUMMARY.md committed. Migration 35 applied to live DB. USAGE-13 closed.
+Status: ERR-033 closed. ERR-034 closed. ERR-035 N/A confirmed. client_usage_metrics table dropped. increment_usage_metric RPC dropped. All 7 metered routes on guardUsage().
+Last activity: 2026-04-26 — Plan 10-02 execution: USAGE-13 legacy usage surface removal + migration 35 apply
 
-Progress: [░░░░░░░░░░] 14% (1/7 Phase 10 plans done)
+Progress: [█░░░░░░░░░] 28% (2/7 Phase 10 plans done)
 
 ## Performance Metrics
 
@@ -41,6 +41,7 @@ Progress: [░░░░░░░░░░] 14% (1/7 Phase 10 plans done)
 
 ### Decisions (v3.0-specific, most recent first)
 
+- **2026-04-26 (10-02 execution):** All 7 routes were pre-migrated to guardUsage() before plan ran (prior session work). Plan 10-02 executed as audit+cleanup+apply. lib/usage/meter.ts checkUsage() is the NEW read-only RPC-based helper — NOT the deleted feature-gate.ts function. ERR-035 confirmed N/A (autopilot/generate never queried users table). Provisioning step 01 had a live INSERT to client_usage_metrics (missed in prior session) — removed as part of plan.
 - **2026-04-26 (10-01 execution):** Supabase MCP unavailable — management API PAT (`sbp_98ba...`) used for all migration applies via `scripts/migrations/phase-10/apply-migration.mjs`. `client_profiles` table absent from live DB — migration 31 includes full CREATE TABLE IF NOT EXISTS. `subscription_history` column shape derived from actual code (FLOAT amounts, transaction_id) not plan suggestions. Two `increment_usage_metric` overloads in live DB — migration 35 drops both. ILIKE required for pg_indexes.indexdef case-insensitive matching.
 - **2026-04-26 (09-03 execution):** Haiku 4.5 (`claude-haiku-4-5-20251001`) is unconditional default for ALL BaseAgent subclasses — Sonnet allow-listed only for scale/platform_admin. USD→ZAR hardcoded as integer `1660` (not `16.6 * 100`, float imprecision). Advisory lock uses `hashtext()` not `hashtextextended()` (32-bit key, no BigInt, same collision risk). Concurrency integration test is env-gated (`TEST_CONCURRENCY_ORG_ID`) — skipped in CI without test org. ai_usage_ledger.error TEXT carries abort detail (`aborted_ceiling: N cents over C`); no separate status column.
 - **2026-04-25 (09-02 execution):** Amount mismatch on ITN: accept + flag (200 to PayFast) — insert amount_mismatch_accepted audit row. Setup fee deferred to post-first-ITN (subscription token needed). payfast-adhoc.ts sends rands — confirmed vs corrected in 09-04 spike. Migration 29 (payfast_subscription_token column) committed to repo but requires manual Supabase Dashboard SQL Editor application. New subscription detected by `!org.activated_at`.
@@ -59,7 +60,7 @@ Progress: [░░░░░░░░░░] 14% (1/7 Phase 10 plans done)
 **Soft (Phase 10 backlog):**
 - 50-concurrent guardUsage integration test in CI (provision `TEST_CONCURRENCY_ORG_ID` org with `billing_plans.limits.ai_generations=50`, verify advisory lock holds).
 - Env-singleton-in-tests fix: 09-04 env singleton throws at module load when `.env.local` is incomplete; vitest setup needs an env mock so tests that transitively import `lib/payments/payfast.ts` don't fail. Orphan `pricing-drift-guard.test.ts` was deleted as part of 09-05 wrap-up; broader fix is Phase 10 backlog.
-- USAGE-13 (Plan 10-02): migrate 5 API routes still on legacy `checkUsage`/`incrementUsage` to new `guardUsage()`: autopilot/chat, autopilot/generate, content/generate, content/generate/social, content/generate/email. Delete dead `handlePaymentComplete()` in `lib/billing/subscriptions.ts` (0 callers). Apply migration 35 (staged) after all callsites migrated.
+- ~~USAGE-13 (Plan 10-02): CLOSED~~ — All 7 routes on guardUsage(). Migration 35 applied 2026-04-26. client_usage_metrics dropped, increment_usage_metric RPC dropped.
 - Test cleanup of v3.0-discovered org classification: 4 test orgs queued for delete, 4 dormant orgs (incl. platform_admin org) for soft-archive. archived_at semantics now defined (migration 33).
 - ~~Add RLS to `agent_sessions`~~ — CLOSED (migration 33 section B, 4 policies active).
 - env-schema unit tests (Task 09 of 09-04 deferred): `__tests__/unit/config/env-schema.test.ts` for the 3 superRefine cross-validation rules.
@@ -75,7 +76,7 @@ Progress: [░░░░░░░░░░] 14% (1/7 Phase 10 plans done)
 
 ## Session Continuity
 
-Last session: 2026-04-26 — Session 55: Phase 10 Plan 01 execution — 5 schema migrations written, 4 applied to live Supabase, 1 staged for plan 10-02. ERR-033 closed. agent_sessions FORCE RLS active.
+Last session: 2026-04-26 — Plan 10-02 execution: USAGE-13 closed, migration 35 applied, test suite fixed (4 deviations auto-fixed), 2 task commits (3582521e, c469ead9).
 Resume file: None
 
 ### Session 55 Summary (2026-04-26) — Phase 10 Plan 01: Schema Migrations
