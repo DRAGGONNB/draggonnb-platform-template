@@ -4,26 +4,11 @@
 -- REQ ID: USAGE-13 (remove legacy checkUsage/incrementUsage surface)
 -- Created: 2026-04-26
 --
--- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
--- DO NOT APPLY UNTIL plan 10-02 has migrated all 5 callsites off legacy usage:
---   1. lib/billing/subscriptions.ts handlePaymentComplete() DELETED (0 callers)
---   2. app/api/autopilot/chat/route.ts uses guardUsage()
---   3. app/api/autopilot/generate/route.ts uses guardUsage() (also fixes ERR-035)
---   4. app/api/content/generate/route.ts uses guardUsage() + getUserOrg() (ERR-034)
---   5. app/api/content/generate/social/route.ts uses guardUsage()
---   6. app/api/content/generate/email/route.ts uses guardUsage()
---   7. app/api/email/send/route.ts + app/api/email/campaigns/[id]/send/route.ts
---      add guardUsage('email_sends')
---
--- Verification before applying:
---   grep -r "checkUsage\|incrementUsage\|client_usage_metrics" lib/ app/
---   -- Expect: 0 hits BEFORE applying this migration.
---
--- Final apply:
---   node scripts/migrations/phase-10/apply-migration.mjs \
---     supabase/migrations/35_drop_legacy_usage.sql
---   (or Supabase MCP apply_migration in plan 10-02 task 5)
--- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+-- Applied: 2026-04-26 by plan 10-02 (gsd-executor)
+-- Pre-flight: 0 rows updated in client_usage_metrics in last 24h
+-- Callsite audit: all 7 routes confirmed migrated to guardUsage() prior to apply
+-- Verification: client_usage_metrics table gone, increment_usage_metric RPC gone
+-- USAGE-13 CLOSED
 --
 -- NOTE: increment_usage_metric has TWO overloads in live DB:
 --   1. (p_organization_id uuid, p_column_name text, p_amount integer)
