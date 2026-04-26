@@ -113,11 +113,6 @@ export async function createOrganization(
       console.warn(`Warning: user_profiles insert failed (may already exist): ${profileError.message}`);
     }
 
-    // Create usage metrics row
-    await supabase.from('client_usage_metrics').insert({
-      organization_id: org.id,
-    });
-
     // Enable modules based on tier/config
     const enabledModules = job.clientConfig
       ? getModulesForTier(job.clientConfig)

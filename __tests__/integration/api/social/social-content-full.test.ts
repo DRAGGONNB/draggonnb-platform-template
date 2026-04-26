@@ -42,9 +42,11 @@ vi.mock('@/lib/auth/get-user-org', () => ({
 }))
 
 vi.mock('@/lib/tier/feature-gate', () => ({
-  checkUsage: vi.fn(),
-  incrementUsage: vi.fn(),
   checkFeatureAccess: vi.fn(),
+}))
+
+vi.mock('@/lib/usage/guard', () => ({
+  guardUsage: vi.fn(),
 }))
 
 vi.mock('@/lib/social/facebook', () => ({
@@ -945,24 +947,13 @@ describe('Content Generate API', () => {
   })
 
   it('returns 429 when usage limit reached', async () => {
-    const { createClient } = await import('@/lib/supabase/server')
-    vi.mocked(createClient).mockResolvedValue(
-      buildSupabaseMock({
-        users: {
-          select: vi.fn(() => ({
-            eq: vi.fn(() => ({
-              single: vi.fn().mockResolvedValue({
-                data: { id: TEST_USER_ID, organization_id: TEST_ORG_ID },
-                error: null,
-              }),
-            })),
-          })),
-        },
-      })
-    )
+    await mockGetUserOrgSuccess()
 
-    const { checkUsage } = await import('@/lib/tier/feature-gate')
-    vi.mocked(checkUsage).mockResolvedValue({ allowed: false, limit: 10, current: 10 } as any)
+    const { guardUsage } = await import('@/lib/usage/guard')
+    const { UsageCapExceededError } = await import('@/lib/usage/types')
+    vi.mocked(guardUsage).mockRejectedValue(
+      new UsageCapExceededError(TEST_ORG_ID, 'ai_generations', 50, 50)
+    )
 
     await testApiHandler({
       appHandler: contentGenerateRoute as any,
@@ -974,7 +965,7 @@ describe('Content Generate API', () => {
         })
         expect(res.status).toBe(429)
         const body = await res.json()
-        expect(body.error).toContain('limit')
+        expect(body.error).toBe('usage_cap_exceeded')
       },
     })
   })
