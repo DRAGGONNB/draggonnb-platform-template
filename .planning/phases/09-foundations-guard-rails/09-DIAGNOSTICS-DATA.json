@@ -1,0 +1,247 @@
+{
+  "generated": "2026-04-26",
+  "phase": "09",
+  "plan": "05",
+  "callsites": {
+    "legacy_write_sites": [
+      {
+        "file": "lib/billing/subscriptions.ts",
+        "lines": "308-313",
+        "columns_targeted": ["monthly_posts_used", "monthly_ai_generations_used", "reset_date"],
+        "operation": "UPDATE (reset on payment complete)",
+        "columns_exist": false,
+        "callers_in_app": 0,
+        "is_dead_code": true,
+        "phase10_action": "delete handlePaymentComplete function (no callers)"
+      },
+      {
+        "file": "lib/tier/feature-gate.ts",
+        "lines": "226-256",
+        "columns_targeted": [
+          "posts_monthly",
+          "ai_generations_monthly",
+          "emails_sent_monthly",
+          "agent_invocations_monthly",
+          "autopilot_runs_monthly"
+        ],
+        "operation": "UPDATE via increment_usage_metric RPC (dynamic column name)",
+        "columns_exist": false,
+        "is_dead_code": false,
+        "phase10_action": "replace incrementUsage() with guardUsage() calls; deprecate checkUsage()"
+      },
+      {
+        "file": "app/api/email/send/route.ts",
+        "lines": "280-283",
+        "columns_targeted": ["emails_sent_monthly"],
+        "operation": "UPDATE (increment after send)",
+        "columns_exist": false,
+        "is_dead_code": false,
+        "phase10_action": "replace with guardUsage({ orgId, metric: 'email_sends' })"
+      },
+      {
+        "file": "app/api/email/campaigns/[id]/send/route.ts",
+        "lines": "284-287",
+        "columns_targeted": ["emails_sent_monthly"],
+        "operation": "UPDATE (increment after bulk send)",
+        "columns_exist": false,
+        "is_dead_code": false,
+        "phase10_action": "replace with guardUsage({ orgId, metric: 'email_sends' })"
+      }
+    ],
+    "legacy_read_sites": [
+      {
+        "file": "lib/tier/feature-gate.ts",
+        "lines": "179-198",
+        "columns_read": ["posts_monthly", "ai_generations_monthly"],
+        "operation": "SELECT for cap-check before action",
+        "columns_exist": false,
+        "behavior": "returns null -> 0 -> always allowed (permissive failure)",
+        "phase10_action": "replace checkUsage() with guardUsage() in all 5 API route callers"
+      },
+      {
+        "file": "app/api/email/send/route.ts",
+        "lines": "84-89",
+        "columns_read": ["emails_sent_monthly", "emails_limit"],
+        "operation": "SELECT for cap-check",
+        "columns_exist": false,
+        "behavior": "returns null -> 0 -> always allowed",
+        "phase10_action": "replace with guardUsage() pre-check"
+      },
+      {
+        "file": "app/api/email/campaigns/[id]/send/route.ts",
+        "lines": "71-76",
+        "columns_read": ["emails_sent_monthly"],
+        "operation": "SELECT for cap-check",
+        "columns_exist": false,
+        "behavior": "returns null -> 0 -> always allowed",
+        "phase10_action": "replace with guardUsage() pre-check"
+      }
+    ],
+    "legacy_callers_of_checkUsage": [
+      { "file": "app/api/autopilot/chat/route.ts", "lines": "5,16,49", "metric": "agent_invocations" },
+      { "file": "app/api/autopilot/generate/route.ts", "lines": "5,64,233", "metric": "agent_invocations" },
+      { "file": "app/api/content/generate/route.ts", "lines": "3,53,126", "metric": "ai_generations" },
+      { "file": "app/api/content/generate/social/route.ts", "lines": "4,39,110", "metric": "ai_generations" },
+      { "file": "app/api/content/generate/email/route.ts", "lines": "4,39,103", "metric": "ai_generations" }
+    ],
+    "new_system_guardUsage": [
+      {
+        "file": "lib/usage/guard.ts",
+        "operation": "calls record_usage_event RPC (advisory-lock-hardened, migration 28)",
+        "callers_in_app": 0,
+        "note": "No app routes have migrated to guardUsage yet — Phase 10 USAGE-13"
+      }
+    ],
+    "dead_code": [
+      {
+        "file": "lib/billing/subscriptions.ts",
+        "function": "handlePaymentComplete",
+        "callers": 0,
+        "reason": "Superseded by 09-02 ITN rewrite in app/api/webhooks/payfast/route.ts"
+      }
+    ]
+  },
+  "orgs": [
+    {
+      "id": "678634bd-0f62-423d-a828-b7a1394580b5",
+      "name": "Test Restaurant ABC",
+      "subdomain": null,
+      "subscription_tier": "starter",
+      "subscription_status": "active",
+      "created_at": "2025-10-14",
+      "user_count": 0,
+      "has_payfast_token": false,
+      "usage_events": 0,
+      "agent_sessions": 0,
+      "classification": "test",
+      "classification_reason": "name contains 'Test'",
+      "phase10_action": "delete",
+      "delete_sql": "DELETE FROM organizations WHERE id = '678634bd-0f62-423d-a828-b7a1394580b5';"
+    },
+    {
+      "id": "094a610d-2a05-44a4-9fa5-e6084bb632c9",
+      "name": "DragoonB Business Automation",
+      "subdomain": null,
+      "subscription_tier": "platform_admin",
+      "subscription_status": "active",
+      "created_at": "2025-10-16",
+      "user_count": 2,
+      "has_payfast_token": false,
+      "usage_events": 0,
+      "agent_sessions": 0,
+      "classification": "dormant",
+      "classification_reason": "platform admin org, no usage activity, real admin users",
+      "phase10_action": "soft-archive",
+      "archive_sql": "UPDATE organizations SET archived_at = now() WHERE id = '094a610d-2a05-44a4-9fa5-e6084bb632c9';"
+    },
+    {
+      "id": "648ffc0d-1732-43a8-8fb8-2ed69486a0db",
+      "name": "Sunset Beach Resort",
+      "subdomain": null,
+      "subscription_tier": "professional",
+      "subscription_status": "active",
+      "created_at": "2025-10-16",
+      "user_count": 0,
+      "has_payfast_token": false,
+      "usage_events": 0,
+      "agent_sessions": 0,
+      "classification": "dormant",
+      "classification_reason": "accommodation module seed data, 0 real users",
+      "phase10_action": "soft-archive",
+      "archive_sql": "UPDATE organizations SET archived_at = now() WHERE id = '648ffc0d-1732-43a8-8fb8-2ed69486a0db';"
+    },
+    {
+      "id": "f898b56b-1988-4500-93a8-0e235b564b7b",
+      "name": "TechStart Solutions",
+      "subdomain": null,
+      "subscription_tier": "starter",
+      "subscription_status": "trial",
+      "created_at": "2025-10-16",
+      "user_count": 0,
+      "has_payfast_token": false,
+      "usage_events": 0,
+      "agent_sessions": 0,
+      "classification": "dormant",
+      "classification_reason": "seeded demo data, 0 real users, trial status",
+      "phase10_action": "soft-archive",
+      "archive_sql": "UPDATE organizations SET archived_at = now() WHERE id = 'f898b56b-1988-4500-93a8-0e235b564b7b';"
+    },
+    {
+      "id": "0b82c005-5dcc-4228-a9f0-3a734eac599f",
+      "name": "Demo Company",
+      "subdomain": null,
+      "subscription_tier": "professional",
+      "subscription_status": "active",
+      "created_at": "2025-12-15",
+      "user_count": 0,
+      "has_payfast_token": false,
+      "usage_events": 0,
+      "agent_sessions": 0,
+      "classification": "test",
+      "classification_reason": "name contains 'Demo'",
+      "phase10_action": "delete",
+      "delete_sql": "DELETE FROM organizations WHERE id = '0b82c005-5dcc-4228-a9f0-3a734eac599f';"
+    },
+    {
+      "id": "dcc325b0-8b7b-40a8-b3da-1b1a87dc34fd",
+      "name": "FIGARIE",
+      "subdomain": null,
+      "subscription_tier": "professional",
+      "subscription_status": "active",
+      "created_at": "2026-02-10",
+      "user_count": 2,
+      "has_payfast_token": false,
+      "usage_events": 0,
+      "agent_sessions": 0,
+      "classification": "dormant",
+      "classification_reason": "provisioned during testing, 2 real admins, no billing activity",
+      "phase10_action": "soft-archive",
+      "archive_sql": "UPDATE organizations SET archived_at = now() WHERE id = 'dcc325b0-8b7b-40a8-b3da-1b1a87dc34fd';"
+    },
+    {
+      "id": "6414eb77-0688-40a0-ab98-ce442fda4b98",
+      "name": "chrisctserv's Organization",
+      "subdomain": null,
+      "subscription_tier": "starter",
+      "subscription_status": "trial",
+      "created_at": "2026-03-17",
+      "user_count": 2,
+      "has_payfast_token": false,
+      "usage_events": 0,
+      "agent_sessions": 0,
+      "classification": "test",
+      "classification_reason": "developer test org created via UI registration during testing",
+      "phase10_action": "delete",
+      "delete_sql": "DELETE FROM organizations WHERE id = '6414eb77-0688-40a0-ab98-ce442fda4b98';"
+    },
+    {
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Swa-Zulu Game Lodge",
+      "subdomain": null,
+      "subscription_tier": "professional",
+      "subscription_status": "active",
+      "created_at": "2026-03-28",
+      "user_count": 3,
+      "has_payfast_token": false,
+      "usage_events": 0,
+      "agent_sessions": 0,
+      "classification": "test",
+      "classification_reason": "sequential seed UUID (a1b2c3d4...), seed user UUIDs (aaaaaaaa-*)",
+      "phase10_action": "delete",
+      "delete_sql": "DELETE FROM organizations WHERE id = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';"
+    }
+  ],
+  "summary": {
+    "total_orgs": 8,
+    "test_count": 4,
+    "dormant_count": 4,
+    "paying_count": 0,
+    "payfast_tokens_set": 0,
+    "usage_events_total": 0,
+    "agent_sessions_total": 0,
+    "client_usage_metrics_rows": 0,
+    "err032_case": "A",
+    "err030_triggered_in_prod": false,
+    "safe_for_phase10": true
+  }
+}
