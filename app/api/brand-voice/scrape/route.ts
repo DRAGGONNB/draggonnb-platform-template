@@ -18,7 +18,7 @@ const ScrapeInputSchema = z.object({
 export async function POST(req: NextRequest) {
   const { data: userOrg, error: authError } = await getUserOrg()
   if (authError || !userOrg) {
-    return Response.json({ error: authError?.message ?? 'unauthenticated' }, { status: 401 })
+    return Response.json({ error: authError ?? 'unauthenticated' }, { status: 401 })
   }
 
   const body = await req.json().catch(() => null)

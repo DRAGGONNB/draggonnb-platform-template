@@ -58,6 +58,7 @@ describe('handlePaymentFailed — subscription_history INSERT', () => {
     const orgId = 'test-org-id'
     const paymentData = {
       pf_payment_id: 'pf-abc123',
+      payment_status: 'FAILED',
       amount_gross: '150000',
       amount_fee: '4250',
       amount_net: '145750',

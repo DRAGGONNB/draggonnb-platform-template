@@ -109,8 +109,10 @@ export default async function DashboardPage() {
 
   const contactsCount = data.contactsCount
   const activeDealsCount = data.activeDeals.length
-  const emailsSent = data.usage?.posts_published || 0
-  const contentGenerated = data.usage?.ai_generations_count || 0
+  // USAGE-13: client_usage_metrics dropped. These widgets now show 0 until
+  // get_usage_summary RPC integration lands in 10-06.
+  const emailsSent = 0
+  const contentGenerated = 0
   const pipelineValue = data.activeDeals.reduce((sum, d) => sum + (d.value || 0), 0)
   const wonDeals = data.deals.filter((d) => d.stage === 'won')
   const totalWonValue = wonDeals.reduce((sum, d) => sum + (d.value || 0), 0)
@@ -380,15 +382,13 @@ export default async function DashboardPage() {
                   <div className="mb-1.5 flex justify-between text-sm">
                     <span className="text-gray-600">Posts Published</span>
                     <span className="font-medium text-gray-900">
-                      {data.usage?.posts_published || 0} / 30
+                      0 / 30
                     </span>
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-gray-100">
                     <div
                       className="h-full rounded-full bg-primary transition-all"
-                      style={{
-                        width: `${Math.min(((data.usage?.posts_published || 0) / 30) * 100, 100)}%`,
-                      }}
+                      style={{ width: '0%' }}
                     />
                   </div>
                 </div>
@@ -396,15 +396,13 @@ export default async function DashboardPage() {
                   <div className="mb-1.5 flex justify-between text-sm">
                     <span className="text-gray-600">AI Generations</span>
                     <span className="font-medium text-gray-900">
-                      {data.usage?.ai_generations_count || 0} / 50
+                      0 / 50
                     </span>
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-gray-100">
                     <div
                       className="h-full rounded-full bg-amber-500 transition-all"
-                      style={{
-                        width: `${Math.min(((data.usage?.ai_generations_count || 0) / 50) * 100, 100)}%`,
-                      }}
+                      style={{ width: '0%' }}
                     />
                   </div>
                 </div>

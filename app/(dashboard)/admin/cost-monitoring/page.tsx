@@ -18,7 +18,7 @@ export default async function CostMonitoringPage() {
     redirect('/dashboard')
   }
 
-  let rows
+  let rows: Awaited<ReturnType<typeof getCostMonitoringRows>> = []
   let fetchError: string | null = null
 
   try {

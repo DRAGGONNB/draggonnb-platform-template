@@ -214,7 +214,7 @@ describe('BaseAgent', () => {
   })
 
   it('marks session as failed on error', async () => {
-    const updateMock = vi.fn(() => ({
+    const updateMock: any = vi.fn(() => ({
       eq: vi.fn().mockResolvedValue({ data: null, error: null }),
     }))
 

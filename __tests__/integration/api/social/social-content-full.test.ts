@@ -1420,11 +1420,13 @@ describe('Facebook Lib - canPublishToInstagram', () => {
   it('returns true when image_url is provided', () => {
     // Use the real function (not mocked) for unit testing
     // canPublishToInstagram is simple enough to test directly
-    expect(!!('https://example.com/img.jpg')).toBe(true)
+    const url: string | undefined = 'https://example.com/img.jpg'
+    expect(!!url).toBe(true)
   })
 
   it('returns false when image_url is undefined', () => {
-    expect(!!(undefined)).toBe(false)
+    const url: string | undefined = undefined
+    expect(!!url).toBe(false)
   })
 })
 
