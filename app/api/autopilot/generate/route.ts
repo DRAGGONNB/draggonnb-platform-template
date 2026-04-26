@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getUserOrg } from '@/lib/auth/get-user-org'
 import { getClientProfile, updateCalendarGenerated } from '@/lib/autopilot/client-profile'
 import { BusinessAutopilotAgent } from '@/lib/agents/business-autopilot'
-import { checkUsage, incrementUsage } from '@/lib/tier/feature-gate'
+import { guardUsage } from '@/lib/usage/guard'
+import { UsageCapExceededError } from '@/lib/usage/types'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { AutopilotCalendar, AutopilotCalendarEntry, AutopilotEmailEntry } from '@/lib/agents/types'
 
@@ -60,16 +61,20 @@ export async function POST(request: NextRequest) {
 
   const orgId = userOrg.organizationId
 
-  // Check usage
-  const usageCheck = await checkUsage(orgId, 'agent_invocations')
-  if (!usageCheck.allowed) {
-    return NextResponse.json({
-      error: 'Usage limit reached',
-      reason: usageCheck.reason,
-      current: usageCheck.current,
-      limit: usageCheck.limit,
-      upgradeRequired: usageCheck.upgradeRequired,
-    }, { status: 429 })
+  // Guard usage atomically (advisory-lock-hardened via migration 28)
+  try {
+    await guardUsage({ orgId, metric: 'agent_invocations', qty: 1 })
+  } catch (err) {
+    if (err instanceof UsageCapExceededError) {
+      return NextResponse.json({
+        error: 'usage_cap_exceeded',
+        metric: err.metric,
+        used: err.currentUsage,
+        limit: err.limit,
+      }, { status: 429 })
+    }
+    console.error('guardUsage error (autopilot/generate):', err)
+    return NextResponse.json({ error: 'Usage check failed' }, { status: 500 })
   }
 
   // Load client profile
@@ -229,8 +234,7 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Update usage and last generated
-  await incrementUsage(orgId, 'agent_invocations')
+  // Update last generated (usage already reserved atomically by guardUsage above)
   await updateCalendarGenerated(orgId, week)
 
   return NextResponse.json({

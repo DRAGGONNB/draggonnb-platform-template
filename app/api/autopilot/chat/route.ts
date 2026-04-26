@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getUserOrg } from '@/lib/auth/get-user-org'
 import { getClientProfile } from '@/lib/autopilot/client-profile'
 import { BusinessAutopilotAgent } from '@/lib/agents/business-autopilot'
-import { checkUsage, incrementUsage } from '@/lib/tier/feature-gate'
+import { guardUsage } from '@/lib/usage/guard'
+import { UsageCapExceededError } from '@/lib/usage/types'
 
 export async function POST(request: NextRequest) {
   const { data: userOrg, error: authError } = await getUserOrg()
@@ -12,15 +13,20 @@ export async function POST(request: NextRequest) {
 
   const orgId = userOrg.organizationId
 
-  // Check usage
-  const usageCheck = await checkUsage(orgId, 'agent_invocations')
-  if (!usageCheck.allowed) {
-    return NextResponse.json({
-      error: 'Usage limit reached',
-      reason: usageCheck.reason,
-      current: usageCheck.current,
-      limit: usageCheck.limit,
-    }, { status: 429 })
+  // Guard usage atomically (advisory-lock-hardened via migration 28)
+  try {
+    await guardUsage({ orgId, metric: 'agent_invocations', qty: 1 })
+  } catch (err) {
+    if (err instanceof UsageCapExceededError) {
+      return NextResponse.json({
+        error: 'usage_cap_exceeded',
+        metric: err.metric,
+        used: err.currentUsage,
+        limit: err.limit,
+      }, { status: 429 })
+    }
+    console.error('guardUsage error (autopilot/chat):', err)
+    return NextResponse.json({ error: 'Usage check failed' }, { status: 500 })
   }
 
   let body: { message: string; session_id?: string }
@@ -46,7 +52,6 @@ export async function POST(request: NextRequest) {
 
   try {
     const result = await agent.chat(body.message, orgId, body.session_id)
-    await incrementUsage(orgId, 'agent_invocations')
 
     return NextResponse.json({
       response: result.response,

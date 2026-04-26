@@ -9,6 +9,7 @@ export default defineConfig({
     globals: true,
     environmentMatchGlobs: [
       ['__tests__/unit/**', 'node'],
+      ['__tests__/api/**', 'node'],
       ['__tests__/integration/api/**', 'node'],
       ['__tests__/integration/middleware/**', 'node'],
       ['__tests__/integration/dashboard/**', 'node'],

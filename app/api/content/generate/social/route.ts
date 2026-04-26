@@ -1,9 +1,15 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { getUserOrg } from '@/lib/auth/get-user-org'
 import { buildSocialPrompt } from '@/lib/content-studio/prompt-builder'
-import { checkUsage, incrementUsage } from '@/lib/tier/feature-gate'
+import { guardUsage } from '@/lib/usage/guard'
+import { UsageCapExceededError } from '@/lib/usage/types'
 import type { SocialGenerationInput, SocialGenerationOutput } from '@/lib/content-studio/types'
 
+/**
+ * POST /api/content/generate/social
+ * USAGE-13: replaced checkUsage/incrementUsage with guardUsage()
+ *           replaced from('users') with getUserOrg()
+ */
 export async function POST(request: Request) {
   try {
     const body: SocialGenerationInput = await request.json()
@@ -15,34 +21,31 @@ export async function POST(request: Request) {
       )
     }
 
-    // Auth
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Auth + org lookup
+    const { data: userOrg, error: orgError } = await getUserOrg()
+    if (orgError || !userOrg) {
+      return NextResponse.json({ error: orgError ?? 'org_lookup_failed' }, { status: 401 })
     }
 
-    // Get org
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('organization_id')
-      .eq('id', user.id)
-      .single()
+    const organizationId = userOrg.organizationId
 
-    if (userError || !userData?.organization_id) {
-      return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
-    }
-
-    const organizationId = userData.organization_id
-
-    // Usage check (atomic via centralized feature gate)
-    const usageCheck = await checkUsage(organizationId, 'ai_generations')
-
-    if (!usageCheck.allowed) {
-      return NextResponse.json(
-        { error: 'Monthly AI generation limit reached', limit: usageCheck.limit, current: usageCheck.current },
-        { status: 429 }
-      )
+    // Guard usage atomically (advisory-lock-hardened via migration 28)
+    try {
+      await guardUsage({ orgId: organizationId, metric: 'ai_generations', qty: 1 })
+    } catch (err) {
+      if (err instanceof UsageCapExceededError) {
+        return NextResponse.json(
+          {
+            error: 'usage_cap_exceeded',
+            metric: err.metric,
+            used: err.currentUsage,
+            limit: err.limit,
+          },
+          { status: 429 }
+        )
+      }
+      console.error('guardUsage error (content/generate/social):', err)
+      return NextResponse.json({ error: 'Usage check failed' }, { status: 500 })
     }
 
     // Build prompt and call N8N
@@ -65,7 +68,7 @@ export async function POST(request: Request) {
           tone: body.tone,
           audience: body.audience,
           topic: body.topic,
-          userId: user.id,
+          userId: userOrg.userId,
         }),
         signal: controller.signal,
       })
@@ -106,13 +109,9 @@ export async function POST(request: Request) {
       }
     }
 
-    // Atomically increment usage
-    await incrementUsage(organizationId, 'ai_generations')
-
     return NextResponse.json({
       success: true,
       data: socialOutput,
-      usage: { current: usageCheck.current + 1, limit: usageCheck.limit },
     })
   } catch (error) {
     console.error('Social content generation error:', error)
@@ -122,4 +121,3 @@ export async function POST(request: Request) {
     )
   }
 }
-

@@ -27,17 +27,11 @@ import { ActivityFeed } from '@/components/dashboard/ActivityFeed'
 import { OnboardingChecklist } from '@/components/dashboard/OnboardingChecklist'
 
 async function getDashboardData(organizationId: string) {
+  // USAGE-13: client_usage_metrics dropped in migration 35.
+  // Usage widget on dashboard now sourced from usage_events via layout.tsx sidebar.
   const supabase = await createClient()
 
   try {
-    const usageQuery = supabase
-      .from('client_usage_metrics')
-      .select('*')
-      .eq('organization_id', organizationId)
-      .order('metric_date', { ascending: false })
-      .limit(1)
-      .single()
-
     const contactsQuery = supabase
       .from('contacts')
       .select('id', { count: 'exact', head: true })
@@ -56,16 +50,15 @@ async function getDashboardData(organizationId: string) {
       .limit(5)
 
     const [
-      { data: usageData },
       { count: contactsCount },
       { data: deals },
       { data: recentPosts },
-    ] = await Promise.all([usageQuery, contactsQuery, dealsQuery, postsQuery])
+    ] = await Promise.all([contactsQuery, dealsQuery, postsQuery])
 
     const activeDeals = deals?.filter((d) => !['won', 'lost'].includes(d.stage)) || []
 
     return {
-      usage: usageData,
+      usage: null,
       contactsCount: contactsCount || 0,
       deals: deals || [],
       activeDeals,
