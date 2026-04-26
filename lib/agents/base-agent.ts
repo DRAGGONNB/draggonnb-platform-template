@@ -19,6 +19,7 @@ import { checkCostCeiling, projectCost, CostCeilingExceededError } from '@/lib/a
 import { computeCostZarCents } from '@/lib/ai/cost-calculator'
 import { getCanonicalTierName } from '@/lib/payments/payfast'
 import { env } from '@/lib/config/env'
+import { buildSystemBlocks } from '@/lib/brand-voice/build-system-blocks'
 import type { ModelId } from '@/lib/ai/model-registry'
 import type {
   AgentConfig,
@@ -38,6 +39,7 @@ export type SystemBlock = {
   text: string
   cache_control?: { type: 'ephemeral' }
 }
+
 
 // ============================================================================
 // CLIENT
@@ -74,26 +76,14 @@ function estimateInputTokens(messages: Anthropic.MessageParam[]): number {
   return Math.ceil(JSON.stringify(messages).length / 4)
 }
 
-/**
- * Normalize the system prompt to SystemBlock[] for consistent SDK passing.
- * Accepts string (legacy) or SystemBlock[] (Phase 10 cache-isolation form).
- */
-function normalizeSystem(
-  system: string | SystemBlock[] | undefined
-): SystemBlock[] | undefined {
-  if (!system) return undefined
-  if (typeof system === 'string') {
-    return [{ type: 'text', text: system }]
-  }
-  return system
-}
-
 // ============================================================================
 // BASE AGENT
 // ============================================================================
 
 export abstract class BaseAgent {
   protected config: AgentConfig & { model: ModelId }
+  /** Lazily loaded brand voice prompt (undefined = not yet loaded; null = no brand voice for this org) */
+  private _brandVoiceCached: string | null | undefined = undefined
 
   constructor(config: AgentConfig) {
     // ERR-029 FIX: explicit model resolution — no implicit Sonnet fallback possible
@@ -104,6 +94,24 @@ export abstract class BaseAgent {
       ...config,
       model: resolvedModel, // always Haiku unless subclass explicitly passes a model string
     }
+  }
+
+  /**
+   * Lazily load the org's brand voice from client_profiles.
+   * Caches on the agent instance — a single agent instance that processes multiple requests
+   * in the same Node.js request context will only hit the DB once.
+   * A fresh agent instance per request (typical for stateless API routes) will fetch once per request.
+   */
+  private async loadBrandVoice(orgId: string): Promise<string | null> {
+    if (this._brandVoiceCached !== undefined) return this._brandVoiceCached
+    const supa = createAdminClient()
+    const { data } = await supa
+      .from('client_profiles')
+      .select('brand_voice_prompt')
+      .eq('organization_id', orgId)
+      .single()
+    this._brandVoiceCached = (data as { brand_voice_prompt: string | null } | null)?.brand_voice_prompt ?? null
+    return this._brandVoiceCached
   }
 
   /**
@@ -246,17 +254,21 @@ export abstract class BaseAgent {
 
     // ------------------------------------------------------------------
     // Step 5: Call Anthropic API
+    // Assemble system blocks via buildSystemBlocks for brand-voice cache isolation (VOICE-03/04).
+    // BaseAgent owns block composition — subclasses pass systemPrompt as a plain string.
     // ------------------------------------------------------------------
-    const systemBlocks = normalizeSystem(
-      this.config.systemPrompt as string | SystemBlock[] | undefined
-    )
+    const agentInstructions = typeof this.config.systemPrompt === 'string'
+      ? this.config.systemPrompt
+      : ''
+    const brandVoice = orgId ? await this.loadBrandVoice(orgId) : null
+    const systemBlocks = buildSystemBlocks(orgId ?? 'unknown', agentInstructions, brandVoice)
 
     try {
       const response = await client.messages.create({
         model,
         max_tokens: maxTokens,
         temperature: this.config.temperature,
-        system: systemBlocks as Anthropic.TextBlockParam[] | undefined,
+        system: systemBlocks as Anthropic.TextBlockParam[],
         messages: claudeMessages,
       })
 
