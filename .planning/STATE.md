@@ -12,9 +12,9 @@ See: .planning/PROJECT.md (updated 2026-04-24)
 
 Milestone: v3.0 Commercial Launch (started 2026-04-24)
 Phase: 11 of 12 (Easy/Advanced CRM + Campaign Decision) — IN PROGRESS
-Plan: 11-01 COMPLETE. 11-02 COMPLETE (Wave 1). 11-06 COMPLETE (Wave 2 — N8N engagement-score + cleanup workflows + provisioning seed).
-Status: Wave 1 done. Wave 2: 11-06 done; 11-03/04/05 parallel.
-Last activity: 2026-04-27 — Plan 11-06 executed: 2 N8N workflows + provisioning patch (52b79b26, 04e31706)
+Plan: 11-01 COMPLETE. 11-02 COMPLETE (Wave 1). 11-06 COMPLETE (Wave 2). 11-04 COMPLETE (Wave 2 — 5 channel adapters: email+sms active, fb/ig/linkedin credential-gated stubs. 18 unit tests).
+Status: Wave 1 done. Wave 2: 11-04 + 11-06 done; 11-03/05 parallel remaining.
+Last activity: 2026-04-27 — Plan 11-04 executed: 5 channel adapters + 18 unit tests + env-schema additions (b62ff81c, 051b9323)
 
 ## Resume Next Session
 
