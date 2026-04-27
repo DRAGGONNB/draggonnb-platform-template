@@ -285,8 +285,9 @@ Resume with:
 
 **TODO-A: Module-focused landing redesign** (drives prospect conversion before pricing)
 - Replace generic landing copy with module-specific value propositions, keeping existing look-and-feel (Crimson/Charcoal palette, current section structure, fonts)
-- Modules to feature with "what it can do" detail per Chris: Accommodation, Restaurant, **Trophy OS** (NEW — needs scoping; not in current `module_registry`), Elijah, Other (TBD list)
-- Discovery before plan: confirm "Trophy OS" definition (is it a new module, a renaming of an existing one, or platform-level branding?), confirm full target-module list
+- Modules to feature with "what it can do" detail per Chris: Accommodation, Restaurant, **Trophy OS**, Elijah, CRM + Campaign Studio, Other (TBD)
+- **Trophy OS is a standalone product** at `C:\Dev\DraggonnB\products\trophy-os` (NOT a `module_registry` row in the DraggonnB platform). 24 routes, Phases 0-11/20 built, shares Supabase project `psqfgzbjbgqrmjskdavs` with `safari_*`/`tos_*` table prefixes. Separate Vercel deploy on `trophyos.co.za` planned. Landing page should treat it as a peer product to Accommodation/Restaurant/Elijah, with cross-link emphasis: Trophy OS hunt → Accommodation lodge stay → Restaurant dining → CRM follow-up.
+- Trophy OS scope (verified 2026-04-27): hunting operations for game farms — quota management, safari booking, trophy log (SCI/Rowland Ward), firearm register (SAPS TIP), cold room (skinning/salt/meat), supplier network (taxidermist + butcher + logistics, each their own org-type role), CITES/DEA compliance, WhatsApp-native client comms, multi-org architecture so a farm owner can also run accommodation in coordinated orgs.
 - Quality bar: copy must reflect what's *actually shipped* in each module (no aspirational claims) — links into Phase 12 promised-vs-delivered audit
 - Files likely touched: `components/landing/sections.tsx` (module showcase), `app/page.tsx` (hero + module strip), possibly `lib/landing/modules.ts` (new — declarative module copy manifest)
 - Estimated scope: 1 plan (~300 LOC + designer iteration)
