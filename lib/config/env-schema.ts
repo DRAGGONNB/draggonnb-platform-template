@@ -29,6 +29,13 @@ export const envSchema = z.object({
 
   N8N_API_URL: z.string().url().optional(),
   N8N_API_KEY: z.string().optional(),
+
+  // Phase 11: Campaign Studio. Adapter enabled() checks at runtime — optional here.
+  BULKSMS_TOKEN_ID: z.string().optional(),
+  BULKSMS_TOKEN_SECRET: z.string().optional(),
+  BULKSMS_SENDER_ID: z.string().optional(),
+  META_APP_ID: z.string().optional(),
+  LINKEDIN_CLIENT_ID: z.string().optional(),
 })
 .superRefine((data, ctx) => {
   if (data.PAYFAST_MODE === 'production' && !data.PAYFAST_PASSPHRASE) {
