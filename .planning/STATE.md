@@ -14,7 +14,22 @@ Milestone: v3.0 Commercial Launch (started 2026-04-24)
 Phase: 10 of 12 (Brand Voice + Site Redesign + 3-Day Onboarding) — **COMPLETE 2026-04-27** (7/7 plans)
 Plan: 10-07 closed via human-verify checkpoint approval (Chris: "approved, skip Lighthouse"); 5 atomic commits + SUMMARY committed. Verifier verdict PASSED — `.planning/phases/10-brand-voice-site-redesign-onboarding/10-VERIFICATION.md`.
 Status: 28 Phase 10 REQs closed in code (BILL-01, BILL-09, VOICE-01..08, USAGE-03, USAGE-04, USAGE-11, USAGE-13, ONBOARD-01..09, SITE-01..05). 17 Phase 09 REQs back-filled to Complete in REQUIREMENTS.md (was stale). 45/45 in-scope reqs for v3.0 Phases 09-10 done. Phase 11 (UX-01..07) and Phase 12 (BILL-08, OPS-02..04) remain.
-Last activity: 2026-04-27 — Plan 10-07 SUMMARY + Phase 10 verifier + ROADMAP/STATE/REQUIREMENTS updates + branch push
+Last activity: 2026-04-27 — Phase 10 SHIPPED + branch pushed + Phase 11 discuss-phase complete (11-CONTEXT.md written) + Phase 11 researcher kicked off in background (timed out at 64min/66 tool calls; resumed via SendMessage to dump partial findings to 11-RESEARCH.md before exit)
+
+## Resume Next Session
+
+**Open fresh session, then:**
+1. Check `.planning/phases/11-easy-advanced-crm-campaign-decision/11-RESEARCH.md` exists. The researcher was resumed in background; it may have written a partial doc with TODO markers, OR may have failed silently.
+2. If RESEARCH.md exists → run `/gsd:plan-phase 11` (it will skip re-research since file exists)
+3. If RESEARCH.md missing → run `/gsd:plan-phase 11 --research` to retry; consider breaking the research focus into 2-3 smaller spawns to avoid timeout (e.g. spawn one for "schema + ModuleHome + drafts" and another for "Campaign Studio + SMS gateway + brand-safety check")
+
+**Phase 11 context summary (full detail in 11-CONTEXT.md):**
+- Decision gate: OPTION B locked — Campaign Studio scaffold ships in v3.0, email+SMS active, FB/IG/LinkedIn credential-gated
+- First-paying-client target relaxed; quality bar (Phase 12 promised-vs-delivered alignment) takes priority
+- 28 locked decisions across 4 areas: 3 AI action cards + approve actions + toggle UX + drafts/view-desync
+- ~10 items in "Claude's Discretion" for researcher to resolve (SMS gateway choice, schema specifics, engagement-score weights, etc.)
+
+**Deferred to Phase 12 (NOT Phase 11):** promised-vs-delivered audit (replace fabricated SocialProof stats; add seat-count gate or remove "2/5 users included" copy; tone down "AI 24/7 autonomous" overpromise).
 
 Progress: [██████████] 100% (7/7 Phase 10 plans done) · v3.0 milestone: 2/4 phases complete
 
