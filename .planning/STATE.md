@@ -5,24 +5,25 @@
 See: .planning/PROJECT.md (updated 2026-04-24)
 
 **Core value:** Complete multi-tenant B2B operating system for South African SMEs. Shared Supabase DB with RLS-based tenant isolation, wildcard subdomain routing, DB-backed module gating, automated provisioning.
-**Current focus:** v3.0 Commercial Launch — **Phase 11 IN PROGRESS.** Wave 1 (11-01, 11-02) + Wave 2 (11-03, 11-04, 11-05, 11-06) all complete. Wave 3: 11-07 (CRM Easy view) + 11-10 (Campaign Studio UI) COMPLETE.
-**Current stats:** 220+ DB tables, 256 API routes (+10 campaign routes), 100 UI pages, 10 AI agent types, 21 N8N workflows. tsc clean (new files). 14 new vitest smoke tests (28 campaign UI tests total).
+**Current focus:** v3.0 Commercial Launch — **Phase 11 IN PROGRESS.** Wave 1 (11-01, 11-02) + Wave 2 (11-03, 11-04, 11-05, 11-06) all complete. Wave 3: 11-07 (CRM Easy view) + 11-10 (Campaign Studio UI) COMPLETE. Wave 4: 11-08 (CRM Advanced route + toggle) COMPLETE.
+**Current stats:** 220+ DB tables, 256 API routes (+10 campaign routes), 100 UI pages, 10 AI agent types, 21 N8N workflows. tsc clean. 5 CRM UI files created/modified in 11-08.
 
 ## Current Position
 
 Milestone: v3.0 Commercial Launch (started 2026-04-24)
 Phase: 11 of 12 (Easy/Advanced CRM + Campaign Decision) — IN PROGRESS
-Plan: 11-01 COMPLETE. 11-02 COMPLETE (Wave 1). 11-03 COMPLETE. 11-04 COMPLETE. 11-05 COMPLETE. 11-06 COMPLETE (Wave 2 complete). **11-07 COMPLETE** (Wave 3 — CRM Easy view). **11-10 COMPLETE** (Wave 3 — Campaign Studio UI).
-Status: Wave 1 + Wave 2 done. Wave 3: 11-07 DONE, 11-10 DONE. 11-08 (Advanced route + toggle), 11-09 (entity drafts), 11-11 (scheduler + kill-switch) pending.
-Last activity: 2026-04-27 — Plan 11-10 executed: Campaign Studio UI — 19 files, 10 routes, 14 tests (0b15b46e, ed2f6bb2, 82fd3ce4)
+Plan: 11-01 COMPLETE. 11-02 COMPLETE (Wave 1). 11-03 COMPLETE. 11-04 COMPLETE. 11-05 COMPLETE. 11-06 COMPLETE (Wave 2 complete). **11-07 COMPLETE** (Wave 3 — CRM Easy view). **11-10 COMPLETE** (Wave 3 — Campaign Studio UI). **11-08 COMPLETE** (Wave 4 — CRM Advanced route + toggle).
+Status: Wave 1 + Wave 2 + Wave 3 done. Wave 4: 11-08 DONE. 11-09 (entity drafts), 11-11 (scheduler + kill-switch) pending.
+Last activity: 2026-04-27 — Plan 11-08 executed: CRM Advanced route + toggle — 5 files (31961c0b, 477f6e90)
 
 ## Resume Next Session
 
-**Open fresh session, then execute Plan 11-11 (Campaign Scheduler + Kill-Switch):**
+**Open fresh session, then execute Plan 11-11 (Campaign Scheduler + Kill-Switch) or 11-09 (Entity Drafts Autosave):**
 1. Plan 11-11 owns pg_cron scheduling + kill-switch admin UI + execute/verify routes
 2. Campaign Studio UI (11-10) is now complete — `/api/campaigns/[id]/approve` sets status to `pending_review` or `scheduled`
 3. 11-11's schedule route needs to enforce the `force_review` gate (campaigns with `force_review=true` must not auto-schedule)
-4. After 11-11: run 11-08 (CRM Advanced route + toggle), 11-09 (entity drafts autosave), 11-12 (tests + docs)
+4. After 11-11 + 11-09: run 11-12 (tests + docs) to close Phase 11
+5. UX-02 + UX-03 both FULLY CLOSED by 11-07 + 11-08
 
 **Plan 11-10 deviations to be aware of for 11-11:**
 - `lib/campaigns/kill-switch.ts` does NOT yet exist (three routes in 11-10 inline the 3-line query)
@@ -101,8 +102,20 @@ Progress: [██████████] 100% (7/7 Phase 10 plans done) · v3.
 
 ## Session Continuity
 
-Last session: 2026-04-27 — Plan 11-07 execution: CRM Easy view RSC + data fetcher + 3 API routes. 3 task commits (8ee8ba7a, 8cdd0395, 6d97af92). tsc clean on all new files.
+Last session: 2026-04-27 — Plan 11-08 execution: CRM Advanced route relocation + toggle wiring. 2 task commits (31961c0b, 477f6e90). tsc clean.
 Resume file: None
+
+### Session (2026-04-27) — Phase 11 Plan 11-08: CRM Advanced Route + Toggle
+
+**What was done:**
+1. Executed plan 11-08: CRM Advanced view at /dashboard/crm/advanced + ToggleViewButton on all 4 CRM advanced pages.
+2. Recovered backup (app/(dashboard)/crm/_legacy/stats-overview.tsx.bak) — created advanced/page.tsx with original stats content + ToggleViewButton (currentMode='advanced').
+3. Created components/crm/AdvancedKanbanShell.tsx — reusable 'use client' fragment wrapper that renders children + ToggleViewButton.
+4. Wrapped contacts/page.tsx, deals/page.tsx, companies/page.tsx with AdvancedKanbanShell — zero business logic changes.
+5. Deleted _legacy backup (tracked as git rename).
+6. REQ-IDs closed: UX-02 (full), UX-03 (full).
+
+**Next: Execute Plan 11-11 or 11-09**
 
 ### Session (2026-04-27) — Phase 11 Plan 11-07: CRM Easy View
 **What was done:**
