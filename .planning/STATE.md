@@ -11,19 +11,18 @@ See: .planning/PROJECT.md (updated 2026-04-24)
 ## Current Position
 
 Milestone: v3.0 Commercial Launch (started 2026-04-24)
-Phase: 11 of 12 (Easy/Advanced CRM + Campaign Decision) — IN PROGRESS
-Plan: 11-01 COMPLETE. 11-02 COMPLETE (Wave 1). 11-03 COMPLETE. 11-04 COMPLETE. 11-05 COMPLETE. 11-06 COMPLETE (Wave 2 complete). **11-07 COMPLETE** (Wave 3 — CRM Easy view). **11-10 COMPLETE** (Wave 3 — Campaign Studio UI). **11-08 COMPLETE** (Wave 4 — CRM Advanced route + toggle). **11-09 COMPLETE** (Wave 5 — entity drafts autosave).
-Status: Wave 1 + Wave 2 + Wave 3 + Wave 4 done. Wave 5: 11-09 DONE. 11-11 (scheduler + kill-switch) pending.
-Last activity: 2026-04-27 — Plan 11-09 executed: entity_drafts autosave hook + merge-on-load + conflict banner. 3 task commits (ee137cc3, 42403cd3, 21c73180). tsc clean. UX-07 CLOSED.
+Phase: 11 of 12 (Easy/Advanced CRM + Campaign Decision) — **COMPLETE**
+Plan: All 12 plans COMPLETE (11-01 through 11-12). Phase 11 done.
+Status: **Phase 11 COMPLETE.** Wave 6: 11-12 DONE. 17 new integration tests. UX-06 fully closed. CAMP-01..08 covered.
+Last activity: 2026-04-27 — Plan 11-12 executed: integration tests + brand-safety regression + CLAUDE.md docs. 3 task commits (d7b7453d, de8265e2, dd630b2d). tsc clean.
 
 ## Resume Next Session
 
-**Open fresh session, then execute Plan 11-12 (tests + docs) to close Phase 11:**
-1. 11-09 DONE — entity_drafts autosave wired into contact + deal edit pages (UX-07 closed)
-2. 11-11 DONE — Campaign Scheduler + Kill-Switch (done in prior session)
-3. 11-12 closes Phase 11: view-desync E2E test (UX-06 full closure) + Phase 11 docs
-4. UX-02 + UX-03 FULLY CLOSED by 11-07 + 11-08
-5. UX-07 FULLY CLOSED by 11-09
+**Phase 11 COMPLETE. Open fresh session to start Phase 12:**
+1. Phase 11 fully done — all 12 plans complete, all REQ-IDs closed
+2. Phase 12: promised-vs-delivered audit + Phase 12 plans
+3. Add `organizations.activated_at` migration (Phase 12 pre-work, see Deferred below)
+4. Run `/gsd:discuss-phase 12` or `/gsd:plan-phase 12` to kick off
 
 **Plan 11-10 deviations to be aware of for 11-11:**
 - `lib/campaigns/kill-switch.ts` does NOT yet exist (three routes in 11-10 inline the 3-line query)
@@ -54,7 +53,7 @@ Progress: [██████████] 100% (7/7 Phase 10 plans done) · v3.
 | 08 Meta | 2/5 | Partial (deferred) |
 | **09 (v3.0)** | **5/5** | **Complete 2026-04-26** |
 | **10 (v3.0)** | **7/7** | **Complete 2026-04-27** |
-| 11 (v3.0) | 0/TBD | Not started |
+| **11 (v3.0)** | **12/12** | **Complete 2026-04-27** |
 | 12 (v3.0) | 0/TBD | Not started |
 
 *Updated after each plan completion*
@@ -102,8 +101,21 @@ Progress: [██████████] 100% (7/7 Phase 10 plans done) · v3.
 
 ## Session Continuity
 
-Last session: 2026-04-27 — Plan 11-09 execution: entity_drafts autosave hook + conflict banner + contact/deal edit pages. 3 task commits (ee137cc3, 42403cd3, 21c73180). tsc clean. UX-07 closed.
+Last session: 2026-04-27 — Plan 11-12 execution: 17 new integration tests (view-desync, action-cards, campaign happy-path, brand-safety regression) + CLAUDE.md docs. 3 task commits (d7b7453d, de8265e2, dd630b2d). tsc clean. Phase 11 complete.
 Resume file: None
+
+### Session (2026-04-27) — Phase 11 Plan 11-12: Integration Tests + Docs (PHASE 11 COMPLETE)
+
+**What was done:**
+1. Task 1: view-desync.test.ts (2 tests) + easy-view-action-cards.test.tsx (3 tests).
+2. Task 2: campaigns/happy-path.test.ts (5 tests) + brand-safety-regression.test.ts (7 tests) + 4 fixture JSON files.
+3. Task 3: lib/agents/CLAUDE.md + app/api/CLAUDE.md docs updated (Campaign Studio + CRM Easy view endpoints).
+4. 17 new tests all passing. tsc clean (pre-existing errors in elijah/social test files, not introduced here).
+5. Deviations auto-fixed: vitest.config.ts env mapping, fireEvent vs userEvent, admin client mock hoisting.
+6. REQ-IDs closed: UX-06 (full), (CAMP-01..08 coverage locked via integration tests).
+7. Phase 11 COMPLETE — all 12 plans done.
+
+**Next: Execute Phase 12**
 
 ### Session (2026-04-27) — Phase 11 Plan 11-09: entity_drafts Autosave
 
