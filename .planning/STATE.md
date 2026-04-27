@@ -280,3 +280,23 @@ Resume with:
 - Meta OAuth credentials (Phase 08.1)
 - Lookout Deck demo seed data
 - VDJ knowledge dump into `lib/finance/knowledge/` (only needed by v3.1)
+
+### NEW — captured 2026-04-27 (Phase 12 candidates, raised by Chris)
+
+**TODO-A: Module-focused landing redesign** (drives prospect conversion before pricing)
+- Replace generic landing copy with module-specific value propositions, keeping existing look-and-feel (Crimson/Charcoal palette, current section structure, fonts)
+- Modules to feature with "what it can do" detail per Chris: Accommodation, Restaurant, **Trophy OS** (NEW — needs scoping; not in current `module_registry`), Elijah, Other (TBD list)
+- Discovery before plan: confirm "Trophy OS" definition (is it a new module, a renaming of an existing one, or platform-level branding?), confirm full target-module list
+- Quality bar: copy must reflect what's *actually shipped* in each module (no aspirational claims) — links into Phase 12 promised-vs-delivered audit
+- Files likely touched: `components/landing/sections.tsx` (module showcase), `app/page.tsx` (hero + module strip), possibly `lib/landing/modules.ts` (new — declarative module copy manifest)
+- Estimated scope: 1 plan (~300 LOC + designer iteration)
+
+**TODO-B: Site AI agent for visitor Q&A + lead qualification** (replaces/augments existing /qualify multi-step form)
+- Conversational chatbot embedded on landing page (and possibly /pricing) that answers prospect questions about modules and routes qualified leads into existing `/api/leads/capture` + downstream qualifier (already wired)
+- Powered by `BaseAgent` extension (new agent type: `site_concierge`); brand-voice-aware out of the box (Phase 10 infra)
+- Key UX questions: floating widget vs embedded section? Default open/closed? Mobile behaviour? Knowledge base = our 5 modules + pricing FAQ
+- Integration points: existing `/api/leads/capture` for lead persistence, existing `/qualify` multi-step as fallback for users who prefer forms
+- Anti-feature watch: do NOT ship a chatbot that answers questions we can't actually deliver on (ties to promised-vs-delivered)
+- Estimated scope: 1 plan (~600 LOC + 1 new BaseAgent + 1 new API route)
+
+**Suggested sequencing:** Phase 12 has BILL-08 + OPS-02..04 + promised-vs-delivered audit + mobile sweep already. Add TODO-A as plan `12-XX-module-landing-redesign` (prerequisite: TODO-A's "Trophy OS" + module list confirmed) and TODO-B as plan `12-XX-site-concierge-agent` after the redesign so the chatbot's pitch matches the new copy.
