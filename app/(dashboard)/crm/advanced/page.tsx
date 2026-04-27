@@ -14,6 +14,7 @@ import {
   Calendar,
 } from 'lucide-react'
 import { CRMPipelineChart } from '@/components/crm/CRMPipelineChart'
+import { ToggleViewButton } from '@/components/module-home/ToggleViewButton'
 
 interface RecentContact {
   id: string
@@ -153,11 +154,11 @@ const STATUS_COLORS: Record<string, string> = {
   customer: 'bg-purple-50 text-purple-700',
 }
 
-export default async function CRMPage() {
+export default async function AdvancedCRMPage() {
   const { data: userOrg, error } = await getUserOrg()
 
   if (error || !userOrg) {
-    console.error('getUserOrg failed on CRM page:', error)
+    console.error('getUserOrg failed on CRM advanced page:', error)
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <div className="rounded-lg border border-red-200 bg-red-50 p-6">
@@ -378,6 +379,13 @@ export default async function CRMPage() {
           </CardContent>
         </Card>
       </div>
+
+      <ToggleViewButton
+        currentMode="advanced"
+        easyHref="/dashboard/crm"
+        advancedHref="/dashboard/crm/advanced"
+        apiEndpoint="/api/crm/ui-mode"
+      />
     </div>
   )
 }
