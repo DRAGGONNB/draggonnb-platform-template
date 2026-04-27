@@ -6,15 +6,15 @@ See: .planning/PROJECT.md (updated 2026-04-24)
 
 **Core value:** Complete multi-tenant B2B operating system for South African SMEs. Shared Supabase DB with RLS-based tenant isolation, wildcard subdomain routing, DB-backed module gating, automated provisioning.
 **Current focus:** v3.0 Commercial Launch — **Phase 11 IN PROGRESS.** Plans 11-01 (CRM schema) + 11-02 (Campaign schema) complete (Wave 1). 6 new CRM tables + 4 campaign tables live in Supabase with full RLS. All stale thresholds seeded for 8 CRM tenants.
-**Current stats:** 220+ DB tables (+4 campaign +4 crm new), 243 API routes, 95 UI pages, 8 AI agent types (added campaign_drafter + campaign_brand_safety to union), 21 N8N workflow files (+2 CRM nightly). tsc clean for new code.
+**Current stats:** 220+ DB tables (+4 campaign +4 crm new), 243 API routes, 95 UI pages, 10 AI agent types (campaign_drafter + campaign_brand_safety classes + enforcement helper implemented), 21 N8N workflow files (+2 CRM nightly). tsc clean for new code.
 
 ## Current Position
 
 Milestone: v3.0 Commercial Launch (started 2026-04-24)
 Phase: 11 of 12 (Easy/Advanced CRM + Campaign Decision) — IN PROGRESS
-Plan: 11-01 COMPLETE. 11-02 COMPLETE (Wave 1). 11-06 COMPLETE (Wave 2). 11-04 COMPLETE (Wave 2 — 5 channel adapters: email+sms active, fb/ig/linkedin credential-gated stubs. 18 unit tests).
-Status: Wave 1 done. Wave 2: 11-04 + 11-06 done; 11-03/05 parallel remaining.
-Last activity: 2026-04-27 — Plan 11-04 executed: 5 channel adapters + 18 unit tests + env-schema additions (b62ff81c, 051b9323)
+Plan: 11-01 COMPLETE. 11-02 COMPLETE (Wave 1). 11-06 COMPLETE (Wave 2). 11-04 COMPLETE (Wave 2). 11-05 COMPLETE (Wave 2 — CampaignDrafterAgent + BrandSafetyAgent + isInNewTenantPeriod()).
+Status: Wave 1 done. Wave 2: 11-04 + 11-05 + 11-06 done; 11-03 done; Wave 2 complete.
+Last activity: 2026-04-27 — Plan 11-05 executed: 2 agents + enforcement helper, 13 tests (28db1652, 5a0a7560, 4141e631)
 
 ## Resume Next Session
 
@@ -55,6 +55,8 @@ Progress: [██████████] 100% (7/7 Phase 10 plans done) · v3.
 ## Accumulated Context
 
 ### Decisions (v3.0-specific, most recent first)
+
+- **2026-04-27 (11-05 execution):** `organizations.activated_at` is ABSENT from live Supabase DB (psqfgzbjbgqrmjskdavs) — column exists in 00_initial_schema.sql but was never applied. `isInNewTenantPeriod()` uses `created_at` as fallback. Phase 12 must add migration for `activated_at`, backfill, then switch. Unit-testing BaseAgent subclasses requires `vi.mock('@/lib/config/env')` hoisted (not just mocking payfast) — env module validates eagerly at import. BrandSafetyAgent: Haiku temperature=0 correct for safety classification tasks. CampaignDrafterAgent: Sonnet default (creative multi-channel needs larger context).
 
 - **2026-04-26 (10-06 execution):** VAT formula locked as `Math.round(cents * 1.15)` — pure integer cent math, no float drift. en-ZA locale renders ZAR as "R599,00" (comma decimal + NBSP thousands) — kept as-is, tests use `\s+` regex. /pricing module picker is RSC + client split: server fetches `billing_addons_catalog`, client renders interactive total. addon IDs NEVER hard-coded — picker iterates whatever the catalog returns. Trust trio "3 business days to go live / Pay in Rands / Cancel anytime" replaces Pitfall F false copy in 4 locations (sections.tsx hero strip, PricingPreview, CTASection, register-interest.tsx). Hero illustration is Lucide gear icon placeholder pending custom SVG. Legacy localStorage `OnboardingChecklist` kept in repo (unreferenced) for safety; new API-backed `app/(dashboard)/_components/onboarding-checklist.tsx` is now the dashboard checklist.
 
