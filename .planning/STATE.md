@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-04-24)
 
 **Core value:** Complete multi-tenant B2B operating system for South African SMEs. Shared Supabase DB with RLS-based tenant isolation, wildcard subdomain routing, DB-backed module gating, automated provisioning.
-**Current focus:** v3.0 Commercial Launch — **Phase 10 SHIPPED 2026-04-27.** All 7 plans complete + verifier PASSED with 2 acknowledged deferrals (Lighthouse to launch-day per Chris's directive; PayFast sandbox runtime ITN carried from Phase 09 — both accepted). Branch `restaurant-sop-upgrade` pushed to origin (was 72 commits behind; now at e05e6e61+). Ready for Phase 11.
-**Current stats:** 220+ DB tables, 243 API routes, 95 UI pages, 6 AI agents (now brand-voice-aware), 19 N8N workflow files (16 active + 3 onboarding day1/2/3 added), ~678 tests (added 10 vat + 9 module-picker + 9 timezone + 9 modal across 10-06/10-07). tsc clean for new code. Build fails at page-data-collection only due to placeholder ANTHROPIC/RESEND env keys (Phase 10 backlog).
+**Current focus:** v3.0 Commercial Launch — **Phase 11 IN PROGRESS.** Plan 11-02 (Campaign schema + AgentType) complete. 4 campaign tables live in Supabase with full RLS, ENUMs, and kill-switch RPC.
+**Current stats:** 220+ DB tables (+4 campaign), 243 API routes, 95 UI pages, 8 AI agent types (added campaign_drafter + campaign_brand_safety to union), 19 N8N workflow files. tsc clean for new code.
 
 ## Current Position
 
 Milestone: v3.0 Commercial Launch (started 2026-04-24)
-Phase: 10 of 12 (Brand Voice + Site Redesign + 3-Day Onboarding) — **COMPLETE 2026-04-27** (7/7 plans)
-Plan: 10-07 closed via human-verify checkpoint approval (Chris: "approved, skip Lighthouse"); 5 atomic commits + SUMMARY committed. Verifier verdict PASSED — `.planning/phases/10-brand-voice-site-redesign-onboarding/10-VERIFICATION.md`.
-Status: 28 Phase 10 REQs closed in code (BILL-01, BILL-09, VOICE-01..08, USAGE-03, USAGE-04, USAGE-11, USAGE-13, ONBOARD-01..09, SITE-01..05). 17 Phase 09 REQs back-filled to Complete in REQUIREMENTS.md (was stale). 45/45 in-scope reqs for v3.0 Phases 09-10 done. Phase 11 (UX-01..07) and Phase 12 (BILL-08, OPS-02..04) remain.
-Last activity: 2026-04-27 — Phase 10 SHIPPED + branch pushed + Phase 11 discuss-phase complete (11-CONTEXT.md written) + Phase 11 researcher kicked off in background (timed out at 64min/66 tool calls; resumed via SendMessage to dump partial findings to 11-RESEARCH.md before exit)
+Phase: 11 of 12 (Easy/Advanced CRM + Campaign Decision) — IN PROGRESS
+Plan: 11-02 complete (Wave 1 — Campaign schema migrations 42-49 + AgentType extension). 4 task commits + SUMMARY.
+Status: 11-02 COMPLETE. Plan 11-01 (CRM schema, Wave 1 parallel) status unknown — check if executor ran. Wave 2 plans (11-04/11-05) now unblocked by AgentType extension.
+Last activity: 2026-04-27 — Plan 11-02 executed: 8 migrations applied, lib/agents/types.ts extended
 
 ## Resume Next Session
 
