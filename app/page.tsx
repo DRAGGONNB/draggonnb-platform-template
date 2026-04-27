@@ -5,7 +5,6 @@ import {
   TrustIndicators,
   ModuleShowcaseSection,
   HowItWorksSection,
-  SocialProofSection,
   PricingPreviewSection,
   CTASection,
 } from '@/components/landing/sections'
@@ -33,7 +32,6 @@ export default function Home({
         <ModuleShowcaseSection />
         <HowItWorksSection />
         <IndustrySolutionsSection />
-        <SocialProofSection />
         <PricingPreviewSection />
         <RegisterInterestSection />
         <CTASection />
