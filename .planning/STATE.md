@@ -95,8 +95,20 @@ Progress: [██████████] 100% (7/7 Phase 10 plans done) · v3.
 
 ## Session Continuity
 
-Last session: 2026-04-27 — Plan 11-06 execution: wf-crm-engagement-score.json + wf-crm-nightly-cleanup.json + provisioning seed. 2 task commits (52b79b26, 04e31706). tsc clean, vitest exit 0.
+Last session: 2026-04-27 — Plan 11-07 execution: CRM Easy view RSC + data fetcher + 3 API routes. 3 task commits (8ee8ba7a, 8cdd0395, 6d97af92). tsc clean on all new files.
 Resume file: None
+
+### Session (2026-04-27) — Phase 11 Plan 11-07: CRM Easy View
+**What was done:**
+1. Executed plan 11-07: CRM Easy view at /dashboard/crm using ModuleHome library.
+2. Built lib/crm/ui-mode.ts (resolveUiMode with role defaults), lib/crm/easy-view-data.ts (server-side 3-card data fetcher).
+3. Replaced app/(dashboard)/crm/page.tsx with Easy view RSC (backed up to _legacy/stats-overview.tsx.bak for 11-08).
+4. Created app/(dashboard)/crm/layout.tsx mounting UndoToastViewport.
+5. Built lib/crm/email-templates.ts with genericFollowupTemplate + composeFollowupEmail + composeHotLeadPitchEmail.
+6. Built 3 API routes: /api/crm/easy-view/approve (full action branching + crm_activities audit), /api/crm/easy-view/dismiss (7-day dismissal upsert), /api/crm/ui-mode (toggle persistence).
+7. Auto-fixed: table names contacts/deals (not crm_contacts/crm_deals); staleness proxy updated_at on deals; UserOrg field names userId/organizationId.
+
+**Next session: Execute Plan 11-08** (Advanced route + backup recovery + toggle button)
 
 ### Session 55 Summary (2026-04-26) — Phase 10 Plan 01: Schema Migrations
 **What was done:**
