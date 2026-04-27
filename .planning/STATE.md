@@ -5,25 +5,25 @@
 See: .planning/PROJECT.md (updated 2026-04-24)
 
 **Core value:** Complete multi-tenant B2B operating system for South African SMEs. Shared Supabase DB with RLS-based tenant isolation, wildcard subdomain routing, DB-backed module gating, automated provisioning.
-**Current focus:** v3.0 Commercial Launch — **Phase 11 IN PROGRESS.** Wave 1 (11-01, 11-02) + Wave 2 (11-03, 11-04, 11-05, 11-06) all complete. Wave 3: 11-07 (CRM Easy view) + 11-10 (Campaign Studio UI) COMPLETE. Wave 4: 11-08 (CRM Advanced route + toggle) COMPLETE.
+**Current focus:** v3.0 Commercial Launch — **Phase 11 IN PROGRESS.** Wave 1 (11-01, 11-02) + Wave 2 (11-03, 11-04, 11-05, 11-06) all complete. Wave 3: 11-07 (CRM Easy view) + 11-10 (Campaign Studio UI) COMPLETE. Wave 4: 11-08 (CRM Advanced route + toggle) COMPLETE. Wave 5: 11-09 (entity drafts autosave) COMPLETE.
 **Current stats:** 220+ DB tables, 256 API routes (+10 campaign routes), 100 UI pages, 10 AI agent types, 21 N8N workflows. tsc clean. 5 CRM UI files created/modified in 11-08.
 
 ## Current Position
 
 Milestone: v3.0 Commercial Launch (started 2026-04-24)
 Phase: 11 of 12 (Easy/Advanced CRM + Campaign Decision) — IN PROGRESS
-Plan: 11-01 COMPLETE. 11-02 COMPLETE (Wave 1). 11-03 COMPLETE. 11-04 COMPLETE. 11-05 COMPLETE. 11-06 COMPLETE (Wave 2 complete). **11-07 COMPLETE** (Wave 3 — CRM Easy view). **11-10 COMPLETE** (Wave 3 — Campaign Studio UI). **11-08 COMPLETE** (Wave 4 — CRM Advanced route + toggle).
-Status: Wave 1 + Wave 2 + Wave 3 done. Wave 4: 11-08 DONE. 11-09 (entity drafts), 11-11 (scheduler + kill-switch) pending.
-Last activity: 2026-04-27 — Plan 11-08 executed: CRM Advanced route + toggle — 5 files (31961c0b, 477f6e90)
+Plan: 11-01 COMPLETE. 11-02 COMPLETE (Wave 1). 11-03 COMPLETE. 11-04 COMPLETE. 11-05 COMPLETE. 11-06 COMPLETE (Wave 2 complete). **11-07 COMPLETE** (Wave 3 — CRM Easy view). **11-10 COMPLETE** (Wave 3 — Campaign Studio UI). **11-08 COMPLETE** (Wave 4 — CRM Advanced route + toggle). **11-09 COMPLETE** (Wave 5 — entity drafts autosave).
+Status: Wave 1 + Wave 2 + Wave 3 + Wave 4 done. Wave 5: 11-09 DONE. 11-11 (scheduler + kill-switch) pending.
+Last activity: 2026-04-27 — Plan 11-09 executed: entity_drafts autosave hook + merge-on-load + conflict banner. 3 task commits (ee137cc3, 42403cd3, 21c73180). tsc clean. UX-07 CLOSED.
 
 ## Resume Next Session
 
-**Open fresh session, then execute Plan 11-11 (Campaign Scheduler + Kill-Switch) or 11-09 (Entity Drafts Autosave):**
-1. Plan 11-11 owns pg_cron scheduling + kill-switch admin UI + execute/verify routes
-2. Campaign Studio UI (11-10) is now complete — `/api/campaigns/[id]/approve` sets status to `pending_review` or `scheduled`
-3. 11-11's schedule route needs to enforce the `force_review` gate (campaigns with `force_review=true` must not auto-schedule)
-4. After 11-11 + 11-09: run 11-12 (tests + docs) to close Phase 11
-5. UX-02 + UX-03 both FULLY CLOSED by 11-07 + 11-08
+**Open fresh session, then execute Plan 11-12 (tests + docs) to close Phase 11:**
+1. 11-09 DONE — entity_drafts autosave wired into contact + deal edit pages (UX-07 closed)
+2. 11-11 DONE — Campaign Scheduler + Kill-Switch (done in prior session)
+3. 11-12 closes Phase 11: view-desync E2E test (UX-06 full closure) + Phase 11 docs
+4. UX-02 + UX-03 FULLY CLOSED by 11-07 + 11-08
+5. UX-07 FULLY CLOSED by 11-09
 
 **Plan 11-10 deviations to be aware of for 11-11:**
 - `lib/campaigns/kill-switch.ts` does NOT yet exist (three routes in 11-10 inline the 3-line query)
@@ -102,8 +102,21 @@ Progress: [██████████] 100% (7/7 Phase 10 plans done) · v3.
 
 ## Session Continuity
 
-Last session: 2026-04-27 — Plan 11-08 execution: CRM Advanced route relocation + toggle wiring. 2 task commits (31961c0b, 477f6e90). tsc clean.
+Last session: 2026-04-27 — Plan 11-09 execution: entity_drafts autosave hook + conflict banner + contact/deal edit pages. 3 task commits (ee137cc3, 42403cd3, 21c73180). tsc clean. UX-07 closed.
 Resume file: None
+
+### Session (2026-04-27) — Phase 11 Plan 11-09: entity_drafts Autosave
+
+**What was done:**
+1. Task 0 (read-only): Glob found no [id] pages under contacts/ or deals/ — Branch B selected.
+2. Task 1: Built /api/crm/drafts (POST upsert + DELETE) + loadEntityWithDraft server helper.
+3. Task 2: Built useEntityDraft hook (1s debounce + sessionStorage tab_id), conflict-detection.ts helpers, DraftConflictBanner amber component.
+4. Task 3: Created contact [id] RSC + ContactEditForm client island + deal [id] RSC + DealEditForm client island.
+5. 11 unit tests passing. tsc clean on all new files.
+6. Deviations: 3 auto-fixed (interface constraint, organization_id in POST, no shadcn Alert component).
+7. REQ-IDs closed: UX-07 (full).
+
+**Next: Execute Plan 11-12** (tests + docs, closes Phase 11)
 
 ### Session (2026-04-27) — Phase 11 Plan 11-08: CRM Advanced Route + Toggle
 
