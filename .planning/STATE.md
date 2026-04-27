@@ -5,23 +5,29 @@
 See: .planning/PROJECT.md (updated 2026-04-24)
 
 **Core value:** Complete multi-tenant B2B operating system for South African SMEs. Shared Supabase DB with RLS-based tenant isolation, wildcard subdomain routing, DB-backed module gating, automated provisioning.
-**Current focus:** v3.0 Commercial Launch — **Phase 11 IN PROGRESS.** Wave 1 (11-01, 11-02) + Wave 2 (11-03, 11-04, 11-05, 11-06) all complete. ModuleHome scaffold live; database.types.ts regenerated with all Phase 11 tables. CRM Easy view (11-07) and Campaign Studio (11-08, 11-09) are Wave 3 (pending).
-**Current stats:** 220+ DB tables, 243 API routes, 95 UI pages, 10 AI agent types, 21 N8N workflows, 6 module-home components, lib/supabase/database.types.ts regenerated (587KB). tsc clean.
+**Current focus:** v3.0 Commercial Launch — **Phase 11 IN PROGRESS.** Wave 1 (11-01, 11-02) + Wave 2 (11-03, 11-04, 11-05, 11-06) all complete. Wave 3: 11-07 (CRM Easy view) + 11-10 (Campaign Studio UI) COMPLETE.
+**Current stats:** 220+ DB tables, 256 API routes (+10 campaign routes), 100 UI pages, 10 AI agent types, 21 N8N workflows. tsc clean (new files). 14 new vitest smoke tests (28 campaign UI tests total).
 
 ## Current Position
 
 Milestone: v3.0 Commercial Launch (started 2026-04-24)
 Phase: 11 of 12 (Easy/Advanced CRM + Campaign Decision) — IN PROGRESS
-Plan: 11-01 COMPLETE. 11-02 COMPLETE (Wave 1). 11-03 COMPLETE (Wave 2 — ModuleHome + types + db regen). 11-04 COMPLETE (Wave 2). 11-05 COMPLETE (Wave 2). 11-06 COMPLETE (Wave 2). Wave 2 complete.
-Status: Wave 1 + Wave 2 done. Wave 3 (11-07 CRM Easy view, 11-08 Campaign Studio scaffold, 11-09 N8N) pending.
-Last activity: 2026-04-27 — Plan 11-03 executed: 6 components + db types regen + 14 tests (0a7f4ff0, 7518cf25, 89094890)
+Plan: 11-01 COMPLETE. 11-02 COMPLETE (Wave 1). 11-03 COMPLETE. 11-04 COMPLETE. 11-05 COMPLETE. 11-06 COMPLETE (Wave 2 complete). **11-07 COMPLETE** (Wave 3 — CRM Easy view). **11-10 COMPLETE** (Wave 3 — Campaign Studio UI).
+Status: Wave 1 + Wave 2 done. Wave 3: 11-07 DONE, 11-10 DONE. 11-08 (Advanced route + toggle), 11-09 (entity drafts), 11-11 (scheduler + kill-switch) pending.
+Last activity: 2026-04-27 — Plan 11-10 executed: Campaign Studio UI — 19 files, 10 routes, 14 tests (0b15b46e, ed2f6bb2, 82fd3ce4)
 
 ## Resume Next Session
 
-**Open fresh session, then:**
-1. Check `.planning/phases/11-easy-advanced-crm-campaign-decision/11-RESEARCH.md` exists. The researcher was resumed in background; it may have written a partial doc with TODO markers, OR may have failed silently.
-2. If RESEARCH.md exists → run `/gsd:plan-phase 11` (it will skip re-research since file exists)
-3. If RESEARCH.md missing → run `/gsd:plan-phase 11 --research` to retry; consider breaking the research focus into 2-3 smaller spawns to avoid timeout (e.g. spawn one for "schema + ModuleHome + drafts" and another for "Campaign Studio + SMS gateway + brand-safety check")
+**Open fresh session, then execute Plan 11-11 (Campaign Scheduler + Kill-Switch):**
+1. Plan 11-11 owns pg_cron scheduling + kill-switch admin UI + execute/verify routes
+2. Campaign Studio UI (11-10) is now complete — `/api/campaigns/[id]/approve` sets status to `pending_review` or `scheduled`
+3. 11-11's schedule route needs to enforce the `force_review` gate (campaigns with `force_review=true` must not auto-schedule)
+4. After 11-11: run 11-08 (CRM Advanced route + toggle), 11-09 (entity drafts autosave), 11-12 (tests + docs)
+
+**Plan 11-10 deviations to be aware of for 11-11:**
+- `lib/campaigns/kill-switch.ts` does NOT yet exist (three routes in 11-10 inline the 3-line query)
+- 11-11 creates this helper, then future sessions can refactor the 3 inlined queries (Phase 12 polish)
+- PATCH /api/campaigns/[id]/drafts/[draftId] returns 501 — v3.1 scope
 
 **Phase 11 context summary (full detail in 11-CONTEXT.md):**
 - Decision gate: OPTION B locked — Campaign Studio scaffold ships in v3.0, email+SMS active, FB/IG/LinkedIn credential-gated
