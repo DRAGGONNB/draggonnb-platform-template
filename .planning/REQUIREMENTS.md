@@ -15,54 +15,54 @@
 
 ### Billing Composition (BILL)
 
-- [ ] **BILL-01**: User sees modular pricing page with interactive module picker — pick Core (R599) + optional vertical (R1,199) + add-ons; live total updates as selections change
-- [ ] **BILL-02**: User signs up with a composed subscription (base + modules + add-ons) and is charged via PayFast variable-amount recurring subscription
-- [ ] **BILL-03**: User pays a one-off R1,499 setup fee at checkout via PayFast ad-hoc charge, separate from recurring subscription
-- [ ] **BILL-04**: User can add or remove a module/add-on mid-cycle; billing recalculates and PayFast subscription amount updates via cancel-and-recreate flow
-- [ ] **BILL-05**: `organizations.billing_plan_snapshot` JSONB column stores the plan composition at subscribe time; ITN validates against snapshot (not current PRICING_TIERS)
-- [ ] **BILL-06**: PayFast webhook branches by `m_payment_id` prefix — `DRG-*` (subscription), `ADDON-*` (module change), `TOPUP-*` (overage pack), `ONEOFF-*` (setup fee)
-- [ ] **BILL-07**: `pricing_changelog` table records every PRICING_TIERS change with timestamp, old/new values, and operator — history is append-only
+- [x] **BILL-01**: User sees modular pricing page with interactive module picker — pick Core (R599) + optional vertical (R1,199) + add-ons; live total updates as selections change
+- [x] **BILL-02**: User signs up with a composed subscription (base + modules + add-ons) and is charged via PayFast variable-amount recurring subscription
+- [x] **BILL-03**: User pays a one-off R1,499 setup fee at checkout via PayFast ad-hoc charge, separate from recurring subscription
+- [x] **BILL-04**: User can add or remove a module/add-on mid-cycle; billing recalculates and PayFast subscription amount updates via cancel-and-recreate flow
+- [x] **BILL-05**: `organizations.billing_plan_snapshot` JSONB column stores the plan composition at subscribe time; ITN validates against snapshot (not current PRICING_TIERS)
+- [x] **BILL-06**: PayFast webhook branches by `m_payment_id` prefix — `DRG-*` (subscription), `ADDON-*` (module change), `TOPUP-*` (overage pack), `ONEOFF-*` (setup fee)
+- [x] **BILL-07**: `pricing_changelog` table records every PRICING_TIERS change with timestamp, old/new values, and operator — history is append-only
 - [ ] **BILL-08**: Billing-reconciliation nightly cron compares PayFast subscription amount vs local composition total; alerts on drift
-- [ ] **BILL-09**: User's pricing page total displays VAT-inclusive ZAR amount with a clear "incl. 15% VAT" line
+- [x] **BILL-09**: User's pricing page total displays VAT-inclusive ZAR amount with a clear "incl. 15% VAT" line
 
 ### Brand Voice (VOICE)
 
-- [ ] **VOICE-01**: User completes a 3-step brand voice capture wizard during onboarding — URL ingest + 5 guided questions + avoid-list
-- [ ] **VOICE-02**: Brand voice stored in `client_profiles` table (extend existing columns with `example_phrases TEXT[]` and `forbidden_topics TEXT[]`) — no new table
-- [ ] **VOICE-03**: Brand voice injected as Anthropic `systemBlocks` with `cache_control: ephemeral` into all 6 existing agents (Quoter, Concierge, Reviewer, Pricer, LeadQualifier, ProposalGenerator)
-- [ ] **VOICE-04**: `org_id` injected as distinct first system block to force tenant-scoped prompt-cache keys — prevents cross-tenant cache leak
-- [ ] **VOICE-05**: Golden CI test provisions 2 orgs with different voices, runs identical prompts, asserts different outputs AND non-zero cache reads on second-same-tenant call
-- [ ] **VOICE-06**: Brand voice system prompt padded to ≥4,096 tokens to hit Haiku 4.5 cache eligibility threshold
-- [ ] **VOICE-07**: PII scrubber sanitises brand voice input before storage (strips email, phone, ID numbers, payment info)
-- [ ] **VOICE-08**: User can re-run the brand voice wizard from settings — updated voice invalidates cached blocks on next agent call
+- [x] **VOICE-01**: User completes a 3-step brand voice capture wizard during onboarding — URL ingest + 5 guided questions + avoid-list
+- [x] **VOICE-02**: Brand voice stored in `client_profiles` table (extend existing columns with `example_phrases TEXT[]` and `forbidden_topics TEXT[]`) — no new table
+- [x] **VOICE-03**: Brand voice injected as Anthropic `systemBlocks` with `cache_control: ephemeral` into all 6 existing agents (Quoter, Concierge, Reviewer, Pricer, LeadQualifier, ProposalGenerator)
+- [x] **VOICE-04**: `org_id` injected as distinct first system block to force tenant-scoped prompt-cache keys — prevents cross-tenant cache leak
+- [x] **VOICE-05**: Golden CI test provisions 2 orgs with different voices, runs identical prompts, asserts different outputs AND non-zero cache reads on second-same-tenant call
+- [x] **VOICE-06**: Brand voice system prompt padded to ≥4,096 tokens to hit Haiku 4.5 cache eligibility threshold
+- [x] **VOICE-07**: PII scrubber sanitises brand voice input before storage (strips email, phone, ID numbers, payment info)
+- [x] **VOICE-08**: User can re-run the brand voice wizard from settings — updated voice invalidates cached blocks on next agent call
 
 ### Usage Caps & Cost Monitoring (USAGE)
 
-- [ ] **USAGE-01**: Every metered action (AI generation, social post, email send, receipt OCR) calls `guardUsage(orgId, metric)` helper BEFORE the work; blocked at 100% of plan limit
-- [ ] **USAGE-02**: `guardUsage` uses existing `record_usage_event` RPC (atomic check+insert) — no Redis, no read-then-write race
-- [ ] **USAGE-03**: User gets in-app warning banners at 50%, 75%, 90% of each metric cap; banner includes upgrade + pay-overage options
-- [ ] **USAGE-04**: User hitting 100% cap sees inline modal with 3 actions: upgrade plan / buy overage top-up / wait until reset (with exact reset date/time in tenant timezone)
-- [ ] **USAGE-05**: 50-concurrent-request unit test verifies no over-cap leakage through `guardUsage`
-- [ ] **USAGE-06**: Per-tier hard ZAR ceiling on Anthropic cost: Core R150/mo, Growth R400/mo, Scale R1,500/mo — agents auto-pause at 100% with alert
-- [ ] **USAGE-07**: Anthropic cost circuit breaker: check projected cost BEFORE API call; abort with graceful error if over ceiling
-- [ ] **USAGE-08**: `ai_usage_ledger` table records every BaseAgent call (including retries) with model, tokens, cache hits, computed cost in ZAR cents
-- [ ] **USAGE-09**: `agent_sessions` migration adds `input_tokens`, `output_tokens`, `cache_read_tokens`, `cache_write_tokens`, `cost_zar_cents`, `model` columns
-- [ ] **USAGE-10**: Nightly cron (`/api/ops/cost-rollup`) aggregates `agent_sessions` + `usage_events` into `daily_cost_rollup` table per org
-- [ ] **USAGE-11**: `/admin/cost-monitoring` page (platform_admin-guarded) shows cost-vs-revenue per tenant, 30-day trend, margin %, and flags any tenant with cost > 40% of MRR
-- [ ] **USAGE-12**: Haiku 4.5 enforced as default model across all BaseAgent subclasses — no silent Sonnet fallback; model selection logged per call
-- [ ] **USAGE-13**: Legacy `client_usage_metrics` reads/writes audited — every route either migrates to `usage_events` RPC or the legacy write is deleted
+- [x] **USAGE-01**: Every metered action (AI generation, social post, email send, receipt OCR) calls `guardUsage(orgId, metric)` helper BEFORE the work; blocked at 100% of plan limit
+- [x] **USAGE-02**: `guardUsage` uses existing `record_usage_event` RPC (atomic check+insert) — no Redis, no read-then-write race
+- [x] **USAGE-03**: User gets in-app warning banners at 50%, 75%, 90% of each metric cap; banner includes upgrade + pay-overage options
+- [x] **USAGE-04**: User hitting 100% cap sees inline modal with 3 actions: upgrade plan / buy overage top-up / wait until reset (with exact reset date/time in tenant timezone)
+- [x] **USAGE-05**: 50-concurrent-request unit test verifies no over-cap leakage through `guardUsage`
+- [x] **USAGE-06**: Per-tier hard ZAR ceiling on Anthropic cost: Core R150/mo, Growth R400/mo, Scale R1,500/mo — agents auto-pause at 100% with alert
+- [x] **USAGE-07**: Anthropic cost circuit breaker: check projected cost BEFORE API call; abort with graceful error if over ceiling
+- [x] **USAGE-08**: `ai_usage_ledger` table records every BaseAgent call (including retries) with model, tokens, cache hits, computed cost in ZAR cents
+- [x] **USAGE-09**: `agent_sessions` migration adds `input_tokens`, `output_tokens`, `cache_read_tokens`, `cache_write_tokens`, `cost_zar_cents`, `model` columns
+- [x] **USAGE-10**: Nightly cron (`/api/ops/cost-rollup`) aggregates `agent_sessions` + `usage_events` into `daily_cost_rollup` table per org
+- [x] **USAGE-11**: `/admin/cost-monitoring` page (platform_admin-guarded) shows cost-vs-revenue per tenant, 30-day trend, margin %, and flags any tenant with cost > 40% of MRR
+- [x] **USAGE-12**: Haiku 4.5 enforced as default model across all BaseAgent subclasses — no silent Sonnet fallback; model selection logged per call
+- [x] **USAGE-13**: Legacy `client_usage_metrics` reads/writes audited — every route either migrates to `usage_events` RPC or the legacy write is deleted
 
 ### Onboarding (ONBOARD)
 
-- [ ] **ONBOARD-01**: Day 0 (signup): user completes payment, receives welcome email, sees onboarding dashboard with 4-step progress checklist
-- [ ] **ONBOARD-02**: Day 1: automated email prompts user to complete brand voice wizard; kickoff call link (Cal.com or equivalent) included
-- [ ] **ONBOARD-03**: Day 2: automated email guides user through first campaign / first action in their active module
-- [ ] **ONBOARD-04**: Day 3: automated email confirms "you're live" + lists unlocked features + invites feedback
-- [ ] **ONBOARD-05**: `onboarding_progress` table tracks per-org state: current day, completed steps, kickoff-call scheduled timestamp, drift flags
-- [ ] **ONBOARD-06**: Provisioning saga gains step 10 (`schedule-onboarding-followups`) that enqueues the 3 N8N workflows
-- [ ] **ONBOARD-07**: Provisioning saga steps 5–9 are idempotent and retryable; saga failures PAUSE (not cascade-delete) with operator Telegram alert
-- [ ] **ONBOARD-08**: Org is usable after saga steps 1–4 complete — later steps run async; user never sees "setting up..." stuck state
-- [ ] **ONBOARD-09**: "3 business days" phrased explicitly on pricing page + welcome email; weekend signups start day-0 timer Monday
+- [x] **ONBOARD-01**: Day 0 (signup): user completes payment, receives welcome email, sees onboarding dashboard with 4-step progress checklist
+- [x] **ONBOARD-02**: Day 1: automated email prompts user to complete brand voice wizard; kickoff call link (Cal.com or equivalent) included
+- [x] **ONBOARD-03**: Day 2: automated email guides user through first campaign / first action in their active module
+- [x] **ONBOARD-04**: Day 3: automated email confirms "you're live" + lists unlocked features + invites feedback
+- [x] **ONBOARD-05**: `onboarding_progress` table tracks per-org state: current day, completed steps, kickoff-call scheduled timestamp, drift flags
+- [x] **ONBOARD-06**: Provisioning saga gains step 10 (`schedule-onboarding-followups`) that enqueues the 3 N8N workflows
+- [x] **ONBOARD-07**: Provisioning saga steps 5–9 are idempotent and retryable; saga failures PAUSE (not cascade-delete) with operator Telegram alert
+- [x] **ONBOARD-08**: Org is usable after saga steps 1–4 complete — later steps run async; user never sees "setting up..." stuck state
+- [x] **ONBOARD-09**: "3 business days" phrased explicitly on pricing page + welcome email; weekend signups start day-0 timer Monday
 
 ### Easy/Advanced UX (UX)
 
@@ -76,19 +76,19 @@
 
 ### Site Redesign (SITE)
 
-- [ ] **SITE-01**: Landing page hero is outcome-led ("Run your lodge on autopilot") with interactive module picker below
-- [ ] **SITE-02**: Pricing page has module-picker UI: toggle Core + vertical + add-ons, live monthly total, "what it replaces" comparison (~R4,500 in manual work)
-- [ ] **SITE-03**: 301 redirects in place for any changed URLs; Search Console baseline exported pre-launch for regression detection
-- [ ] **SITE-04**: Mobile-first verified at 360px breakpoint on every landing + pricing + signup page; Lighthouse mobile performance ≥85
-- [ ] **SITE-05**: Landing page keeps brand direction (charcoal #363940 + crimson #6B1420 + light sections) — full layout refresh, not cosmetic
+- [x] **SITE-01**: Landing page hero is outcome-led ("Run your lodge on autopilot") with interactive module picker below
+- [x] **SITE-02**: Pricing page has module-picker UI: toggle Core + vertical + add-ons, live monthly total, "what it replaces" comparison (~R4,500 in manual work)
+- [x] **SITE-03**: 301 redirects in place for any changed URLs; Search Console baseline exported pre-launch for regression detection
+- [x] **SITE-04**: Mobile-first verified at 360px breakpoint on every landing + pricing + signup page; Lighthouse mobile performance ≥85 *(code shipped; Lighthouse measurement deferred to launch-day on production per Chris's directive 2026-04-27)*
+- [x] **SITE-05**: Landing page keeps brand direction (charcoal #363940 + crimson #6B1420 + light sections) — full layout refresh, not cosmetic
 
 ### Operations (OPS)
 
-- [ ] **OPS-01**: Startup Zod schema assertion in `lib/config/env.ts` fails boot if `PAYFAST_MODE=production` without `PAYFAST_PASSPHRASE`, or other required env vars are missing
+- [x] **OPS-01**: Startup Zod schema assertion in `lib/config/env.ts` fails boot if `PAYFAST_MODE=production` without `PAYFAST_PASSPHRASE`, or other required env vars are missing
 - [ ] **OPS-02**: Feature-gate audit daily cron verifies every gated capability is blocked at three layers (middleware, API route, DB RLS); alerts on misconfiguration
 - [ ] **OPS-03**: Token expiry monitor cron checks Facebook + LinkedIn OAuth tokens 7 days before expiry; alerts operator with refresh link
 - [ ] **OPS-04**: `/api/ops/env-health` endpoint returns current environment validation status (masked — no secrets leaked)
-- [ ] **OPS-05**: Multi-step migration discipline documented in `CLAUDE.md`: add column NULLABLE → deploy write code → backfill → add NOT NULL in later migration; never combine add + constraint
+- [x] **OPS-05**: Multi-step migration discipline documented in `CLAUDE.md`: add column NULLABLE → deploy write code → backfill → add NOT NULL in later migration; never combine add + constraint
 
 ### Campaign Studio (CAMPAIGN) — decision-gated
 
@@ -171,7 +171,7 @@ Populated by gsd-roadmapper 2026-04-24. 53 REQ-IDs across 8 categories, 100% cov
 
 | REQ-ID | Phase | Status |
 |--------|-------|--------|
-| BILL-01 | Phase 10 | Planned |
+| BILL-01 | Phase 10 | Complete |
 | BILL-02 | Phase 09 | Complete |
 | BILL-03 | Phase 09 | Complete |
 | BILL-04 | Phase 09 | Complete |
@@ -179,37 +179,37 @@ Populated by gsd-roadmapper 2026-04-24. 53 REQ-IDs across 8 categories, 100% cov
 | BILL-06 | Phase 09 | Complete |
 | BILL-07 | Phase 09 | Complete |
 | BILL-08 | Phase 12 | Planned |
-| BILL-09 | Phase 10 | Planned |
-| VOICE-01 | Phase 10 | Planned |
-| VOICE-02 | Phase 10 | Planned |
-| VOICE-03 | Phase 10 | Planned |
-| VOICE-04 | Phase 10 | Planned |
-| VOICE-05 | Phase 10 | Planned |
-| VOICE-06 | Phase 10 | Planned |
-| VOICE-07 | Phase 10 | Planned |
-| VOICE-08 | Phase 10 | Planned |
+| BILL-09 | Phase 10 | Complete |
+| VOICE-01 | Phase 10 | Complete |
+| VOICE-02 | Phase 10 | Complete |
+| VOICE-03 | Phase 10 | Complete |
+| VOICE-04 | Phase 10 | Complete |
+| VOICE-05 | Phase 10 | Complete |
+| VOICE-06 | Phase 10 | Complete |
+| VOICE-07 | Phase 10 | Complete |
+| VOICE-08 | Phase 10 | Complete |
 | USAGE-01 | Phase 09 | Complete |
 | USAGE-02 | Phase 09 | Complete |
-| USAGE-03 | Phase 10 | Planned |
-| USAGE-04 | Phase 10 | Planned |
+| USAGE-03 | Phase 10 | Complete |
+| USAGE-04 | Phase 10 | Complete |
 | USAGE-05 | Phase 09 | Complete |
 | USAGE-06 | Phase 09 | Complete |
 | USAGE-07 | Phase 09 | Complete |
 | USAGE-08 | Phase 09 | Complete |
 | USAGE-09 | Phase 09 | Complete |
 | USAGE-10 | Phase 09 | Complete |
-| USAGE-11 | Phase 10 | Planned |
+| USAGE-11 | Phase 10 | Complete |
 | USAGE-12 | Phase 09 | Complete |
-| USAGE-13 | Phase 10 | Planned |
-| ONBOARD-01 | Phase 10 | Planned |
-| ONBOARD-02 | Phase 10 | Planned |
-| ONBOARD-03 | Phase 10 | Planned |
-| ONBOARD-04 | Phase 10 | Planned |
-| ONBOARD-05 | Phase 10 | Planned |
-| ONBOARD-06 | Phase 10 | Planned |
-| ONBOARD-07 | Phase 10 | Planned |
-| ONBOARD-08 | Phase 10 | Planned |
-| ONBOARD-09 | Phase 10 | Planned |
+| USAGE-13 | Phase 10 | Complete |
+| ONBOARD-01 | Phase 10 | Complete |
+| ONBOARD-02 | Phase 10 | Complete |
+| ONBOARD-03 | Phase 10 | Complete |
+| ONBOARD-04 | Phase 10 | Complete |
+| ONBOARD-05 | Phase 10 | Complete |
+| ONBOARD-06 | Phase 10 | Complete |
+| ONBOARD-07 | Phase 10 | Complete |
+| ONBOARD-08 | Phase 10 | Complete |
+| ONBOARD-09 | Phase 10 | Complete |
 | UX-01 | Phase 11 | Planned |
 | UX-02 | Phase 11 | Planned |
 | UX-03 | Phase 11 | Planned |
@@ -217,11 +217,11 @@ Populated by gsd-roadmapper 2026-04-24. 53 REQ-IDs across 8 categories, 100% cov
 | UX-05 | Phase 11 | Planned |
 | UX-06 | Phase 11 | Planned |
 | UX-07 | Phase 11 | Planned |
-| SITE-01 | Phase 10 | Planned |
-| SITE-02 | Phase 10 | Planned |
-| SITE-03 | Phase 10 | Planned |
-| SITE-04 | Phase 10 | Planned |
-| SITE-05 | Phase 10 | Planned |
+| SITE-01 | Phase 10 | Complete |
+| SITE-02 | Phase 10 | Complete |
+| SITE-03 | Phase 10 | Complete |
+| SITE-04 | Phase 10 | Complete (Lighthouse measurement deferred to launch-day) |
+| SITE-05 | Phase 10 | Complete |
 | OPS-01 | Phase 09 | Complete |
 | OPS-02 | Phase 12 | Planned |
 | OPS-03 | Phase 12 | Planned |
@@ -250,4 +250,4 @@ Populated by gsd-roadmapper 2026-04-24. 53 REQ-IDs across 8 categories, 100% cov
 *Note: BILL-01 through BILL-09 = 9 REQs, VOICE-01..08 = 8, USAGE-01..13 = 13, ONBOARD-01..09 = 9, UX-01..07 = 7, SITE-01..05 = 5, OPS-01..05 = 5, CAMP-01..08 = 8. Total unique = 64. Discrepancy with "53 REQ-IDs" in milestone intro: the intro counted category groupings differently; precise count of unique REQ-IDs is 64 including 8 conditional CAMP, or 56 unconditional.*
 
 ---
-*Last updated: 2026-04-24 — Traceability populated by gsd-roadmapper. All unconditional REQ-IDs mapped to Phases 09-12. CAMP-* flagged as Phase 11 conditional (decision-gated at Phase 10 exit).*
+*Last updated: 2026-04-27 — Phase 10 closed (28 reqs Complete). Phase 09 reqs back-filled to Complete (17 reqs). 45/45 in-scope reqs for v3.0 Phases 09-10 done. Phase 11 (UX-01..07) and Phase 12 (BILL-08, OPS-02..04) remain.*

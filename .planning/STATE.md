@@ -5,18 +5,18 @@
 See: .planning/PROJECT.md (updated 2026-04-24)
 
 **Core value:** Complete multi-tenant B2B operating system for South African SMEs. Shared Supabase DB with RLS-based tenant isolation, wildcard subdomain routing, DB-backed module gating, automated provisioning.
-**Current focus:** v3.0 Commercial Launch — **Phase 10 Wave 3 (Plan 06) complete 2026-04-26.** Public /pricing live with interactive module picker (VAT-inclusive). Landing redesigned with outcome-led hero + true trust trio (Pitfall F closed). Brand voice wizard UI live at /settings/brand-voice. Dashboard onboarding checklist API-backed.
-**Current stats:** 220+ DB tables (client_usage_metrics dropped), 198+ API routes, 20+ UI modules, 6 AI agents, 30 N8N workflows (27 active), 660+ tests (added 10 vat + 9 module-picker). Build passing. tsc clean for 10-06 surface.
+**Current focus:** v3.0 Commercial Launch — **Phase 10 SHIPPED 2026-04-27.** All 7 plans complete + verifier PASSED with 2 acknowledged deferrals (Lighthouse to launch-day per Chris's directive; PayFast sandbox runtime ITN carried from Phase 09 — both accepted). Branch `restaurant-sop-upgrade` pushed to origin (was 72 commits behind; now at e05e6e61+). Ready for Phase 11.
+**Current stats:** 220+ DB tables, 243 API routes, 95 UI pages, 6 AI agents (now brand-voice-aware), 19 N8N workflow files (16 active + 3 onboarding day1/2/3 added), ~678 tests (added 10 vat + 9 module-picker + 9 timezone + 9 modal across 10-06/10-07). tsc clean for new code. Build fails at page-data-collection only due to placeholder ANTHROPIC/RESEND env keys (Phase 10 backlog).
 
 ## Current Position
 
 Milestone: v3.0 Commercial Launch (started 2026-04-24)
-Phase: 10 of 12 (Brand Voice + Site Redesign + 3-Day Onboarding) — IN PROGRESS (6/7 plans complete)
-Plan: 10-06 complete with SUMMARY.md. /pricing + landing redesign + brand voice wizard + dashboard checklist live.
-Status: BILL-01, BILL-09, VOICE-01 (UI), VOICE-08 (UI), SITE-01, SITE-02, SITE-05, ONBOARD-01 (UI), Pitfall F all closed. 3 atomic feat commits + plan-metadata commit.
-Last activity: 2026-04-26 — Plan 10-06 execution: pricing page + outcome-led landing + brand voice wizard + onboarding checklist
+Phase: 10 of 12 (Brand Voice + Site Redesign + 3-Day Onboarding) — **COMPLETE 2026-04-27** (7/7 plans)
+Plan: 10-07 closed via human-verify checkpoint approval (Chris: "approved, skip Lighthouse"); 5 atomic commits + SUMMARY committed. Verifier verdict PASSED — `.planning/phases/10-brand-voice-site-redesign-onboarding/10-VERIFICATION.md`.
+Status: 28 Phase 10 REQs closed in code (BILL-01, BILL-09, VOICE-01..08, USAGE-03, USAGE-04, USAGE-11, USAGE-13, ONBOARD-01..09, SITE-01..05). 17 Phase 09 REQs back-filled to Complete in REQUIREMENTS.md (was stale). 45/45 in-scope reqs for v3.0 Phases 09-10 done. Phase 11 (UX-01..07) and Phase 12 (BILL-08, OPS-02..04) remain.
+Last activity: 2026-04-27 — Plan 10-07 SUMMARY + Phase 10 verifier + ROADMAP/STATE/REQUIREMENTS updates + branch push
 
-Progress: [████████░░] 86% (6/7 Phase 10 plans done)
+Progress: [██████████] 100% (7/7 Phase 10 plans done) · v3.0 milestone: 2/4 phases complete
 
 ## Performance Metrics
 
@@ -31,7 +31,7 @@ Progress: [████████░░] 86% (6/7 Phase 10 plans done)
 | 01-07 (v1.0) | 19/19 | Complete |
 | 08 Meta | 2/5 | Partial (deferred) |
 | **09 (v3.0)** | **5/5** | **Complete 2026-04-26** |
-| 10 (v3.0) | 0/TBD | Not started |
+| **10 (v3.0)** | **7/7** | **Complete 2026-04-27** |
 | 11 (v3.0) | 0/TBD | Not started |
 | 12 (v3.0) | 0/TBD | Not started |
 
