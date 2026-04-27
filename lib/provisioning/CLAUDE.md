@@ -50,6 +50,13 @@ Rollback runs in reverse order of creation. Each rollback action is independent 
 
 Module manifest template: `scripts/provisioning/template/client-config.json`. This determines which modules (CRM, email, social, content, accommodation) are enabled for a client. Provisioning reads this to configure the client's deployment.
 
+### CRM stale-thresholds seed (Phase 11)
+
+The `01-create-org.ts` step writes `tenant_modules.config.crm.stale_thresholds_days` with sensible
+defaults `{lead:7, qualified:14, proposal:10, negotiation:21}` whenever the CRM module is activated
+for a new org. The Easy view stale-deals card reads this JSONB key at render time. Existing orgs
+were backfilled by migration 41. Stage names match the real DB enum (not the CONTEXT.md diverged set).
+
 ## Backup Strategy
 
 - **Supabase**: PITR (point-in-time recovery) per project
