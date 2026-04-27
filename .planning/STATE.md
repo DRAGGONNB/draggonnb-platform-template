@@ -6,15 +6,15 @@ See: .planning/PROJECT.md (updated 2026-04-24)
 
 **Core value:** Complete multi-tenant B2B operating system for South African SMEs. Shared Supabase DB with RLS-based tenant isolation, wildcard subdomain routing, DB-backed module gating, automated provisioning.
 **Current focus:** v3.0 Commercial Launch — **Phase 11 IN PROGRESS.** Plans 11-01 (CRM schema) + 11-02 (Campaign schema) complete (Wave 1). 6 new CRM tables + 4 campaign tables live in Supabase with full RLS. All stale thresholds seeded for 8 CRM tenants.
-**Current stats:** 220+ DB tables (+4 campaign +4 crm new), 243 API routes, 95 UI pages, 8 AI agent types (added campaign_drafter + campaign_brand_safety to union), 19 N8N workflow files. tsc clean for new code.
+**Current stats:** 220+ DB tables (+4 campaign +4 crm new), 243 API routes, 95 UI pages, 8 AI agent types (added campaign_drafter + campaign_brand_safety to union), 21 N8N workflow files (+2 CRM nightly). tsc clean for new code.
 
 ## Current Position
 
 Milestone: v3.0 Commercial Launch (started 2026-04-24)
 Phase: 11 of 12 (Easy/Advanced CRM + Campaign Decision) — IN PROGRESS
-Plan: 11-01 COMPLETE (Wave 1 — CRM schema migrations 36-41c, 3 task commits). 11-02 COMPLETE (Wave 1 — Campaign schema migrations 42-49 + AgentType). Wave 2 plans (11-03 types regen, 11-04/05) now unblocked.
-Status: Wave 1 both plans done. Wave 2 ready.
-Last activity: 2026-04-27 — Plan 11-01 executed: 8 migrations applied (36-41c), 3 task commits (4a0eaaa0, 89495323, 40e0438d)
+Plan: 11-01 COMPLETE. 11-02 COMPLETE (Wave 1). 11-06 COMPLETE (Wave 2 — N8N engagement-score + cleanup workflows + provisioning seed).
+Status: Wave 1 done. Wave 2: 11-06 done; 11-03/04/05 parallel.
+Last activity: 2026-04-27 — Plan 11-06 executed: 2 N8N workflows + provisioning patch (52b79b26, 04e31706)
 
 ## Resume Next Session
 
@@ -93,7 +93,7 @@ Progress: [██████████] 100% (7/7 Phase 10 plans done) · v3.
 
 ## Session Continuity
 
-Last session: 2026-04-26 — Plan 10-06 execution: pricing + landing + wizard + checklist surface, 3 task commits (6aed18da, 3eaa0bf2, e4067505) + plan-metadata commit. 19 new tests added (10 vat + 9 module-picker), all green.
+Last session: 2026-04-27 — Plan 11-06 execution: wf-crm-engagement-score.json + wf-crm-nightly-cleanup.json + provisioning seed. 2 task commits (52b79b26, 04e31706). tsc clean, vitest exit 0.
 Resume file: None
 
 ### Session 55 Summary (2026-04-26) — Phase 10 Plan 01: Schema Migrations
