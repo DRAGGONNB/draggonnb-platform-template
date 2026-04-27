@@ -165,7 +165,7 @@ Phases execute in numeric order: 09 → 10 → 11 → 12
 | 08. Meta Integration | (transitional) | 3/5 | Partial | 2026-03-15 (08.2, 08.3) |
 | 09. Foundations & Guard Rails | v3.0 | 5/5 | Complete | 2026-04-26 |
 | 10. Brand Voice + Site Redesign + 3-Day Onboarding | v3.0 | 7/7 | Complete | 2026-04-27 |
-| 11. Easy/Advanced CRM PoC + Campaign Studio Decision Gate | v3.0 | 0/TBD | Not started | - |
+| 11. Easy/Advanced CRM PoC + Campaign Studio Decision Gate | v3.0 | 12/12 | Complete (structural; 5 runtime checks pending Chris) | 2026-04-27 |
 | 12. Launch Polish + v3.1 Handoff | v3.0 | 0/TBD | Not started | - |
 
 ## Next Milestones

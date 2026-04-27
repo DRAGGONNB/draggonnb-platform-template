@@ -5,39 +5,42 @@
 See: .planning/PROJECT.md (updated 2026-04-24)
 
 **Core value:** Complete multi-tenant B2B operating system for South African SMEs. Shared Supabase DB with RLS-based tenant isolation, wildcard subdomain routing, DB-backed module gating, automated provisioning.
-**Current focus:** v3.0 Commercial Launch — **Phase 11 IN PROGRESS.** Wave 1 (11-01, 11-02) + Wave 2 (11-03, 11-04, 11-05, 11-06) all complete. Wave 3: 11-07 (CRM Easy view) + 11-10 (Campaign Studio UI) COMPLETE. Wave 4: 11-08 (CRM Advanced route + toggle) COMPLETE. Wave 5: 11-09 (entity drafts autosave) COMPLETE.
-**Current stats:** 220+ DB tables, 256 API routes (+10 campaign routes), 100 UI pages, 10 AI agent types, 21 N8N workflows. tsc clean. 5 CRM UI files created/modified in 11-08.
+**Current focus:** v3.0 Commercial Launch — **Phase 11 SHIPPED 2026-04-27.** All 12 plans complete (12/12), all 4 success criteria verified structurally, 28 new integration tests added, verifier verdict = `human_needed` with 5 expected runtime deferrals (HMAC env var, N8N activation, BulkSMS sender ID, organizations.activated_at backfill, visual smoke test). 60/60 in-scope reqs for v3.0 Phases 09-11 done. Ready for Phase 12.
+**Current stats:** 230+ DB tables (15 new in Phase 11: crm_activities, crm_action_suggestions, crm_action_dismissals, entity_drafts + 6 campaign tables + 4 RPCs), 270+ API routes (~25 new in Phase 11), 105+ UI pages, 10 AI agent types (added campaign_drafter + campaign_brand_safety), 21 N8N workflow files (added wf-crm-engagement-score + wf-crm-nightly-cleanup). tsc clean. ~720 tests (added 17 in 11-12 + 18 in 11-04 + 13 in 11-05 + autosave/toast tests).
 
 ## Current Position
 
 Milestone: v3.0 Commercial Launch (started 2026-04-24)
-Phase: 11 of 12 (Easy/Advanced CRM + Campaign Decision) — **COMPLETE**
-Plan: All 12 plans COMPLETE (11-01 through 11-12). Phase 11 done.
-Status: **Phase 11 COMPLETE.** Wave 6: 11-12 DONE. 17 new integration tests. UX-06 fully closed. CAMP-01..08 covered.
-Last activity: 2026-04-27 — Plan 11-12 executed: integration tests + brand-safety regression + CLAUDE.md docs. 3 task commits (d7b7453d, de8265e2, dd630b2d). tsc clean.
+Phase: 11 of 12 (Easy/Advanced CRM + Campaign Decision) — **SHIPPED 2026-04-27** (12/12 plans, 4/4 SC structural pass)
+Plan: All 12 plans COMPLETE (11-01 through 11-12) + verifier report at `.planning/phases/11-easy-advanced-crm-campaign-decision/11-VERIFICATION.md`.
+Status: 15 Phase 11 REQs closed in code (UX-01..07 + CAMP-01..08). Migrations 36-50 live on Supabase project `psqfgzbjbgqrmjskdavs`. 5 runtime deferrals tracked separately (NOT phase gaps — they were anticipated and captured in 11-VERIFICATION.md).
+Last activity: 2026-04-27 — Phase 11 SHIPPED. Final commits: 215028ad (11-12 docs), d4729ed7 (11-11 docs reconstructed after stream timeout), 0c41b421 (planning artifacts).
 
 ## Resume Next Session
 
-**Phase 11 COMPLETE. Open fresh session to start Phase 12:**
-1. Phase 11 fully done — all 12 plans complete, all REQ-IDs closed
-2. Phase 12: promised-vs-delivered audit + Phase 12 plans
-3. Add `organizations.activated_at` migration (Phase 12 pre-work, see Deferred below)
-4. Run `/gsd:discuss-phase 12` or `/gsd:plan-phase 12` to kick off
+**Phase 11 COMPLETE. Open fresh session to start Phase 12 OR address runtime deferrals.**
 
-**Plan 11-10 deviations to be aware of for 11-11:**
-- `lib/campaigns/kill-switch.ts` does NOT yet exist (three routes in 11-10 inline the 3-line query)
-- 11-11 creates this helper, then future sessions can refactor the 3 inlined queries (Phase 12 polish)
-- PATCH /api/campaigns/[id]/drafts/[draftId] returns 501 — v3.1 scope
+**Hard runtime checks (do BEFORE Phase 12, OR before first paying client — whichever first):**
+1. **Set `CAMPAIGN_EXECUTE_HMAC_SECRET` in Vercel** (Production env vars). Generate via `openssl rand -hex 32`. Without it the execute endpoint rejects all calls.
+2. **End-to-end campaign test on Supabase branch** (NOT main): create test campaign → approve drafts (verify brand-safety fires) → schedule with `scheduled_at = now() + 2 minutes` → confirm pg_cron job created (`SELECT * FROM cron.job WHERE jobname LIKE 'campaign_run_%'`) → wait 2 min → confirm execute endpoint invoked → verify endpoint populates `published_url`. Then test kill switch: activate via admin UI → confirm scheduled run cancelled.
+3. **Activate N8N workflows manually** (no N8N MCP available): import `n8n/wf-crm-engagement-score.json` (02:00 SAST) and `n8n/wf-crm-nightly-cleanup.json` (03:00 SAST), verify `draggonnb-supabase` credential, activate.
+4. **BulkSMS sender ID pre-registration** with SA carrier (parallel track, 1-5 business days). Does NOT block code path; only blocks live SMS sends.
+5. **Visual browser test** — Easy view 3 cards + approve flow + PublishConfirmModal at 360px breakpoint.
+
+**Phase 12 prerequisites (cheap, do during planning):**
+- Migration to add `organizations.activated_at` column + backfill from `created_at`. `isInNewTenantPeriod()` falls back to `created_at` today; Phase 12 should make this proper.
+- Promised-vs-delivered audit (replace fabricated SocialProof stats in `components/landing/sections.tsx:267-271`; add seat-count gate or remove "2/5 users included" pricing copy; tone down "AI 24/7 autonomous" overpromise) — first plan of Phase 12 per CONTEXT decision.
+- Mobile 360px sweep across revenue-critical pages.
+- Reconciliation/audit/monitor crons (BILL-08, OPS-02..04).
+
+Run `/gsd:discuss-phase 12` or `/gsd:plan-phase 12` to kick off.
 
 **Phase 11 context summary (full detail in 11-CONTEXT.md):**
 - Decision gate: OPTION B locked — Campaign Studio scaffold ships in v3.0, email+SMS active, FB/IG/LinkedIn credential-gated
 - First-paying-client target relaxed; quality bar (Phase 12 promised-vs-delivered alignment) takes priority
-- 28 locked decisions across 4 areas: 3 AI action cards + approve actions + toggle UX + drafts/view-desync
-- ~10 items in "Claude's Discretion" for researcher to resolve (SMS gateway choice, schema specifics, engagement-score weights, etc.)
+- 28 locked decisions; ~10 Claude's-discretion items resolved by research (SMS gateway = BulkSMS; engagement weights open=1/click=3/reply=10/manual=15; stale thresholds use real deal-stage enum; kill switch storage in `tenant_modules.config.campaigns.kill_switch_active`)
 
-**Deferred to Phase 12 (NOT Phase 11):** promised-vs-delivered audit (replace fabricated SocialProof stats; add seat-count gate or remove "2/5 users included" copy; tone down "AI 24/7 autonomous" overpromise).
-
-Progress: [██████████] 100% (7/7 Phase 10 plans done) · v3.0 milestone: 2/4 phases complete
+Progress: [██████████] 100% (12/12 Phase 11 plans done) · v3.0 milestone: 3/4 phases complete
 
 ## Performance Metrics
 

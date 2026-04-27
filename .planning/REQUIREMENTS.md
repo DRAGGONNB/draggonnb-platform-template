@@ -210,13 +210,13 @@ Populated by gsd-roadmapper 2026-04-24. 53 REQ-IDs across 8 categories, 100% cov
 | ONBOARD-07 | Phase 10 | Complete |
 | ONBOARD-08 | Phase 10 | Complete |
 | ONBOARD-09 | Phase 10 | Complete |
-| UX-01 | Phase 11 | Planned |
-| UX-02 | Phase 11 | Planned |
-| UX-03 | Phase 11 | Planned |
-| UX-04 | Phase 11 | Planned |
-| UX-05 | Phase 11 | Planned |
-| UX-06 | Phase 11 | Planned |
-| UX-07 | Phase 11 | Planned |
+| UX-01 | Phase 11 | Complete |
+| UX-02 | Phase 11 | Complete |
+| UX-03 | Phase 11 | Complete |
+| UX-04 | Phase 11 | Complete |
+| UX-05 | Phase 11 | Complete |
+| UX-06 | Phase 11 | Complete |
+| UX-07 | Phase 11 | Complete |
 | SITE-01 | Phase 10 | Complete |
 | SITE-02 | Phase 10 | Complete |
 | SITE-03 | Phase 10 | Complete |
@@ -227,14 +227,14 @@ Populated by gsd-roadmapper 2026-04-24. 53 REQ-IDs across 8 categories, 100% cov
 | OPS-03 | Phase 12 | Planned |
 | OPS-04 | Phase 12 | Planned |
 | OPS-05 | Phase 09 | Complete |
-| CAMP-01 | Phase 11 (conditional) | Conditional — decision-gated at Phase 10 exit |
-| CAMP-02 | Phase 11 (conditional) | Conditional — decision-gated at Phase 10 exit |
-| CAMP-03 | Phase 11 (conditional) | Conditional — decision-gated at Phase 10 exit |
-| CAMP-04 | Phase 11 (conditional) | Conditional — decision-gated at Phase 10 exit |
-| CAMP-05 | Phase 11 (conditional) | Conditional — decision-gated at Phase 10 exit |
-| CAMP-06 | Phase 11 (conditional) | Conditional — decision-gated at Phase 10 exit |
-| CAMP-07 | Phase 11 (conditional) | Conditional — decision-gated at Phase 10 exit |
-| CAMP-08 | Phase 11 (conditional) | Conditional — decision-gated at Phase 10 exit |
+| CAMP-01 | Phase 11 | Complete |
+| CAMP-02 | Phase 11 | Complete |
+| CAMP-03 | Phase 11 | Complete (HMAC execute endpoint runtime test pending Chris) |
+| CAMP-04 | Phase 11 | Complete |
+| CAMP-05 | Phase 11 | Complete |
+| CAMP-06 | Phase 11 | Complete |
+| CAMP-07 | Phase 11 | Complete |
+| CAMP-08 | Phase 11 | Complete |
 
 ### Coverage Summary by Phase
 
@@ -250,4 +250,4 @@ Populated by gsd-roadmapper 2026-04-24. 53 REQ-IDs across 8 categories, 100% cov
 *Note: BILL-01 through BILL-09 = 9 REQs, VOICE-01..08 = 8, USAGE-01..13 = 13, ONBOARD-01..09 = 9, UX-01..07 = 7, SITE-01..05 = 5, OPS-01..05 = 5, CAMP-01..08 = 8. Total unique = 64. Discrepancy with "53 REQ-IDs" in milestone intro: the intro counted category groupings differently; precise count of unique REQ-IDs is 64 including 8 conditional CAMP, or 56 unconditional.*
 
 ---
-*Last updated: 2026-04-27 — Phase 10 closed (28 reqs Complete). Phase 09 reqs back-filled to Complete (17 reqs). 45/45 in-scope reqs for v3.0 Phases 09-10 done. Phase 11 (UX-01..07) and Phase 12 (BILL-08, OPS-02..04) remain.*
+*Last updated: 2026-04-27 — Phase 11 closed (15 reqs Complete: UX-01..07 + CAMP-01..08; decision gate resolved OPTION B → all CAMP unconditional). 60/60 in-scope reqs for v3.0 Phases 09-11 done. Phase 12 (BILL-08, OPS-02..04) remains.*
