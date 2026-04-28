@@ -11,12 +11,24 @@ See: .planning/PROJECT.md (updated 2026-04-24)
 ## Current Position
 
 Milestone: v3.0 Commercial Launch (started 2026-04-24)
-Phase: 11 of 12 (Easy/Advanced CRM + Campaign Decision) — **SHIPPED 2026-04-27** (12/12 plans, 4/4 SC structural pass)
-Plan: All 12 plans COMPLETE (11-01 through 11-12) + verifier report at `.planning/phases/11-easy-advanced-crm-campaign-decision/11-VERIFICATION.md`.
-Status: 15 Phase 11 REQs closed in code (UX-01..07 + CAMP-01..08). Migrations 36-50 live on Supabase project `psqfgzbjbgqrmjskdavs`. 5 runtime deferrals tracked separately (NOT phase gaps — they were anticipated and captured in 11-VERIFICATION.md).
-Last activity: 2026-04-27 — Phase 11 SHIPPED. Final commits: 215028ad (11-12 docs), d4729ed7 (11-11 docs reconstructed after stream timeout), 0c41b421 (planning artifacts).
+Phase: 12 of 12 (Launch Polish) — **IN PROGRESS**
+Plan: 12-01 COMPLETE (hotfix sweep, 2026-04-28). 7/8 items resolved (7 hotfixes + 1 AI error surfacing).
+Status: Production hotfixes shipped. CRM SSR crash fixed. Missing routes created. Sidebar active-state fixed. Social link fixed. BaseAgent typed credit/rate-limit errors added. A2/A4/A7 resolved by Anthropic credit funding.
+Last activity: 2026-04-28 — Phase 12 Plan 12-01 COMPLETE. Commits: a1778d97, 88ac4d10.
 
 ## Resume Next Session
+
+**Phase 12 Plan 12-01 COMPLETE. Continue with 12-02 (promised-vs-delivered audit) or 12-03 (mobile sweep).**
+
+**Hard runtime checks still pending (from Phase 11 — must do before first paying client):**
+1. Set `CAMPAIGN_EXECUTE_HMAC_SECRET` in Vercel (without it, execute endpoint rejects all calls).
+2. End-to-end campaign test on Supabase branch (create → approve → schedule → confirm pg_cron).
+3. Activate N8N workflows manually (wf-crm-engagement-score + wf-crm-nightly-cleanup).
+4. BulkSMS sender ID pre-registration (parallel track, non-blocking for code).
+5. Visual browser test — Easy view + PublishConfirmModal at 360px.
+
+**Phase 12 completed plans:**
+- 12-01 DONE: hotfix sweep (CRM SSR, routes, sidebar, BaseAgent errors)
 
 **Phase 11 COMPLETE. Open fresh session to start Phase 12 OR address runtime deferrals.**
 
@@ -104,7 +116,7 @@ Progress: [██████████] 100% (12/12 Phase 11 plans done) · v
 
 ## Session Continuity
 
-Last session: 2026-04-27 — Plan 11-12 execution: 17 new integration tests (view-desync, action-cards, campaign happy-path, brand-safety regression) + CLAUDE.md docs. 3 task commits (d7b7453d, de8265e2, dd630b2d). tsc clean. Phase 11 complete.
+Last session: 2026-04-28 — Plan 12-01 execution: 7 hotfixes + AI error surfacing. Commits: a1778d97, 88ac4d10, plus final docs commit. tsc clean. 807 tests passing (35 pre-existing failures in base-agent.test.ts / elijah / social test files — env-singleton issue, not introduced here).
 Resume file: None
 
 ### Session (2026-04-27) — Phase 11 Plan 11-12: Integration Tests + Docs (PHASE 11 COMPLETE)
