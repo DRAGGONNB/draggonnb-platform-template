@@ -29,6 +29,14 @@ const navigation = [
     ],
   },
   {
+    section: 'Campaign Studio',
+    items: [
+      { name: 'All Campaigns', href: '/campaigns', icon: '🎬', badge: 'NEW', badgeColor: 'bg-gradient-to-r from-purple-500 to-purple-600' },
+      { name: 'New Campaign', href: '/campaigns/new', icon: '✨', badge: null },
+      { name: 'Runs', href: '/campaigns/runs', icon: '📊', badge: null },
+    ],
+  },
+  {
     section: 'Content Studio',
     items: [
       { name: 'Content Studio', href: '/content-generator', icon: '✨', badge: null },
@@ -50,6 +58,21 @@ const navigation = [
       { name: 'Stock', href: '/accommodation/stock', icon: '📦', badge: null },
       { name: 'Costs', href: '/accommodation/costs', icon: '💰', badge: null },
       { name: 'Channels', href: '/accommodation/channels', icon: '🌐', badge: null },
+    ],
+  },
+  {
+    section: 'Restaurant',
+    items: [
+      { name: 'Dashboard', href: '/restaurant/dashboard', icon: '🍽️', badge: 'NEW', badgeColor: 'bg-gradient-to-r from-amber-500 to-amber-600' },
+      { name: 'Menu', href: '/restaurant/menu', icon: '📋', badge: null },
+      { name: 'Tables', href: '/restaurant/tables', icon: '🪑', badge: null },
+      { name: 'Reservations', href: '/restaurant/reservations', icon: '📅', badge: null },
+      { name: 'Bills', href: '/restaurant/bills', icon: '🧾', badge: null },
+      { name: 'QR Codes', href: '/restaurant/qr-codes', icon: '📱', badge: null },
+      { name: 'SOPs', href: '/restaurant/sops', icon: '📑', badge: null },
+      { name: 'Staff', href: '/restaurant/staff', icon: '👥', badge: null },
+      { name: 'Compliance', href: '/restaurant/compliance', icon: '✅', badge: null },
+      { name: 'Events', href: '/restaurant/events', icon: '🎉', badge: 'NEW', badgeColor: 'bg-gradient-to-r from-pink-500 to-pink-600' },
     ],
   },
   {
