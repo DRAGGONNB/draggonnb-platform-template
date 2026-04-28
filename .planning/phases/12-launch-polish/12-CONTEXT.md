@@ -251,6 +251,47 @@ The redesign is a **commercial requirement, not just polish** — the platform's
 - Easy view rollout to non-CRM modules (v3.1 trigger: ModuleHome stable + 5 paying clients)
 - White-label, annual billing, Embedded Finance (v3.1+)
 
+### NEW (added 2026-04-28 from Chris's feedback after viewing dashboard mockup)
+
+**Wave 4 — Floating AI helper + Telegram-mobile approval flow**
+
+Architectural decision locked: **mobile is Telegram**, not native iOS/Android. Smart Dashboard (web/desktop) + Floating AI helper (web context-aware) + Telegram bot (mobile/push approval) covers the full surface area for SA owner-operators (lodge owners, restaurant managers, etc.).
+
+**Floating AI helper component** — added to specific pages where context-aware AI assistance earns its keep:
+
+| Page | Helper purpose |
+|---|---|
+| Brand voice wizard | Explain inputs, sample responses, suggest URL to ingest |
+| Campaign Studio composer | Suggest channel mix; explain why a channel is disabled |
+| Accommodation rates settings | Translate natural-language requests to structured rule changes ("drop weekend rate 15%") |
+| Cost monitoring / Insights | Explain spikes in plain English; recommend actions |
+| Empty states (CRM, campaigns, etc.) | "Show me how to start" — guides first-time use |
+| Onboarding follow-up | Post-wizard reinforcement |
+
+**Skip helper on**: CRM Easy view (already self-explaining), tables/lists, already-AI-driven flows (Campaign Studio Autopilot — no meta-AI on top).
+
+**Telegram approval flow pattern** (generalised from Chris's rates example):
+
+1. User on web asks floating AI: "drop weekend rate by 15% for next 3 months"
+2. AI translates to structured proposal, surfaces in-page
+3. User clicks "Send for approval" → owner Telegram message with inline-keyboard Approve/Decline/See-impact
+4. Owner taps Approve in Telegram → web auto-refreshes, change committed, audit row written
+5. Telegram replies with confirmation + impact summary (revenue forecast delta, etc.)
+
+**Existing infrastructure already in place** (no rebuild needed):
+- `lib/accommodation/telegram/ops-bot.ts` — message sending
+- `lib/campaigns/telegram-alerts.ts` — alert pattern from Phase 11
+- BaseAgent + brand-voice — language layer
+- Audit rows in `crm_activities` (Phase 11) for change tracking
+
+**Missing for full implementation**:
+- Floating helper React component (`components/ai-helper/FloatingHelper.tsx`) — small button bottom-right, slide-up sheet with conversation
+- New table: `approval_requests` — `requested_by_user_id`, `approver_user_id`, `proposed_changes` JSONB, `status`, `decided_at`, `telegram_message_id` for callback wiring
+- Telegram inline-keyboard handler — webhook route to receive Approve/Decline button taps and commit pending change
+- Per-page helper context provider — component wraps page, injects current entity context (e.g., on /accommodation/rates the helper knows the active property)
+
+**Estimated scope**: 1 plan (~700 LOC + 2 migrations + 1 N8N workflow for Telegram callback handling). Sequenced AFTER sidebar redesign (Wave 3) so the helper's UI lives in the redesigned page chrome, not the legacy sidebar.
+
 </decisions>
 
 <specifics>
