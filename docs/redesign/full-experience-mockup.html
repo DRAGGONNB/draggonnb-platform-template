@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DraggonnB OS — Full Experience Mockup (Smart-Landing Across Modules)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'Inter', system-ui, sans-serif; background: #f5f5f7; margin: 0; }
+  .text-brand-crimson { color: #6B1420; }
+  .bg-brand-crimson { background: #6B1420; }
+  .bg-brand-charcoal { background: #1E1B16; }
+  .gradient-quick { background: linear-gradient(135deg, #6B1420 0%, #8B1A2A 100%); }
+  .gradient-restaurant { background: linear-gradient(135deg, #C8821A 0%, #B8941E 100%); }
+  .gradient-content { background: linear-gradient(135deg, #4338CA 0%, #6366F1 100%); }
+  .gradient-crm { background: linear-gradient(135deg, #047857 0%, #10B981 100%); }
+
+  .nav-item.active {
+    background: rgba(184,148,30,0.12);
+    color: #B8941E;
+    font-weight: 600;
+  }
+  .nav-item:hover:not(.active) { background: rgba(255,255,255,0.05); color: #FDFCFA; }
+  .nav-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 18px;
+    color: rgba(237,232,227,0.7);
+    font-size: 14px;
+    transition: all 150ms;
+    cursor: pointer;
+    border-radius: 8px;
+    margin: 2px 12px;
+    position: relative;
+  }
+  .nav-item .icon-bullet {
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,0.05);
+    border-radius: 6px;
+    font-size: 14px;
+  }
+  .nav-item.active .icon-bullet { background: rgba(184,148,30,0.18); }
+
+  /* Flyout panel */
+  .has-flyout:hover .flyout-panel { opacity: 1; pointer-events: auto; transform: translateX(0); }
+  .flyout-panel {
+    position: absolute; left: 100%; top: 0; margin-left: 12px;
+    background: #FDFCFA; color: #1E1B16;
+    border-radius: 12px;
+    box-shadow: 0 24px 48px -8px rgba(13,13,13,0.35);
+    width: 260px;
+    padding: 12px;
+    z-index: 50;
+    opacity: 0; pointer-events: none;
+    transform: translateX(-8px);
+    transition: all 200ms;
+  }
+
+  .frame-shadow { box-shadow: 0 24px 64px -8px rgba(13,13,13,0.18); }
+
+  /* Top scene tabs */
+  .scene-tab {
+    padding: 12px 20px;
+    font-size: 13px; font-weight: 600;
+    color: #6b7280;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: all 150ms;
+  }
+  .scene-tab.active { color: #6B1420; border-bottom-color: #6B1420; }
+  .scene-tab:hover:not(.active) { color: #111; background: #f9fafb; }
+
+  .scene { display: none; }
+  .scene.active { display: block; }
+
+  /* In-page tabs */
+  .ip-tab { padding: 10px 18px; font-size: 14px; color: #6b7280; cursor: pointer; border-bottom: 2px solid transparent; }
+  .ip-tab.active { color: #6B1420; border-bottom-color: #6B1420; font-weight: 600; }
+  .ip-tab:hover:not(.active) { color: #111; }
+</style>
+</head>
+<body>
+
+<!-- Title bar -->
+<div class="max-w-[1400px] mx-auto pt-8 px-4">
+  <div class="flex items-center justify-between flex-wrap gap-4 mb-4">
+    <div>
+      <div class="flex items-center gap-3">
+        <h1 class="text-3xl font-bold text-gray-900">DraggonnB OS — Full Experience Mockup</h1>
+        <span class="px-2 py-1 rounded-md bg-amber-100 text-amber-800 text-xs font-bold">SMART-LANDING ACROSS MODULES</span>
+      </div>
+      <p class="text-gray-600 mt-1">Click a tab below to switch between scenarios — same dashboard pattern adapts per module + per tenant type.</p>
+    </div>
+  </div>
+
+  <!-- SCENE TAB BAR -->
+  <div class="bg-white rounded-t-xl border border-gray-200 border-b-0 flex flex-wrap">
+    <div class="scene-tab active" data-scene="lodge">🏨 Lodge dashboard</div>
+    <div class="scene-tab" data-scene="restaurant">🍽 Restaurant ops</div>
+    <div class="scene-tab" data-scene="content">✨ Base tenant — Content Studio</div>
+    <div class="scene-tab" data-scene="crm">👥 CRM Easy view</div>
+    <div class="scene-tab" data-scene="dropdown">🧭 Sidebar dropdown / flyout</div>
+  </div>
+</div>
+
+<!-- =============================================================== -->
+<!-- SCENE 1 — LODGE DASHBOARD -->
+<!-- =============================================================== -->
+<div class="scene active" data-scene="lodge">
+<div class="max-w-[1400px] mx-auto bg-white frame-shadow overflow-hidden border border-gray-200 rounded-b-xl rounded-t-none">
+  <div class="bg-gray-100 px-4 py-2 flex items-center gap-2 border-b border-gray-200">
+    <div class="flex gap-1.5">
+      <div class="w-3 h-3 rounded-full bg-red-400"></div>
+      <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
+      <div class="w-3 h-3 rounded-full bg-green-400"></div>
+    </div>
+    <div class="flex-1 text-center">
+      <div class="inline-flex items-center gap-2 bg-white px-4 py-1 rounded-md text-xs text-gray-600 border border-gray-200">🔒 draggonnb.online/dashboard</div>
+    </div>
+  </div>
+
+  <div class="flex bg-[#FDFCFA]" style="min-height: 760px;">
+    <aside class="bg-brand-charcoal w-60 flex-shrink-0 flex flex-col">
+      <div class="px-6 py-5 border-b border-white/5">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-[#6B1420] to-[#8B1A2A] flex items-center justify-center text-white font-bold text-lg">D</div>
+          <div>
+            <div class="text-white font-bold text-base leading-tight">DRAGGON<span class="text-[#B8941E]">NB</span></div>
+            <div class="text-[10px] uppercase tracking-wider text-white/40 font-semibold">OS</div>
+          </div>
+        </div>
+      </div>
+      <div class="px-4 py-3 border-b border-white/5">
+        <button class="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-white/5 text-sm">
+          <div class="flex items-center gap-2 text-white/90">
+            <div class="w-6 h-6 rounded bg-emerald-500/30 flex items-center justify-center text-xs font-bold text-emerald-300">SS</div>
+            <div class="text-left">
+              <div class="font-medium text-xs leading-tight">Swa-Zulu Lodge</div>
+              <div class="text-[10px] text-white/50">Lodge · Vertical</div>
+            </div>
+          </div>
+          <span class="text-white/40 text-xs">⇅</span>
+        </button>
+      </div>
+      <nav class="flex-1 py-3">
+        <div class="nav-item active"><div class="icon-bullet">📊</div><span>Dashboard</span></div>
+        <div class="nav-item"><div class="icon-bullet">🏨</div><span>Accommodation</span></div>
+        <div class="nav-item"><div class="icon-bullet">✨</div><span>Content Studio</span></div>
+        <div class="nav-item"><div class="icon-bullet">👥</div><span>CRM</span></div>
+        <div class="nav-item"><div class="icon-bullet">📈</div><span>Insights</span></div>
+        <div class="nav-item"><div class="icon-bullet">⚙️</div><span>Settings</span></div>
+      </nav>
+    </aside>
+
+    <main class="flex-1 overflow-y-auto">
+      <header class="bg-white px-8 py-4 border-b border-gray-200 flex items-center justify-between">
+        <div>
+          <div class="text-xs text-gray-400 mb-0.5">Home</div>
+          <h1 class="text-xl font-bold text-gray-900">Good morning, Chris ☀</h1>
+        </div>
+        <button class="px-4 py-2 bg-brand-crimson text-white text-sm font-semibold rounded-lg flex items-center gap-2">+ Add booking</button>
+      </header>
+
+      <div class="p-8 space-y-6 max-w-6xl">
+        <div class="gradient-quick rounded-2xl p-7 text-white relative overflow-hidden">
+          <div class="absolute top-0 right-0 opacity-5 text-[200px] leading-none">📋</div>
+          <div class="relative flex items-start gap-6 flex-wrap">
+            <div class="flex-1 min-w-[260px]">
+              <div class="text-[10px] uppercase tracking-[0.15em] font-bold opacity-80 mb-2">TODAY'S QUICK ACTION · AI READY</div>
+              <h2 class="text-3xl font-bold leading-tight mb-2">2 new inquiries waiting on you</h2>
+              <p class="text-white/85 text-sm mb-5">Quoter Agent has drafted personalised replies in your brand voice. You approve, it sends.</p>
+              <div class="flex gap-3 flex-wrap">
+                <button class="px-6 py-3 bg-white text-brand-crimson font-bold text-sm rounded-xl shadow-lg">⚡ Approve all & send</button>
+                <button class="px-6 py-3 border-2 border-white/40 text-white font-semibold text-sm rounded-xl">✋ Review one by one</button>
+              </div>
+            </div>
+            <div class="flex-shrink-0 w-full lg:w-72 space-y-2">
+              <div class="bg-white/15 rounded-lg p-3 text-xs"><div class="flex justify-between mb-1"><strong>Sarah Mokoena</strong><span class="opacity-75">2h ago</span></div><div class="opacity-85">2 adults · 3 nights</div></div>
+              <div class="bg-white/15 rounded-lg p-3 text-xs"><div class="flex justify-between mb-1"><strong>James Pieters</strong><span class="opacity-75">5h ago</span></div><div class="opacity-85">Family of 4 · 5 nights</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="text-base font-semibold text-gray-900 mb-3">Today · Mon, 28 Apr 2026</h3>
+          <div class="grid grid-cols-3 gap-4">
+            <div class="bg-white rounded-xl border border-gray-200 p-5"><div class="text-3xl mb-2">🛎</div><div class="text-3xl font-bold">4</div><div class="text-sm font-medium text-gray-700">check-ins today</div></div>
+            <div class="bg-white rounded-xl border border-gray-200 p-5"><div class="text-3xl mb-2">📊</div><div class="text-3xl font-bold">82%</div><div class="text-sm font-medium text-gray-700">occupancy this week</div></div>
+            <div class="bg-white rounded-xl border border-gray-200 p-5"><div class="text-3xl mb-2">💰</div><div class="text-3xl font-bold">R 18,450</div><div class="text-sm font-medium text-gray-700">revenue this week</div></div>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="text-base font-semibold text-gray-900 mb-3">Other things ready for you</h3>
+          <div class="grid grid-cols-3 gap-4">
+            <div class="bg-white rounded-xl border border-gray-200 p-5 hover:border-brand-crimson cursor-pointer"><div class="text-2xl mb-2">🔥</div><div class="font-semibold mb-1">3 hot leads in CRM</div><div class="text-xs text-brand-crimson">Engage all →</div></div>
+            <div class="bg-white rounded-xl border border-gray-200 p-5 hover:border-brand-crimson cursor-pointer"><div class="text-2xl mb-2">📨</div><div class="font-semibold mb-1">3 Content Studio drafts</div><div class="text-xs text-brand-crimson">Review →</div></div>
+            <div class="bg-white rounded-xl border border-gray-200 p-5 hover:border-brand-crimson cursor-pointer"><div class="text-2xl mb-2">📅</div><div class="font-semibold mb-1">2 ops tasks open</div><div class="text-xs text-brand-crimson">View tasks →</div></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+</div>
+
+<!-- =============================================================== -->
+<!-- SCENE 2 — RESTAURANT OPS -->
+<!-- =============================================================== -->
+<div class="scene" data-scene="restaurant">
+<div class="max-w-[1400px] mx-auto bg-white frame-shadow overflow-hidden border border-gray-200 rounded-b-xl rounded-t-none">
+  <div class="bg-gray-100 px-4 py-2 flex items-center gap-2 border-b border-gray-200">
+    <div class="flex gap-1.5"><div class="w-3 h-3 rounded-full bg-red-400"></div><div class="w-3 h-3 rounded-full bg-yellow-400"></div><div class="w-3 h-3 rounded-full bg-green-400"></div></div>
+    <div class="flex-1 text-center"><div class="inline-flex items-center gap-2 bg-white px-4 py-1 rounded-md text-xs text-gray-600 border border-gray-200">🔒 draggonnb.online/dashboard</div></div>
+  </div>
+
+  <div class="flex bg-[#FDFCFA]" style="min-height: 760px;">
+    <aside class="bg-brand-charcoal w-60 flex-shrink-0 flex flex-col">
+      <div class="px-6 py-5 border-b border-white/5">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-[#6B1420] to-[#8B1A2A] flex items-center justify-center text-white font-bold text-lg">D</div>
+          <div><div class="text-white font-bold text-base leading-tight">DRAGGON<span class="text-[#B8941E]">NB</span></div><div class="text-[10px] uppercase tracking-wider text-white/40 font-semibold">OS</div></div>
+        </div>
+      </div>
+      <div class="px-4 py-3 border-b border-white/5">
+        <button class="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-white/5 text-sm">
+          <div class="flex items-center gap-2 text-white/90">
+            <div class="w-6 h-6 rounded bg-amber-500/30 flex items-center justify-center text-xs font-bold text-amber-300">LD</div>
+            <div class="text-left"><div class="font-medium text-xs leading-tight">The Lookout Deck</div><div class="text-[10px] text-white/50">Restaurant · Plett</div></div>
+          </div>
+          <span class="text-white/40 text-xs">⇅</span>
+        </button>
+      </div>
+      <nav class="flex-1 py-3">
+        <div class="nav-item active"><div class="icon-bullet">📊</div><span>Dashboard</span></div>
+        <div class="nav-item"><div class="icon-bullet">🍽</div><span>Restaurant</span></div>
+        <div class="nav-item"><div class="icon-bullet">✨</div><span>Content Studio</span></div>
+        <div class="nav-item"><div class="icon-bullet">👥</div><span>CRM</span></div>
+        <div class="nav-item"><div class="icon-bullet">📈</div><span>Insights</span></div>
+        <div class="nav-item"><div class="icon-bullet">⚙️</div><span>Settings</span></div>
+      </nav>
+    </aside>
+
+    <main class="flex-1 overflow-y-auto">
+      <header class="bg-white px-8 py-4 border-b border-gray-200 flex items-center justify-between">
+        <div>
+          <div class="text-xs text-gray-400 mb-0.5">Home</div>
+          <h1 class="text-xl font-bold text-gray-900">Good evening, Service is on tonight 🍽</h1>
+        </div>
+        <button class="px-4 py-2 bg-brand-crimson text-white text-sm font-semibold rounded-lg">+ Walk-in</button>
+      </header>
+
+      <div class="p-8 space-y-6 max-w-6xl">
+        <div class="gradient-restaurant rounded-2xl p-7 text-white relative overflow-hidden">
+          <div class="absolute top-0 right-0 opacity-5 text-[200px] leading-none">🪑</div>
+          <div class="relative flex items-start gap-6 flex-wrap">
+            <div class="flex-1 min-w-[260px]">
+              <div class="text-[10px] uppercase tracking-[0.15em] font-bold opacity-80 mb-2">TONIGHT'S SERVICE · AI READY</div>
+              <h2 class="text-3xl font-bold leading-tight mb-2">42 covers booked · 3 dietary alerts</h2>
+              <p class="text-white/85 text-sm mb-5">Mr. Patel (table 7) confirmed gluten-free; Brown party of 6 (table 12) requested high-chair. Front-of-house briefing ready to print.</p>
+              <div class="flex gap-3 flex-wrap">
+                <button class="px-6 py-3 bg-white text-amber-700 font-bold text-sm rounded-xl shadow-lg">📋 Print FOH brief</button>
+                <button class="px-6 py-3 border-2 border-white/40 text-white font-semibold text-sm rounded-xl">🪑 Open floor plan</button>
+              </div>
+            </div>
+            <div class="flex-shrink-0 w-full lg:w-72 space-y-2">
+              <div class="bg-white/15 rounded-lg p-3 text-xs"><div class="flex justify-between mb-1"><strong>18:00 – 20:00</strong><span class="opacity-75">22 covers</span></div><div class="opacity-85">First seating</div></div>
+              <div class="bg-white/15 rounded-lg p-3 text-xs"><div class="flex justify-between mb-1"><strong>20:30 – 22:30</strong><span class="opacity-75">20 covers</span></div><div class="opacity-85">Second seating</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="text-base font-semibold text-gray-900 mb-3">Service KPIs · Mon, 28 Apr 2026</h3>
+          <div class="grid grid-cols-4 gap-4">
+            <div class="bg-white rounded-xl border border-gray-200 p-5"><div class="text-3xl mb-2">🪑</div><div class="text-3xl font-bold">42</div><div class="text-sm font-medium text-gray-700">covers tonight</div></div>
+            <div class="bg-white rounded-xl border border-gray-200 p-5"><div class="text-3xl mb-2">🍷</div><div class="text-3xl font-bold">R 387</div><div class="text-sm font-medium text-gray-700">avg spend / cover</div></div>
+            <div class="bg-white rounded-xl border border-gray-200 p-5"><div class="text-3xl mb-2">⭐</div><div class="text-3xl font-bold">4.8</div><div class="text-sm font-medium text-gray-700">rolling review score</div></div>
+            <div class="bg-white rounded-xl border border-gray-200 p-5"><div class="text-3xl mb-2">📦</div><div class="text-3xl font-bold">6</div><div class="text-sm font-medium text-gray-700">stock alerts</div></div>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="text-base font-semibold text-gray-900 mb-3">Tomorrow's prep — ready for action</h3>
+          <div class="grid grid-cols-3 gap-4">
+            <div class="bg-white rounded-xl border border-gray-200 p-5 hover:border-amber-500 cursor-pointer"><div class="text-2xl mb-2">📋</div><div class="font-semibold mb-1">SOPs assigned (8)</div><div class="text-xs text-gray-500 mb-2">Opening checklist · Stock count · Staff briefing</div><div class="text-xs text-amber-700 font-medium">View SOPs →</div></div>
+            <div class="bg-white rounded-xl border border-gray-200 p-5 hover:border-amber-500 cursor-pointer"><div class="text-2xl mb-2">📱</div><div class="font-semibold mb-1">QR menu views ↑ 24%</div><div class="text-xs text-gray-500 mb-2">Most-viewed: Beef tartare · Wine list</div><div class="text-xs text-amber-700 font-medium">Optimise menu →</div></div>
+            <div class="bg-white rounded-xl border border-gray-200 p-5 hover:border-amber-500 cursor-pointer"><div class="text-2xl mb-2">📨</div><div class="font-semibold mb-1">Weekly newsletter draft</div><div class="text-xs text-gray-500 mb-2">Content Studio drafted Friday's email</div><div class="text-xs text-amber-700 font-medium">Approve →</div></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+</div>
+
+<!-- =============================================================== -->
+<!-- SCENE 3 — BASE TENANT CONTENT STUDIO -->
+<!-- =============================================================== -->
+<div class="scene" data-scene="content">
+<div class="max-w-[1400px] mx-auto bg-white frame-shadow overflow-hidden border border-gray-200 rounded-b-xl rounded-t-none">
+  <div class="bg-gray-100 px-4 py-2 flex items-center gap-2 border-b border-gray-200">
+    <div class="flex gap-1.5"><div class="w-3 h-3 rounded-full bg-red-400"></div><div class="w-3 h-3 rounded-full bg-yellow-400"></div><div class="w-3 h-3 rounded-full bg-green-400"></div></div>
+    <div class="flex-1 text-center"><div class="inline-flex items-center gap-2 bg-white px-4 py-1 rounded-md text-xs text-gray-600 border border-gray-200">🔒 draggonnb.online/content-studio</div></div>
+  </div>
+
+  <div class="flex bg-[#FDFCFA]" style="min-height: 760px;">
+    <aside class="bg-brand-charcoal w-60 flex-shrink-0 flex flex-col">
+      <div class="px-6 py-5 border-b border-white/5">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-[#6B1420] to-[#8B1A2A] flex items-center justify-center text-white font-bold text-lg">D</div>
+          <div><div class="text-white font-bold text-base leading-tight">DRAGGON<span class="text-[#B8941E]">NB</span></div><div class="text-[10px] uppercase tracking-wider text-white/40 font-semibold">OS</div></div>
+        </div>
+      </div>
+      <div class="px-4 py-3 border-b border-white/5">
+        <button class="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-white/5 text-sm">
+          <div class="flex items-center gap-2 text-white/90">
+            <div class="w-6 h-6 rounded bg-indigo-500/30 flex items-center justify-center text-xs font-bold text-indigo-300">CS</div>
+            <div class="text-left"><div class="font-medium text-xs leading-tight">chrisctserv's Org</div><div class="text-[10px] text-white/50">Service · Core tier</div></div>
+          </div>
+          <span class="text-white/40 text-xs">⇅</span>
+        </button>
+      </div>
+      <nav class="flex-1 py-3">
+        <div class="nav-item"><div class="icon-bullet">📊</div><span>Dashboard</span></div>
+        <div class="nav-item active"><div class="icon-bullet">✨</div><span>Content Studio</span></div>
+        <div class="nav-item"><div class="icon-bullet">👥</div><span>CRM</span></div>
+        <div class="nav-item"><div class="icon-bullet">📈</div><span>Insights</span></div>
+        <div class="nav-item"><div class="icon-bullet">⚙️</div><span>Settings</span></div>
+      </nav>
+    </aside>
+
+    <main class="flex-1 overflow-y-auto">
+      <header class="bg-white px-8 py-4 border-b border-gray-200 flex items-center justify-between">
+        <div>
+          <div class="text-xs text-gray-400 mb-0.5">Home / Content Studio</div>
+          <h1 class="text-xl font-bold text-gray-900">Content Studio</h1>
+        </div>
+        <button class="px-4 py-2 bg-brand-crimson text-white text-sm font-semibold rounded-lg">+ New campaign</button>
+      </header>
+
+      <div class="p-8 space-y-6 max-w-6xl">
+        <div class="gradient-content rounded-2xl p-7 text-white relative overflow-hidden">
+          <div class="absolute top-0 right-0 opacity-5 text-[200px] leading-none">✨</div>
+          <div class="relative flex items-start gap-6 flex-wrap">
+            <div class="flex-1 min-w-[260px]">
+              <div class="text-[10px] uppercase tracking-[0.15em] font-bold opacity-80 mb-2">QUICK START · AI READY</div>
+              <h2 class="text-3xl font-bold leading-tight mb-2">Generate this week — 7 social + 1 email + 1 SMS</h2>
+              <p class="text-white/85 text-sm mb-5">Drafted in your brand voice. Review and approve before send. ~30 seconds.</p>
+              <div class="flex gap-3 flex-wrap">
+                <button class="px-6 py-3 bg-white text-indigo-700 font-bold text-sm rounded-xl shadow-lg">⚡ Autopilot it</button>
+                <button class="px-6 py-3 border-2 border-white/40 text-white font-semibold text-sm rounded-xl">✋ Walk me through it</button>
+              </div>
+            </div>
+            <div class="flex-shrink-0 w-full lg:w-72 space-y-2">
+              <div class="bg-white/15 rounded-lg p-2 text-xs"><strong>📱 Facebook</strong> · 7 posts</div>
+              <div class="bg-white/15 rounded-lg p-2 text-xs"><strong>📷 Instagram</strong> · 7 posts</div>
+              <div class="bg-white/15 rounded-lg p-2 text-xs"><strong>📨 Email</strong> · weekly newsletter</div>
+              <div class="bg-white/15 rounded-lg p-2 text-xs"><strong>📲 SMS</strong> · special offer to top 50</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- in-page tabs -->
+        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div class="flex border-b border-gray-200 px-6 overflow-x-auto">
+            <div class="ip-tab active">Overview</div>
+            <div class="ip-tab">Social</div>
+            <div class="ip-tab">Email Campaigns</div>
+            <div class="ip-tab">Sequences</div>
+            <div class="ip-tab">Outreach</div>
+            <div class="ip-tab">Drafts <span class="ml-1 px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px]">3</span></div>
+            <div class="ip-tab">Analytics</div>
+          </div>
+
+          <div class="p-6 grid grid-cols-2 gap-4">
+            <div class="border border-gray-200 rounded-lg p-5">
+              <div class="text-xs uppercase tracking-wider font-semibold text-gray-500 mb-2">SOCIAL THIS WEEK</div>
+              <div class="text-2xl font-bold mb-1">7 posts</div>
+              <div class="text-xs text-gray-500 mb-3">Scheduled across Facebook + Instagram</div>
+              <div class="flex gap-2 mt-3">
+                <span class="text-[10px] px-2 py-1 rounded bg-emerald-50 text-emerald-700 font-semibold">⚡ Autopilot</span>
+              </div>
+            </div>
+            <div class="border border-gray-200 rounded-lg p-5">
+              <div class="text-xs uppercase tracking-wider font-semibold text-gray-500 mb-2">EMAIL</div>
+              <div class="text-2xl font-bold mb-1">2 campaigns drafted</div>
+              <div class="text-xs text-gray-500 mb-3">Newsletter + product update — review pending</div>
+              <div class="flex gap-2 mt-3">
+                <span class="text-[10px] px-2 py-1 rounded bg-amber-50 text-amber-700 font-semibold">✋ Hands-on</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+</div>
+
+<!-- =============================================================== -->
+<!-- SCENE 4 — CRM EASY VIEW -->
+<!-- =============================================================== -->
+<div class="scene" data-scene="crm">
+<div class="max-w-[1400px] mx-auto bg-white frame-shadow overflow-hidden border border-gray-200 rounded-b-xl rounded-t-none">
+  <div class="bg-gray-100 px-4 py-2 flex items-center gap-2 border-b border-gray-200">
+    <div class="flex gap-1.5"><div class="w-3 h-3 rounded-full bg-red-400"></div><div class="w-3 h-3 rounded-full bg-yellow-400"></div><div class="w-3 h-3 rounded-full bg-green-400"></div></div>
+    <div class="flex-1 text-center"><div class="inline-flex items-center gap-2 bg-white px-4 py-1 rounded-md text-xs text-gray-600 border border-gray-200">🔒 draggonnb.online/crm</div></div>
+  </div>
+
+  <div class="flex bg-[#FDFCFA]" style="min-height: 760px;">
+    <aside class="bg-brand-charcoal w-60 flex-shrink-0 flex flex-col">
+      <div class="px-6 py-5 border-b border-white/5">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-[#6B1420] to-[#8B1A2A] flex items-center justify-center text-white font-bold text-lg">D</div>
+          <div><div class="text-white font-bold text-base leading-tight">DRAGGON<span class="text-[#B8941E]">NB</span></div><div class="text-[10px] uppercase tracking-wider text-white/40 font-semibold">OS</div></div>
+        </div>
+      </div>
+      <nav class="flex-1 py-3">
+        <div class="nav-item"><div class="icon-bullet">📊</div><span>Dashboard</span></div>
+        <div class="nav-item"><div class="icon-bullet">✨</div><span>Content Studio</span></div>
+        <div class="nav-item active"><div class="icon-bullet">👥</div><span>CRM</span></div>
+        <div class="nav-item"><div class="icon-bullet">📈</div><span>Insights</span></div>
+        <div class="nav-item"><div class="icon-bullet">⚙️</div><span>Settings</span></div>
+      </nav>
+    </aside>
+
+    <main class="flex-1 overflow-y-auto">
+      <header class="bg-white px-8 py-4 border-b border-gray-200 flex items-center justify-between">
+        <div>
+          <div class="text-xs text-gray-400 mb-0.5">Home / CRM</div>
+          <h1 class="text-xl font-bold text-gray-900">CRM</h1>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1">
+            <button class="px-3 py-1.5 text-xs font-semibold rounded-md bg-white shadow-sm text-brand-crimson">⚡ Easy view</button>
+            <button class="px-3 py-1.5 text-xs font-semibold rounded-md text-gray-500">📊 Advanced</button>
+          </div>
+          <button class="px-4 py-2 bg-brand-crimson text-white text-sm font-semibold rounded-lg">+ New contact</button>
+        </div>
+      </header>
+
+      <div class="p-8 space-y-6 max-w-6xl">
+
+        <div class="grid grid-cols-3 gap-4">
+          <!-- Today's follow-ups -->
+          <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div class="bg-gradient-to-br from-emerald-50 to-emerald-100/40 px-5 py-4 border-b border-emerald-200/40">
+              <div class="flex items-center gap-2 mb-1"><span class="text-2xl">📅</span><strong class="text-gray-900">Today's follow-ups</strong></div>
+              <div class="text-xs text-emerald-800">3 contacts · score-ranked</div>
+            </div>
+            <div class="divide-y divide-gray-100">
+              <div class="p-4 hover:bg-gray-50 cursor-pointer">
+                <div class="flex justify-between items-start mb-1"><strong class="text-sm">Sarah Mokoena</strong><span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 font-bold">26 pts</span></div>
+                <div class="text-xs text-gray-500 mb-2">Manor Gardens · Last contact 8 days ago</div>
+                <div class="flex gap-2">
+                  <button class="flex-1 px-3 py-1.5 text-[11px] font-semibold bg-brand-crimson text-white rounded">Send email</button>
+                  <button class="px-3 py-1.5 text-[11px] font-semibold border border-gray-300 text-gray-700 rounded">Snooze 1d</button>
+                </div>
+              </div>
+              <div class="p-4 hover:bg-gray-50 cursor-pointer">
+                <div class="flex justify-between items-start mb-1"><strong class="text-sm">James Pieters</strong><span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 font-bold">22 pts</span></div>
+                <div class="text-xs text-gray-500 mb-2">Riverside Lodge · 12 days ago</div>
+                <div class="flex gap-2">
+                  <button class="flex-1 px-3 py-1.5 text-[11px] font-semibold bg-brand-crimson text-white rounded">Send email</button>
+                  <button class="px-3 py-1.5 text-[11px] font-semibold border border-gray-300 text-gray-700 rounded">Snooze 1d</button>
+                </div>
+              </div>
+              <div class="px-4 py-2 text-center"><a href="#" class="text-[11px] text-brand-crimson font-medium">View all in Advanced →</a></div>
+            </div>
+          </div>
+
+          <!-- Stale deals -->
+          <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div class="bg-gradient-to-br from-amber-50 to-amber-100/40 px-5 py-4 border-b border-amber-200/40">
+              <div class="flex items-center gap-2 mb-1"><span class="text-2xl">🥶</span><strong class="text-gray-900">Stale deals</strong></div>
+              <div class="text-xs text-amber-800">2 deals · past stage threshold</div>
+            </div>
+            <div class="divide-y divide-gray-100">
+              <div class="p-4 hover:bg-gray-50 cursor-pointer">
+                <div class="flex justify-between items-start mb-1"><strong class="text-sm">Acme Corp · R 24,000</strong><span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-bold">17d</span></div>
+                <div class="text-xs text-gray-500 mb-2">Stage: Proposal · threshold 10d</div>
+                <button class="w-full px-3 py-1.5 text-[11px] font-semibold border border-gray-300 text-gray-700 rounded">Decide…</button>
+              </div>
+              <div class="px-4 py-2 text-center"><a href="#" class="text-[11px] text-brand-crimson font-medium">View all in Advanced →</a></div>
+            </div>
+          </div>
+
+          <!-- Hot leads -->
+          <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div class="bg-gradient-to-br from-rose-50 to-rose-100/40 px-5 py-4 border-b border-rose-200/40">
+              <div class="flex items-center gap-2 mb-1"><span class="text-2xl">🔥</span><strong class="text-gray-900">Hot leads</strong></div>
+              <div class="text-xs text-rose-800">2 leads · high intent + value</div>
+            </div>
+            <div class="divide-y divide-gray-100">
+              <div class="p-4 hover:bg-gray-50 cursor-pointer">
+                <div class="flex justify-between items-start mb-1"><strong class="text-sm">Elsie Grobler · R 80,000</strong><span class="text-[10px] px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 font-bold">88 pts</span></div>
+                <div class="text-xs text-gray-500 mb-2">Filled qualifier · requested call</div>
+                <button class="w-full px-3 py-1.5 text-[11px] font-semibold bg-rose-600 text-white rounded">Engage now</button>
+              </div>
+              <div class="px-4 py-2 text-center"><a href="#" class="text-[11px] text-brand-crimson font-medium">View all in Advanced →</a></div>
+            </div>
+          </div>
+        </div>
+
+        <p class="text-center text-xs text-gray-400 pt-2">↑ Phase 11 Easy view rendered in the redesigned shell · Easy ⇄ Advanced toggle in header (top-right)</p>
+
+      </div>
+    </main>
+  </div>
+</div>
+</div>
+
+<!-- =============================================================== -->
+<!-- SCENE 5 — DROPDOWN / FLYOUT -->
+<!-- =============================================================== -->
+<div class="scene" data-scene="dropdown">
+<div class="max-w-[1400px] mx-auto bg-white frame-shadow overflow-hidden border border-gray-200 rounded-b-xl rounded-t-none">
+  <div class="bg-gray-100 px-4 py-2 flex items-center gap-2 border-b border-gray-200">
+    <div class="flex gap-1.5"><div class="w-3 h-3 rounded-full bg-red-400"></div><div class="w-3 h-3 rounded-full bg-yellow-400"></div><div class="w-3 h-3 rounded-full bg-green-400"></div></div>
+    <div class="flex-1 text-center"><div class="inline-flex items-center gap-2 bg-white px-4 py-1 rounded-md text-xs text-gray-600 border border-gray-200">🔒 draggonnb.online/content-studio</div></div>
+  </div>
+
+  <div class="flex bg-[#FDFCFA]" style="min-height: 760px;">
+    <aside class="bg-brand-charcoal w-60 flex-shrink-0 flex flex-col">
+      <div class="px-6 py-5 border-b border-white/5">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-[#6B1420] to-[#8B1A2A] flex items-center justify-center text-white font-bold text-lg">D</div>
+          <div><div class="text-white font-bold text-base leading-tight">DRAGGON<span class="text-[#B8941E]">NB</span></div><div class="text-[10px] uppercase tracking-wider text-white/40 font-semibold">OS</div></div>
+        </div>
+      </div>
+
+      <nav class="flex-1 py-3 relative">
+        <div class="nav-item"><div class="icon-bullet">📊</div><span>Dashboard</span></div>
+
+        <div class="nav-item active has-flyout">
+          <div class="icon-bullet">✨</div><span>Content Studio</span>
+          <span class="ml-auto text-white/30 text-xs">›</span>
+
+          <!-- flyout panel -->
+          <div class="flyout-panel">
+            <div class="text-[10px] uppercase tracking-wider text-gray-400 font-semibold px-2 py-1.5">Quick navigate</div>
+            <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-100 text-sm font-medium text-gray-800">📊 Overview</a>
+            <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-100 text-sm font-medium text-gray-800">📱 Social</a>
+            <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-100 text-sm font-medium text-gray-800">📨 Email Campaigns</a>
+            <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-100 text-sm font-medium text-gray-800">🔄 Sequences</a>
+            <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-100 text-sm font-medium text-gray-800">🎯 Outreach</a>
+            <a class="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-gray-100 text-sm font-medium text-gray-800">
+              <span class="flex items-center gap-3">📝 Drafts</span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-bold">3</span>
+            </a>
+            <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-100 text-sm font-medium text-gray-800">📊 Analytics</a>
+            <hr class="my-2 border-gray-200">
+            <div class="px-3 py-1.5 text-[11px] text-gray-500">💡 Click <strong>Content Studio</strong> to land on Overview · hover to flyout · use tabs once on the page.</div>
+          </div>
+        </div>
+
+        <div class="nav-item has-flyout">
+          <div class="icon-bullet">👥</div><span>CRM</span>
+          <span class="ml-auto text-white/30 text-xs">›</span>
+          <div class="flyout-panel">
+            <div class="text-[10px] uppercase tracking-wider text-gray-400 font-semibold px-2 py-1.5">Quick navigate</div>
+            <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-100 text-sm font-medium text-gray-800">⚡ Easy view (default)</a>
+            <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-100 text-sm font-medium text-gray-800">📊 Advanced kanban</a>
+            <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-100 text-sm font-medium text-gray-800">🔥 Lead Scoring</a>
+            <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-100 text-sm font-medium text-gray-800">📋 Drafts</a>
+            <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-100 text-sm font-medium text-gray-800">📜 Activity log</a>
+          </div>
+        </div>
+
+        <div class="nav-item"><div class="icon-bullet">📈</div><span>Insights</span></div>
+        <div class="nav-item"><div class="icon-bullet">⚙️</div><span>Settings</span></div>
+      </nav>
+    </aside>
+
+    <main class="flex-1 p-8">
+      <div class="max-w-3xl">
+        <div class="bg-white border border-gray-200 rounded-xl p-6 mb-6">
+          <h2 class="text-lg font-bold mb-3">🧭 How navigation works (best of both worlds)</h2>
+          <ol class="text-sm text-gray-700 space-y-2 list-decimal pl-5">
+            <li><strong>Click</strong> a sidebar item (e.g. "Content Studio") — navigates to that section's <em>Overview</em> page (the smart-landing for that module)</li>
+            <li><strong>Hover</strong> over a sidebar item — flyout appears with all sub-pages, click any to jump straight there</li>
+            <li>Once on the page, <strong>horizontal tabs</strong> at the top let you switch between Overview / Social / Email / Sequences / Drafts / Analytics</li>
+            <li>The <strong>Easy ⇄ Advanced</strong> toggle (top-right of each page) controls level of detail per tab — Phase 11 pattern, extended platform-wide as <strong>Autopilot ⇄ Hands-on</strong></li>
+          </ol>
+          <div class="mt-4 p-3 bg-amber-50 border border-amber-200 rounded text-xs text-amber-800">
+            👉 <strong>Try it</strong>: hover over <em>Content Studio</em> or <em>CRM</em> in the sidebar to see the flyout. Click the item itself to navigate to its main page.
+          </div>
+        </div>
+
+        <div class="bg-gray-50 border border-gray-200 rounded-xl p-6">
+          <h3 class="font-semibold mb-3 text-gray-900">When you might use each</h3>
+          <div class="grid grid-cols-3 gap-3 text-xs">
+            <div class="p-3 bg-white rounded-lg border border-gray-200">
+              <div class="font-bold mb-1">⚡ Hover flyout</div>
+              <div class="text-gray-600">Power users · jump 2 clicks deep without losing context</div>
+            </div>
+            <div class="p-3 bg-white rounded-lg border border-gray-200">
+              <div class="font-bold mb-1">🖱 Click sidebar</div>
+              <div class="text-gray-600">First-time users · land on overview, see everything at once</div>
+            </div>
+            <div class="p-3 bg-white rounded-lg border border-gray-200">
+              <div class="font-bold mb-1">📑 Tabs on page</div>
+              <div class="text-gray-600">Already inside a module · switch sub-features without going back to sidebar</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+</div>
+
+<!-- Footer caption -->
+<div class="max-w-[1400px] mx-auto px-4 pt-4 pb-12">
+  <div class="bg-white rounded-xl border border-gray-200 p-5 text-sm text-gray-600">
+    <strong class="text-gray-900">5 scenes covered:</strong> Lodge dashboard · Restaurant ops · Base tenant Content Studio · CRM Easy view · Sidebar dropdown/flyout. The smart-landing pattern (one big AI quick action card → 3-stat snapshot → cross-module cards) repeats with module-specific flavour.
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('.scene-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.scene;
+    document.querySelectorAll('.scene-tab').forEach(t => t.classList.toggle('active', t === tab));
+    document.querySelectorAll('.scene').forEach(s => s.classList.toggle('active', s.dataset.scene === target));
+    window.scrollTo({ top: 200, behavior: 'smooth' });
+  });
+});
+</script>
+
+</body>
+</html>
