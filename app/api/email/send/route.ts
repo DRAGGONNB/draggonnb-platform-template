@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { getUserOrg } from '@/lib/auth/get-user-org'
+import { guardUsage } from '@/lib/usage/guard'
+import { UsageCapExceededError } from '@/lib/usage/types'
 import {
   sendEmail,
   renderTemplate,
@@ -11,11 +13,15 @@ import {
   htmlToPlainText,
   isProviderConfigured,
 } from '@/lib/email/resend'
-import { TIER_EMAIL_LIMITS } from '@/lib/email/types'
+import { createClient } from '@/lib/supabase/server'
 
 /**
  * POST /api/email/send
  * Send a single email or batch of emails
+ *
+ * USAGE-13: replaced client_usage_metrics query + from('users') with:
+ *   - getUserOrg() for org resolution
+ *   - guardUsage({ metric: 'email_sends', qty: recipientCount }) BEFORE Resend call
  *
  * Body:
  * - to: string | string[] - Recipient email(s)
@@ -35,61 +41,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = await createClient()
-
-    // Verify authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
+    // Auth + org lookup
+    const { data: userOrg, error: orgError } = await getUserOrg()
+    if (orgError || !userOrg) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: orgError ?? 'org_lookup_failed' },
         { status: 401 }
       )
     }
 
-    // Get user's organization
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('organization_id')
-      .eq('id', user.id)
-      .single()
+    const organizationId = userOrg.organizationId
 
-    if (userError || !userData?.organization_id) {
-      return NextResponse.json(
-        { error: 'User organization not found' },
-        { status: 400 }
-      )
-    }
-
-    const organizationId = userData.organization_id
-
-    // Get organization details for limits and tier
-    const { data: orgData, error: orgError } = await supabase
-      .from('organizations')
-      .select('subscription_tier')
-      .eq('id', organizationId)
-      .single()
-
-    if (orgError || !orgData) {
-      return NextResponse.json(
-        { error: 'Organization not found' },
-        { status: 400 }
-      )
-    }
-
-    const tier = orgData.subscription_tier || 'starter'
-    const limits = TIER_EMAIL_LIMITS[tier] || TIER_EMAIL_LIMITS.starter
-
-    // Check usage limits
-    const { data: usageData } = await supabase
-      .from('client_usage_metrics')
-      .select('emails_sent_monthly, emails_limit')
-      .eq('organization_id', organizationId)
-      .single()
-
-    const emailsSent = usageData?.emails_sent_monthly || 0
-    const emailLimit = usageData?.emails_limit || limits.emails_per_month
-
-    // Parse request body
+    // Parse request body (before guard so we know recipient count)
     const body = await request.json()
     const {
       to,
@@ -117,7 +80,7 @@ export async function POST(request: NextRequest) {
 
     // Normalize recipients
     const recipients = Array.isArray(to) ? to : [to]
-    const validRecipients = recipients.filter(email => isValidEmail(email)).map(sanitizeEmail)
+    const validRecipients = recipients.filter((email: string) => isValidEmail(email)).map((email: string) => sanitizeEmail(email))
 
     if (validRecipients.length === 0) {
       return NextResponse.json(
@@ -126,18 +89,28 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if we have enough quota
-    if (emailsSent + validRecipients.length > emailLimit) {
-      return NextResponse.json(
-        {
-          error: 'Monthly email limit reached',
-          current: emailsSent,
-          limit: emailLimit,
-          requested: validRecipients.length,
-        },
-        { status: 429 }
-      )
+    // Guard usage atomically BEFORE sending (advisory-lock-hardened via migration 28)
+    // Amount = number of recipients to prevent partial-send quota drain
+    try {
+      await guardUsage({ orgId: organizationId, metric: 'email_sends', qty: validRecipients.length })
+    } catch (err) {
+      if (err instanceof UsageCapExceededError) {
+        return NextResponse.json(
+          {
+            error: 'usage_cap_exceeded',
+            metric: err.metric,
+            used: err.currentUsage,
+            limit: err.limit,
+          },
+          { status: 429 }
+        )
+      }
+      console.error('guardUsage error (email/send):', err)
+      return NextResponse.json({ error: 'Usage check failed' }, { status: 500 })
     }
+
+    // Use RLS-scoped client for org-owned table queries (templates, unsubscribes, send records)
+    const supabase = await createClient()
 
     // Check for unsubscribed recipients
     const { data: unsubscribes } = await supabase
@@ -148,7 +121,7 @@ export async function POST(request: NextRequest) {
       .is('resubscribed_at', null)
 
     const unsubscribedEmails = new Set(unsubscribes?.map(u => u.email) || [])
-    const activeRecipients = validRecipients.filter(email => !unsubscribedEmails.has(email))
+    const activeRecipients = validRecipients.filter((email: string) => !unsubscribedEmails.has(email))
 
     if (activeRecipients.length === 0) {
       return NextResponse.json(
@@ -161,7 +134,6 @@ export async function POST(request: NextRequest) {
     let htmlContent: string
 
     if (template_id) {
-      // Load template
       const { data: template, error: templateError } = await supabase
         .from('email_templates')
         .select('html_content, subject')
@@ -190,7 +162,6 @@ export async function POST(request: NextRequest) {
     const results = []
 
     for (const recipientEmail of activeRecipients) {
-      // Add standard variables
       const allVariables = {
         ...variables,
         email: recipientEmail,
@@ -199,7 +170,6 @@ export async function POST(request: NextRequest) {
         current_year: new Date().getFullYear().toString(),
       }
 
-      // Render template with variables
       let renderedHtml = renderTemplate(htmlContent, allVariables)
       const renderedSubject = renderTemplate(subject, allVariables)
 
@@ -229,13 +199,10 @@ export async function POST(request: NextRequest) {
         continue
       }
 
-      // Add tracking to email
       renderedHtml = addEmailTracking(renderedHtml, sendRecord.id)
 
-      // Generate plain text version
       const textContent = htmlToPlainText(renderedHtml)
 
-      // Send email via Resend
       const sendResult = await sendEmail({
         to: recipientEmail,
         subject: renderedSubject,
@@ -244,7 +211,6 @@ export async function POST(request: NextRequest) {
         fromName: from_name,
       })
 
-      // Update email_sends record with result
       if (sendResult.success) {
         await supabase
           .from('email_sends')
@@ -273,21 +239,9 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Update usage metrics
-    const successCount = results.filter(r => r.success).length
-    if (successCount > 0) {
-      await supabase
-        .from('client_usage_metrics')
-        .update({
-          emails_sent_monthly: emailsSent + successCount,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('organization_id', organizationId)
-    }
-
-    // Return results
     const allSuccess = results.every(r => r.success)
     const someSuccess = results.some(r => r.success)
+    const successCount = results.filter(r => r.success).length
 
     return NextResponse.json({
       success: someSuccess,

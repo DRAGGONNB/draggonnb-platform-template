@@ -113,10 +113,12 @@ export async function createOrganization(
       console.warn(`Warning: user_profiles insert failed (may already exist): ${profileError.message}`);
     }
 
-    // Create usage metrics row
-    await supabase.from('client_usage_metrics').insert({
-      organization_id: org.id,
-    });
+    // CRM stale-threshold defaults (Phase 11 — Easy view reads this JSONB key).
+    // Existing orgs were backfilled by migration 41. New orgs get defaults here.
+    // Stage names match the real DB enum: lead, qualified, proposal, negotiation.
+    const crmConfigDefaults = {
+      stale_thresholds_days: { lead: 7, qualified: 14, proposal: 10, negotiation: 21 },
+    };
 
     // Enable modules based on tier/config
     const enabledModules = job.clientConfig
@@ -124,11 +126,25 @@ export async function createOrganization(
       : getDefaultModules(tier);
 
     for (const moduleId of enabledModules) {
-      await supabase.from('tenant_modules').insert({
+      const moduleRow: {
+        organization_id: string;
+        module_id: string;
+        is_enabled: boolean;
+        config?: Record<string, unknown>;
+      } = {
         organization_id: org.id,
         module_id: moduleId,
         is_enabled: true,
-      });
+      };
+
+      if (moduleId === 'crm') {
+        // Merge with any caller-supplied config so we never blow away other keys
+        const existingCrmConfig =
+          (job.clientConfig as Record<string, Record<string, unknown>> | undefined)?.crm ?? {};
+        moduleRow.config = { ...existingCrmConfig, ...crmConfigDefaults };
+      }
+
+      await supabase.from('tenant_modules').insert(moduleRow);
     }
 
     console.log(`Organization ${job.clientId} created: ${org.id} (${tier} tier, ${enabledModules.length} modules)`);

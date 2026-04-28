@@ -27,7 +27,6 @@ const tables = [
   'users',
   'user_profiles',
   'organization_users',
-  'client_usage_metrics',
   'subscription_history',
   'social_posts',
   'platform_metrics',

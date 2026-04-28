@@ -181,3 +181,31 @@ export async function GET(
   const { id } = await params
 }
 ```
+
+### Campaign Studio Endpoints (Phase 11)
+
+| Route | Method | Purpose | Auth |
+|---|---|---|---|
+| /api/campaigns | POST | Create campaign | user (org member) |
+| /api/campaigns/[id]/drafts | POST | Generate 7 drafts via CampaignDrafterAgent | user |
+| /api/campaigns/[id]/drafts/[draftId]/check-safety | POST | Brand-safety check (Haiku, 20/day budget) | user |
+| /api/campaigns/[id]/drafts/[draftId]/regenerate | POST | Regenerate single draft | user |
+| /api/campaigns/[id]/approve | POST | Approve campaign (gates 30-day enforcement) | user |
+| /api/campaigns/[id]/schedule | POST | Schedule run via pg_cron + pg_net | user |
+| /api/campaigns/execute | POST | Internal — fired by pg_net with HMAC | x-internal-hmac |
+| /api/campaigns/verify | POST | Internal — fires 5min post-send | x-internal-hmac |
+| /api/campaigns/sms-dlr | POST | BulkSMS delivery receipt webhook | webhook (no auth) |
+| /api/admin/campaigns/kill-switch | POST | Emergency stop per org | platform_admin |
+
+All routes guard against `tenant_modules.config.campaigns.kill_switch_active = true` (returns 423
+when active). Internal routes (`/execute`, `/verify`) validate `x-internal-hmac` header against
+`INTERNAL_HMAC_SECRET` env var.
+
+### CRM Easy View Endpoints (Phase 11)
+
+| Route | Method | Purpose |
+|---|---|---|
+| /api/crm/easy-view/approve | POST | Commit one of the 4 ApproveAction variants; writes 1+ crm_activities rows with source='easy_view' |
+| /api/crm/easy-view/dismiss | POST | Hide a card item for 7 days (crm_action_dismissals) |
+| /api/crm/ui-mode | POST | Persist user_profiles.ui_mode |
+| /api/crm/drafts | POST/DELETE | Upsert/delete entity_drafts (1s debounce, 7d TTL) |

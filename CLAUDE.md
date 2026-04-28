@@ -12,6 +12,25 @@ Client-specific config lives in `tenant_modules.config` JSONB column. The `modul
 
 RLS policies use `get_user_org_id()` function (STABLE, cached per-query) for fast tenant isolation. All tables have `FORCE ROW LEVEL SECURITY` enabled.
 
+## Multi-Step Migration Discipline (OPS-05)
+
+DraggonnB OS runs on a single shared Supabase database. Migrations must never break existing rows or running deployments. Follow this 4-step pattern for any column or constraint change:
+
+1. **Add column NULLABLE.** Ship a migration that ADDs the column with no NOT NULL constraint. Existing rows have NULL.
+2. **Deploy code that writes the column.** New rows populate the column. Old rows still NULL.
+3. **Backfill old rows.** Either via a one-shot SQL UPDATE (if data is derivable) or via a script that runs once per org. Verify backfill complete via `SELECT COUNT(*) WHERE column IS NULL`.
+4. **Add NOT NULL in a later migration.** Only when step 3 confirms zero NULLs.
+
+**Never combine** "add column" + "add constraint" in a single migration on a populated table. The constraint will fail mid-deploy and Supabase will mark the migration failed without rollback.
+
+**Other rules:**
+- One change per migration. Never bundle (e.g., add 2 columns + new table + RLS policies).
+- Test against a Supabase branch before applying to main.
+- Migrations are append-only — never edit a committed migration file. Always create a new one.
+- RLS policy changes go in their own migrations, never alongside DDL.
+
+**Reference:** See PITFALL-12 in `.planning/research/PITFALLS.md` for the full failure-mode analysis.
+
 ## Role Definitions
 
 - **Claude Code** = Execution hub. Implements all code changes, provisions clients, manages infrastructure, syncs state. Full access: VPS (SSH), GitHub, Vercel, Supabase, N8N. Everything goes through Claude Code for implementation. No exceptions.

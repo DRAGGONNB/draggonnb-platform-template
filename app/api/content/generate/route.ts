@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { checkUsage, incrementUsage } from '@/lib/tier/feature-gate'
+import { getUserOrg } from '@/lib/auth/get-user-org'
+import { guardUsage } from '@/lib/usage/guard'
+import { UsageCapExceededError } from '@/lib/usage/types'
 
 /**
  * POST /api/content/generate
  * Generates social media content using Claude AI via N8N workflow
+ *
+ * ERR-034 fix: replaced from('users') with getUserOrg() (users table does not exist)
+ * USAGE-13: replaced checkUsage/incrementUsage with guardUsage()
  */
 export async function POST(request: Request) {
   try {
@@ -19,48 +23,34 @@ export async function POST(request: Request) {
       )
     }
 
-    // Get authenticated user
-    const supabase = await createClient()
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    // Get authenticated user and org (ERR-034: was querying non-existent users table)
+    const { data: userOrg, error: orgError } = await getUserOrg()
+    if (orgError || !userOrg) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: orgError ?? 'org_lookup_failed' },
         { status: 401 }
       )
     }
 
-    // Get user's organization
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('organization_id')
-      .eq('id', user.id)
-      .single()
+    const organizationId = userOrg.organizationId
 
-    if (userError || !userData?.organization_id) {
-      return NextResponse.json(
-        { error: 'Organization not found' },
-        { status: 404 }
-      )
-    }
-
-    const organizationId = userData.organization_id
-
-    // Check usage limits (atomic check via centralized feature gate)
-    const usageCheck = await checkUsage(organizationId, 'ai_generations')
-
-    if (!usageCheck.allowed) {
-      return NextResponse.json(
-        {
-          error: 'Monthly AI generation limit reached',
-          limit: usageCheck.limit,
-          current: usageCheck.current,
-        },
-        { status: 429 }
-      )
+    // Guard usage atomically (advisory-lock-hardened via migration 28)
+    try {
+      await guardUsage({ orgId: organizationId, metric: 'ai_generations', qty: 1 })
+    } catch (err) {
+      if (err instanceof UsageCapExceededError) {
+        return NextResponse.json(
+          {
+            error: 'usage_cap_exceeded',
+            metric: err.metric,
+            used: err.currentUsage,
+            limit: err.limit,
+          },
+          { status: 429 }
+        )
+      }
+      console.error('guardUsage error (content/generate):', err)
+      return NextResponse.json({ error: 'Usage check failed' }, { status: 500 })
     }
 
     // Call N8N webhook with timeout
@@ -82,7 +72,7 @@ export async function POST(request: Request) {
           platforms,
           tone: tone || 'professional',
           keywords: keywords || [],
-          userId: user.id,
+          userId: userOrg.userId,
         }),
         signal: controller.signal,
       })
@@ -105,12 +95,8 @@ export async function POST(request: Request) {
     const result = await n8nResponse.json()
 
     // Transform N8N response into UI-expected format
-    // N8N returns { success, data: { content, post_id } }
-    // UI expects { data: { contents: [{ platform, content, hashtags?, imagePrompt? }] } }
     const contents = platforms.map((platform: string) => {
       const rawContent = result?.data?.content || result?.content || ''
-
-      // Extract hashtags from content
       const hashtagMatches = rawContent.match(/#\w+/g) || []
       const hashtags = hashtagMatches.map((tag: string) => tag)
 
@@ -122,16 +108,9 @@ export async function POST(request: Request) {
       }
     })
 
-    // Atomically increment usage
-    await incrementUsage(organizationId, 'ai_generations')
-
     return NextResponse.json({
       success: true,
       data: { contents },
-      usage: {
-        current: usageCheck.current + 1,
-        limit: usageCheck.limit,
-      },
     })
   } catch (error) {
     console.error('Content generation error:', error)
@@ -144,4 +123,3 @@ export async function POST(request: Request) {
     )
   }
 }
-

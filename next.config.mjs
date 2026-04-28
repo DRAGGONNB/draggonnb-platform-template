@@ -30,6 +30,22 @@ const nextConfig = {
       },
     ]
   },
+  /**
+   * SITE-03: 301 redirect scaffold.
+   *
+   * Phase 10 (v3.0) RESEARCH found NO existing indexed URLs that need to redirect:
+   *   - Existing routes (/, /login, /signup, /dashboard/*, /admin/*) all preserved.
+   *   - /pricing is a new route (no prior indexed URL to redirect from).
+   *
+   * Pre-launch action: export Search Console top-50 URLs and confirm /pricing
+   * wasn't indexed elsewhere — see 10-07-SUMMARY.md.
+   *
+   * Post-launch action: add entries here as URL structure evolves. Each entry
+   * is a permanent (308) or temporary (307) redirect (set permanent: true for 308).
+   */
+  async redirects() {
+    return []
+  },
 }
 
 export default nextConfig

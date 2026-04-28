@@ -1,0 +1,5 @@
+-- Phase 11. Corrective: migration 41 used single-level jsonb_set on non-existent intermediate
+-- path 'crm' in config='{}'. PostgreSQL jsonb_set silently writes nothing when intermediate
+-- keys don't exist. This migration was registered in Supabase but wrote 0 rows.
+-- Migration 41c below applies the correct double-nested jsonb_set via NO FORCE RLS bypass.
+-- This file is a stub documenting the failed attempt.

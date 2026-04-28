@@ -56,7 +56,7 @@ export function RegisterInterestSection() {
   return (
     <section
       id="register-interest"
-      className="relative overflow-hidden bg-[#363940] px-4 py-24 sm:px-6 lg:px-8"
+      className="relative overflow-hidden bg-[#2D2F33] px-4 py-24 sm:px-6 lg:px-8"
     >
       <div className="pointer-events-none absolute left-1/2 top-0 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-[#6B1420]/[0.15] blur-[120px]" />
 
@@ -72,8 +72,8 @@ export function RegisterInterestSection() {
           </h2>
           <p className="mx-auto max-w-xl text-lg text-[#A8A9AD]">
             Be first in line when we open the doors. Early registrants get
-            priority onboarding, a 14-day free trial, and a founding-member
-            discount locked in.
+            priority onboarding, 3 business days to go live, and a
+            founding-member discount locked in.
           </p>
         </div>
 

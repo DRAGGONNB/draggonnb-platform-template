@@ -66,3 +66,31 @@ export interface UsageAlert {
   threshold: 80 | 90 | 100
   message: string
 }
+
+// ============================================================================
+// METERED METRIC (guard-aware subset used by guardUsage — Phase 09 addition)
+// ============================================================================
+
+export type MeteredMetric =
+  | 'ai_generations'
+  | 'social_posts'
+  | 'email_sends'
+  | 'receipt_ocr'
+  | 'campaign_runs'
+  | 'agent_invocations'
+
+// ============================================================================
+// USAGE CAP EXCEEDED ERROR (thrown by guardUsage when monthly limit hit)
+// ============================================================================
+
+export class UsageCapExceededError extends Error {
+  constructor(
+    public readonly orgId: string,
+    public readonly metric: MeteredMetric,
+    public readonly currentUsage: number,
+    public readonly limit: number,
+  ) {
+    super(`Usage cap exceeded for ${metric}: ${currentUsage}/${limit}`)
+    this.name = 'UsageCapExceededError'
+  }
+}

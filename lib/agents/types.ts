@@ -21,6 +21,9 @@ export type AgentType =
   | 'accommodation_concierge'
   | 'accommodation_reviewer'
   | 'accommodation_pricer'
+  // Campaign Studio agents (Plans 11-04/05)
+  | 'campaign_drafter'
+  | 'campaign_brand_safety'
 
 export type AgentStatus = 'active' | 'completed' | 'failed'
 

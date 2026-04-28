@@ -59,6 +59,7 @@ async function resolveTenant(subdomain: string): Promise<TenantContext | null> {
     .from('organizations')
     .select('id, subscription_tier, subdomain')
     .eq('subdomain', subdomain)
+    .is('archived_at', null) // Phase 10 (10-07): soft-archived orgs must not resolve
     .single()
 
   if (!org) return null

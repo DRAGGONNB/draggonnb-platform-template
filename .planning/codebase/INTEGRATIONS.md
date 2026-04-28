@@ -200,9 +200,9 @@ Uses `createClient` from `@supabase/supabase-js` directly with `SUPABASE_SERVICE
 **Environment Variables:**
 - `RESEND_API_KEY` - Resend API key (required for sending)
 - `RESEND_WEBHOOK_SECRET` - Webhook signature verification
-- `EMAIL_FROM` - Default sender email (default: `noreply@draggonnb.app`)
+- `EMAIL_FROM` - Default sender email (default: `noreply@draggonnb.online`)
 - `EMAIL_FROM_NAME` - Default sender name (default: `DraggonnB CRMM`)
-- `EMAIL_REPLY_TO` - Reply-to address (default: `support@draggonnb.app`)
+- `EMAIL_REPLY_TO` - Reply-to address (default: `info@draggonnb.online`)
 
 **Current State:** Code is complete and well-structured. Requires `RESEND_API_KEY` to be configured. No evidence of testing with real emails.
 

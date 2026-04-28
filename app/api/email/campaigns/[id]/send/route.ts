@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { getUserOrg } from '@/lib/auth/get-user-org'
+import { guardUsage } from '@/lib/usage/guard'
+import { UsageCapExceededError } from '@/lib/usage/types'
 import {
   sendEmail,
   sendBatchEmails,
@@ -10,12 +12,19 @@ import {
   htmlToPlainText,
   isProviderConfigured,
 } from '@/lib/email/resend'
-import { TIER_EMAIL_LIMITS } from '@/lib/email/types'
+import { createClient } from '@/lib/supabase/server'
 import type { SendEmailRequest } from '@/lib/email/types'
 
 /**
  * POST /api/email/campaigns/[id]/send
  * Send a campaign to its recipients
+ *
+ * USAGE-13: replaced client_usage_metrics query + from('users') with:
+ *   - getUserOrg() for org resolution
+ *   - guardUsage({ metric: 'email_sends', qty: recipientCount }) BEFORE Resend call
+ *
+ * Guard is placed AFTER recipient query (cheap, idempotent) but BEFORE sendBatchEmails()
+ * to prevent partial sends that burn quota without a guard.
  */
 export async function POST(
   request: NextRequest,
@@ -32,48 +41,16 @@ export async function POST(
       )
     }
 
+    // Auth + org lookup
+    const { data: userOrg, error: orgError } = await getUserOrg()
+    if (orgError || !userOrg) {
+      return NextResponse.json({ error: orgError ?? 'org_lookup_failed' }, { status: 401 })
+    }
+
+    const organizationId = userOrg.organizationId
+
+    // Use RLS-scoped client for org-owned table queries
     const supabase = await createClient()
-
-    // Verify authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Get user's organization
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('organization_id')
-      .eq('id', user.id)
-      .single()
-
-    if (userError || !userData?.organization_id) {
-      return NextResponse.json({ error: 'Organization not found' }, { status: 400 })
-    }
-
-    const organizationId = userData.organization_id
-
-    // Get organization tier and limits
-    const { data: orgData } = await supabase
-      .from('organizations')
-      .select('subscription_tier')
-      .eq('id', organizationId)
-      .single()
-
-    const tier = orgData?.subscription_tier || 'starter'
-    const limits = TIER_EMAIL_LIMITS[tier] || TIER_EMAIL_LIMITS.starter
-
-    // Get current usage
-    const { data: usageData } = await supabase
-      .from('client_usage_metrics')
-      .select('emails_sent_monthly')
-      .eq('organization_id', organizationId)
-      .single()
-
-    const emailsSent = usageData?.emails_sent_monthly || 0
 
     // Get campaign with template
     const { data: campaign, error: campaignError } = await supabase
@@ -108,30 +85,16 @@ export async function POST(
 
     // Get recipients based on segment rules
     // Query CONTACTS (CRM leads/customers), not USERS (team members)
-    // Users table contains team members who should not receive marketing emails
     const { data: recipients, error: recipientsError } = await supabase
       .from('contacts')
       .select('id, email, first_name, last_name')
       .eq('organization_id', organizationId)
-      .eq('status', 'active')  // Only send to active contacts
+      .eq('status', 'active')
 
     if (recipientsError || !recipients || recipients.length === 0) {
       return NextResponse.json(
         { error: 'No recipients found for this campaign' },
         { status: 400 }
-      )
-    }
-
-    // Check usage limits
-    if (emailsSent + recipients.length > limits.emails_per_month) {
-      return NextResponse.json(
-        {
-          error: 'Monthly email limit would be exceeded',
-          current: emailsSent,
-          limit: limits.emails_per_month,
-          requested: recipients.length,
-        },
-        { status: 429 }
       )
     }
 
@@ -154,6 +117,32 @@ export async function POST(
       )
     }
 
+    // Guard usage atomically BEFORE sending (advisory-lock-hardened via migration 28)
+    // Amount = active recipient count to prevent partial-send quota drain
+    try {
+      await guardUsage({ orgId: organizationId, metric: 'email_sends', qty: activeRecipients.length })
+    } catch (err) {
+      if (err instanceof UsageCapExceededError) {
+        // Mark campaign as paused due to quota exceeded
+        await supabase
+          .from('email_campaigns')
+          .update({ status: 'draft' })
+          .eq('id', id)
+
+        return NextResponse.json(
+          {
+            error: 'usage_cap_exceeded',
+            metric: err.metric,
+            used: err.currentUsage,
+            limit: err.limit,
+          },
+          { status: 429 }
+        )
+      }
+      console.error('guardUsage error (email/campaigns/send):', err)
+      return NextResponse.json({ error: 'Usage check failed' }, { status: 500 })
+    }
+
     // Update campaign status to sending
     await supabase
       .from('email_campaigns')
@@ -172,7 +161,6 @@ export async function POST(
     }> = []
 
     for (const recipient of activeRecipients) {
-      // Prepare variables
       const variables = {
         first_name: recipient.first_name || '',
         last_name: recipient.last_name || '',
@@ -183,11 +171,9 @@ export async function POST(
         current_year: new Date().getFullYear().toString(),
       }
 
-      // Render template
       let renderedHtml = renderTemplate(htmlContent, variables)
       const renderedSubject = renderTemplate(campaign.subject, variables)
 
-      // Create email send record
       const { data: sendRecord } = await supabase
         .from('email_sends')
         .insert({
@@ -208,7 +194,6 @@ export async function POST(
 
       if (!sendRecord) continue
 
-      // Add tracking to HTML
       renderedHtml = addEmailTracking(renderedHtml, sendRecord.id)
 
       emailRequests.push({
@@ -233,7 +218,6 @@ export async function POST(
 
       const results = await sendBatchEmails(batchRequests)
 
-      // Update send records with results
       for (let j = 0; j < results.length; j++) {
         const result = results[j]
         const item = batch[j]
@@ -277,17 +261,6 @@ export async function POST(
         },
       })
       .eq('id', id)
-
-    // Update usage metrics
-    if (successCount > 0) {
-      await supabase
-        .from('client_usage_metrics')
-        .update({
-          emails_sent_monthly: emailsSent + successCount,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('organization_id', organizationId)
-    }
 
     return NextResponse.json({
       success: true,

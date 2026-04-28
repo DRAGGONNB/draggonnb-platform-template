@@ -24,20 +24,16 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ActivityFeed } from '@/components/dashboard/ActivityFeed'
-import { OnboardingChecklist } from '@/components/dashboard/OnboardingChecklist'
+// 10-06 ONBOARD-01: API-backed 4-step checklist (signup / brand voice / kickoff / first action).
+// Replaces the prior localStorage-based legacy checklist.
+import { OnboardingChecklist } from '../_components/onboarding-checklist'
 
 async function getDashboardData(organizationId: string) {
+  // USAGE-13: client_usage_metrics dropped in migration 35.
+  // Usage widget on dashboard now sourced from usage_events via layout.tsx sidebar.
   const supabase = await createClient()
 
   try {
-    const usageQuery = supabase
-      .from('client_usage_metrics')
-      .select('*')
-      .eq('organization_id', organizationId)
-      .order('metric_date', { ascending: false })
-      .limit(1)
-      .single()
-
     const contactsQuery = supabase
       .from('contacts')
       .select('id', { count: 'exact', head: true })
@@ -56,16 +52,15 @@ async function getDashboardData(organizationId: string) {
       .limit(5)
 
     const [
-      { data: usageData },
       { count: contactsCount },
       { data: deals },
       { data: recentPosts },
-    ] = await Promise.all([usageQuery, contactsQuery, dealsQuery, postsQuery])
+    ] = await Promise.all([contactsQuery, dealsQuery, postsQuery])
 
     const activeDeals = deals?.filter((d) => !['won', 'lost'].includes(d.stage)) || []
 
     return {
-      usage: usageData,
+      usage: null,
       contactsCount: contactsCount || 0,
       deals: deals || [],
       activeDeals,
@@ -116,8 +111,10 @@ export default async function DashboardPage() {
 
   const contactsCount = data.contactsCount
   const activeDealsCount = data.activeDeals.length
-  const emailsSent = data.usage?.posts_published || 0
-  const contentGenerated = data.usage?.ai_generations_count || 0
+  // USAGE-13: client_usage_metrics dropped. These widgets now show 0 until
+  // get_usage_summary RPC integration lands in 10-06.
+  const emailsSent = 0
+  const contentGenerated = 0
   const pipelineValue = data.activeDeals.reduce((sum, d) => sum + (d.value || 0), 0)
   const wonDeals = data.deals.filter((d) => d.stage === 'won')
   const totalWonValue = wonDeals.reduce((sum, d) => sum + (d.value || 0), 0)
@@ -387,15 +384,13 @@ export default async function DashboardPage() {
                   <div className="mb-1.5 flex justify-between text-sm">
                     <span className="text-gray-600">Posts Published</span>
                     <span className="font-medium text-gray-900">
-                      {data.usage?.posts_published || 0} / 30
+                      0 / 30
                     </span>
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-gray-100">
                     <div
                       className="h-full rounded-full bg-primary transition-all"
-                      style={{
-                        width: `${Math.min(((data.usage?.posts_published || 0) / 30) * 100, 100)}%`,
-                      }}
+                      style={{ width: '0%' }}
                     />
                   </div>
                 </div>
@@ -403,15 +398,13 @@ export default async function DashboardPage() {
                   <div className="mb-1.5 flex justify-between text-sm">
                     <span className="text-gray-600">AI Generations</span>
                     <span className="font-medium text-gray-900">
-                      {data.usage?.ai_generations_count || 0} / 50
+                      0 / 50
                     </span>
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-gray-100">
                     <div
                       className="h-full rounded-full bg-amber-500 transition-all"
-                      style={{
-                        width: `${Math.min(((data.usage?.ai_generations_count || 0) / 50) * 100, 100)}%`,
-                      }}
+                      style={{ width: '0%' }}
                     />
                   </div>
                 </div>

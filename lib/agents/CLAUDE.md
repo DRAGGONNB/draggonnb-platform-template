@@ -60,6 +60,20 @@ const result = await agent.run({
 - `LeadQualifierAgent` (`lead-qualifier.ts`): Scores leads on fit/urgency/size, recommends tier, identifies automatable processes
 - `ProposalGeneratorAgent` (`proposal-generator.ts`): Generates proposals with pain points, solutions, pricing, timeline
 
+### Campaign Studio Agents (lib/campaigns/agent/)
+
+Two agents support the Campaign Studio (Phase 11):
+
+- `CampaignDrafterAgent` (`campaign-drafter.ts`): Receives a campaign intent and the tenant's brand voice
+  (auto-injected via BaseAgent.loadBrandVoice), generates 5 social posts + 1 email + 1 SMS as structured JSON.
+  Model: Sonnet (default). Closes CAMP-01.
+- `BrandSafetyAgent` (`brand-safety-checker.ts`): Haiku-based safety reviewer. Returns
+  `{ safe, flags[], recommendation }`. Hard-pinned to `claude-haiku-4-5-20251001`, temperature 0,
+  maxTokens 512. Daily budget 20/tenant tracked in `ai_usage_ledger`. Closes CAMP-07.
+
+Both register `agentType` values `'campaign_drafter'` and `'campaign_brand_safety'` in
+`lib/agents/types.ts` `AgentType` union.
+
 ### Accommodation AI Agents (lib/accommodation/agents/)
 
 Four specialized agents for accommodation operations, all extending `BaseAgent`:

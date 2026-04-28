@@ -23,6 +23,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { ArchiveButton } from './_components/archive-button'
+
+const PLATFORM_ADMIN_ORG_NAME = 'DragoonB Business Automation'
 
 interface Client {
   id: string
@@ -236,7 +239,7 @@ export default function ClientsPage() {
                   <TableHead>Users</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Created</TableHead>
-                  <TableHead className="w-[140px]">Actions</TableHead>
+                  <TableHead className="w-[180px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -264,13 +267,18 @@ export default function ClientsPage() {
                       {new Date(client.created_at).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-1">
+                      <div className="flex items-center gap-1">
                         <Button variant="ghost" size="sm" title="View Details">
                           <Eye className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" size="sm" title="Edit Modules">
                           <Settings className="h-4 w-4" />
                         </Button>
+                        <ArchiveButton
+                          orgId={client.id}
+                          orgName={client.name}
+                          isPlatformAdmin={client.name === PLATFORM_ADMIN_ORG_NAME}
+                        />
                       </div>
                     </TableCell>
                   </TableRow>

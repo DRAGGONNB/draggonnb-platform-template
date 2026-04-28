@@ -3,15 +3,18 @@
 Recurring issues identified across multiple sessions. Consult before making changes in these areas.
 
 ## Pattern: DB Column Name Mismatches
-- **Occurrences:** 3+ sessions (21, 22, and earlier)
-- **Root cause:** Code assumptions don't match actual schema. Column names are guessed rather than verified.
-- **Prevention:** Always check actual table schema before writing queries. Use `\d table_name` or Supabase MCP to inspect columns.
+- **Occurrences:** 4+ sessions (21, 22, 50, and earlier)
+- **Root cause:** Code assumptions don't match actual schema. Column names are guessed rather than verified. New occurrence in session 50: PayFast webhook writes `monthly_posts_used` / `monthly_ai_generations_used` to `client_usage_metrics` but actual columns may be `posts_monthly` / `ai_generations_monthly` (Phase 09 09-05 diagnostic confirms case at runtime).
+- **Prevention:** Always check actual table schema before writing queries. Use `\d table_name` or Supabase MCP to inspect columns. Add a CI assertion test that catches drift between code references and `information_schema.columns`. Phase 09 ships such a diagnostic for `client_usage_metrics`.
 - **Key tables:**
-  - `client_usage_metrics`: uses `posts_published` (not posts_monthly), `ai_generations_count` (not ai_generations_monthly)
+  - `client_usage_metrics`: uses `posts_published` (not posts_monthly / monthly_posts_used), `ai_generations_count` (not ai_generations_monthly / monthly_ai_generations_used)
   - `deals`: uses `stage` (not status) with values: prospect, qualified, proposal, won, lost
   - `analytics_snapshots`: uses `platform_breakdown` (JSONB), `total_engagement` (not per-platform columns)
   - `social_posts`: no `platform` column, uses `publish_to_accounts`
-- **Related errors:** ERR-001, ERR-002
+  - `organizations`: tier identity is `plan_id` (FK to billing_plans.id), NOT `subscription_tier` which contains legacy aliases (starter/professional/enterprise) that hash-miss in canonical TIER_CEILING_ZAR_CENTS lookup
+  - `ai_usage_ledger` (Phase 09): uses `error TEXT (NULL on success)` and `was_retry BOOLEAN` for status semantics — there is NO `status` column
+  - `daily_cost_rollup` (Phase 09): uses `rollup_date`, `total_cost_zar_cents`, `total_input_tokens`, `total_output_tokens`, `total_cache_read_tokens`, `total_cache_write_tokens`, `call_count`, `failed_call_count`, `rolled_up_at` with UNIQUE on (organization_id, rollup_date)
+- **Related errors:** ERR-001, ERR-002, ERR-032
 
 ## Pattern: Missing search_path on Supabase Functions
 - **Occurrences:** 2+ sessions
@@ -68,6 +71,30 @@ Recurring issues identified across multiple sessions. Consult before making chan
   - Run `npx tsc --noEmit` locally before pushing
   - This is the same root pattern as ERR-007 (Vercel TypeScript Strictness) but specific to Supabase joins
 - **Related errors:** ERR-007, ERR-015
+
+## Pattern: Vitest ESM + Supabase Mock Builder
+- **Occurrences:** 3+ test files in session 48 (ERR-025, ERR-026)
+- **Root cause:** Two distinct issues compound in Vitest:
+  1. `require('@/lib/...')` fails because @/ path aliases don't resolve in ESM mode. Must use `await import()`.
+  2. Supabase mock builders using eager `{ ...chainable }` spread inside a loop capture incomplete objects. Methods added later (eq, order) are missing from objects returned by methods added earlier (select).
+- **Prevention:**
+  - NEVER use `require()` with @/ aliases in tests. Always use `await import('@/lib/...')`.
+  - For Supabase mock builders, use self-referencing pattern:
+    ```typescript
+    function createMockBuilder(result: { data: unknown; error: unknown }) {
+      const builder: any = {}
+      builder.then = (resolve: any) => resolve(result) // thenable for await
+      builder.single = vi.fn().mockResolvedValue(result)
+      builder.maybeSingle = vi.fn().mockResolvedValue(result)
+      const methods = ['select', 'insert', 'update', 'delete', 'eq', 'neq', 'gte', 'lte', 'order', 'limit', 'range', 'or', 'in', 'ilike', 'filter']
+      for (const m of methods) {
+        builder[m] = vi.fn().mockReturnValue(builder) // self-referencing
+      }
+      return builder
+    }
+    ```
+  - All chainable methods return the SAME builder object. `.then` makes it thenable for direct `await`.
+- **Related errors:** ERR-025, ERR-026
 
 ## Pattern: Supabase MCP Re-authentication
 - **Occurrences:** Every session

@@ -78,7 +78,7 @@ export function invoiceEmail(data: InvoiceData): EmailTemplate {
   </tr>
 </table>
 <p style="margin:0;font-size:13px;color:#8c8c9a;">
-  <strong>Payment Terms:</strong> Payment is due by ${data.dueDate}. If you have already made payment, please disregard this email. For queries, reply to this email or contact <a href="mailto:accounts@draggonnb.co.za" style="color:${BRAND.primaryColor};text-decoration:none;">accounts@draggonnb.co.za</a>.
+  <strong>Payment Terms:</strong> Payment is due by ${data.dueDate}. If you have already made payment, please disregard this email. For queries, reply to this email or contact <a href="mailto:info@draggonnb.online" style="color:${BRAND.primaryColor};text-decoration:none;">info@draggonnb.online</a>.
 </p>`
 
   const lineItemsPlain = data.lineItems
@@ -100,7 +100,7 @@ Total: R${data.totalAmount}
 
 Pay now: ${data.paymentUrl}
 
-Payment Terms: Payment is due by ${data.dueDate}. If you have already made payment, please disregard this email. For queries, reply to this email or contact accounts@draggonnb.co.za.
+Payment Terms: Payment is due by ${data.dueDate}. If you have already made payment, please disregard this email. For queries, reply to this email or contact info@draggonnb.online.
 
 --
 ${BRAND.companyName} OS - The CRM and Marketing Platform Built for South Africa

@@ -142,19 +142,9 @@ function SignupContent() {
           return
         }
 
-        // Also create initial usage metrics for the organization
-        const { error: usageError } = await supabase.from('client_usage_metrics').insert({
-          organization_id: orgData.id,
-          posts_monthly: 0,
-          ai_generations_monthly: 0,
-          emails_sent_monthly: 0,
-          engagement_rate: 0,
-          created_at: new Date().toISOString(),
-        })
-
-        if (usageError) {
-          console.error('Usage metrics creation error:', usageError)
-        }
+        // USAGE-13: client_usage_metrics dropped in migration 35.
+        // Usage is now tracked in usage_events automatically when actions are taken.
+        // No initial row seeding needed.
       }
 
       // Redirect to checkout if a tier was selected, otherwise dashboard

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { AdvancedKanbanShell } from '@/components/crm/AdvancedKanbanShell'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -183,6 +184,7 @@ export default function ContactsPage() {
     : contacts
 
   return (
+    <AdvancedKanbanShell>
     <div className="space-y-6">
       {/* Page Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -452,5 +454,6 @@ export default function ContactsPage() {
         )}
       </Card>
     </div>
+    </AdvancedKanbanShell>
   )
 }

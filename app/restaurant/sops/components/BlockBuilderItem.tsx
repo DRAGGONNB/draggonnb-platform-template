@@ -1,11 +1,10 @@
 'use client'
 
-import { ChevronUp, ChevronDown, Trash2, Settings, CheckCircle2, ListChecks, Camera, ScanText, Hash, Type, ShieldCheck, ArrowRight } from 'lucide-react'
+import { ChevronUp, ChevronDown, Trash2, Settings, CheckCircle2, ListChecks, Camera, ScanText, Hash, Type, ShieldCheck, ArrowRight, type LucideIcon } from 'lucide-react'
 import { SOP_BLOCK_META } from '@/lib/restaurant/constants'
 import type { SOPBlockType } from '@/lib/restaurant/types'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const ICON_MAP: Record<string, React.ComponentType<any>> = {
+const ICON_MAP: Record<string, LucideIcon> = {
   CheckCircle2, ListChecks, Camera, ScanText, Hash, Type, ShieldCheck, ArrowRight,
 }
 

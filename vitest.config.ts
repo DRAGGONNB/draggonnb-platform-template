@@ -9,9 +9,12 @@ export default defineConfig({
     globals: true,
     environmentMatchGlobs: [
       ['__tests__/unit/**', 'node'],
+      ['__tests__/api/**', 'node'],
       ['__tests__/integration/api/**', 'node'],
       ['__tests__/integration/middleware/**', 'node'],
       ['__tests__/integration/dashboard/**', 'node'],
+      ['__tests__/integration/crm/**', 'jsdom'],
+      ['__tests__/integration/campaigns/**', 'node'],
       ['__tests__/components/**', 'jsdom'],
     ],
     setupFiles: ['./vitest.setup.ts'],
