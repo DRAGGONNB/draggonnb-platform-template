@@ -4,10 +4,8 @@ import { headers } from 'next/headers'
 import { Sidebar } from '@/components/dashboard/Sidebar'
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
 import { getUserOrg } from '@/lib/auth/get-user-org'
-import {
-  UsageWarningBanner,
-  thresholdFor,
-} from './_components/usage-warning-banner'
+import { UsageWarningBanner } from './_components/usage-warning-banner'
+import { thresholdFor } from '@/lib/usage/banner-threshold'
 
 interface MetricSnapshot {
   metric: string

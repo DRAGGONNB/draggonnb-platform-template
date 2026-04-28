@@ -68,15 +68,10 @@ export function UsageWarningBanner({ metric, used, limit, threshold }: BannerPro
   )
 }
 
-/**
- * Returns the banner threshold (0.50, 0.75, 0.90) given used/limit, or null if below 50%.
- * Pure helper — used by dashboard layout to decide whether to render a banner per metric.
- */
-export function thresholdFor(used: number, limit: number): 0.5 | 0.75 | 0.9 | null {
-  if (limit <= 0) return null
-  const ratio = used / limit
-  if (ratio >= 0.9) return 0.9
-  if (ratio >= 0.75) return 0.75
-  if (ratio >= 0.5) return 0.5
-  return null
-}
+// `thresholdFor` was extracted to lib/usage/banner-threshold.ts so the
+// dashboard server-component layout can import it without crossing the
+// 'use client' bundle boundary. In production builds, Next.js drops
+// non-component exports from client modules, which caused the dashboard
+// layout to throw 'TypeError: c is not a function' at SSR.
+// Re-exported here for any callsite that already imports from this module.
+export { thresholdFor } from '@/lib/usage/banner-threshold'
