@@ -84,6 +84,23 @@ Phase 10's brand voice wizard (URL ingest + 5 questions + avoid-list). Failure m
 **Diagnosis priority:** HIGH (brand voice is the foundation for every Phase 10/11 AI agent — if voice wizard doesn't work, autopilot/campaigns/quoter all degrade to generic templates)
 **Likely fix size:** medium (1-3 hours)
 
+### A6. Sidebar doesn't highlight the active section on sub-routes
+
+**Symptom:** *"When you're inside the menu, whether on the dashboard or the other modules, there's nothing to show you exactly where you are. At the top you have the [breadcrumbs] — i.e. dashboard, CRM or whatever — but if you're on it on the left-hand side in the menu bar, there's nothing highlighting that section which you're busy on."*
+
+**Root cause:** `components/dashboard/Sidebar.tsx:111`:
+```typescript
+const isActive = pathname === item.href
+```
+
+Strict equality only matches exact URLs. On any sub-route (e.g. `/crm/contacts`, `/crm/deals`, `/email/campaigns/[id]`, `/admin/clients/[id]`), no sidebar item has that exact href, so nothing highlights. Breadcrumbs at the top of the page (in `DashboardHeader.tsx`) work correctly via a separate `breadcrumbMap` — but the sidebar match doesn't share that logic.
+
+**Fix:** change to `pathname === item.href || pathname.startsWith(item.href + '/')`. 2-line change. Should also handle the trivial edge case where `item.href === '/'` (dashboard root) — exact-match only there, otherwise everything would always be "active".
+
+**Diagnosis priority:** LOW (UX-only, not blocking)
+**Likely fix size:** trivial (5 minutes)
+**Note:** the broader sidebar IA redesign (section B of this Phase 12) will retain whatever active-state pattern we land on here, so fixing now isn't waste.
+
 ### A5. Lead Scoring crashes
 
 **Symptom:** *"Leads scoring also bombs. Page [not] found and evidence as well."* (voice-transcribed; likely "page not found" with developer/console evidence)
