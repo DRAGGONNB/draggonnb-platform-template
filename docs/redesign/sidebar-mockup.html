@@ -2,17 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>DraggonnB OS — Sidebar Redesign Mockup</title>
+<title>DraggonnB OS — Sidebar Redesign v2 (Smart-Landing + Dynamic Sidebar)</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
   body { font-family: 'Inter', system-ui, sans-serif; background: #f5f5f7; }
-  .brand-crimson { color: #6B1420; }
   .bg-brand-crimson { background: #6B1420; }
   .bg-brand-charcoal { background: #363940; }
-  .border-brand-crimson { border-color: #6B1420; }
   .text-brand-crimson { color: #6B1420; }
+  .text-brand-gold { color: #B8941E; }
+  .border-brand-crimson { border-color: #6B1420; }
 
-  /* sidebar item highlight */
   .nav-item.active {
     background: #fef2f2;
     color: #6B1420;
@@ -36,300 +35,326 @@
     font-size: 10px; color: #9ca3af; font-weight: 600;
     padding: 12px 14px 4px;
   }
-  /* tab styles */
   .tab { padding: 10px 18px; font-size: 14px; color: #6b7280; cursor: pointer; border-bottom: 2px solid transparent; }
   .tab.active { color: #6B1420; border-bottom-color: #6B1420; font-weight: 600; }
   .tab:hover:not(.active) { color: #111; }
+  .badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
 
-  .badge-new { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: #fee2e2; color: #6B1420; font-weight: 600; }
-  .badge-count { font-size: 10px; padding: 2px 6px; border-radius: 9999px; background: #e5e7eb; color: #6b7280; font-weight: 600; }
+  .quick-card {
+    background: linear-gradient(135deg, #6B1420 0%, #8B1A2A 100%);
+    color: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 8px 24px rgba(107, 20, 32, 0.2);
+  }
 </style>
 </head>
 <body class="p-6">
 
 <header class="max-w-7xl mx-auto mb-8">
-  <h1 class="text-3xl font-bold text-gray-900 mb-2">Sidebar Redesign Mockup</h1>
-  <p class="text-gray-600">Side-by-side view: current (overloaded) vs proposed (collapsed by user goal). Built from your direct feedback this session.</p>
+  <div class="flex items-center gap-3 mb-2">
+    <h1 class="text-3xl font-bold text-gray-900">Sidebar Redesign — v2</h1>
+    <span class="badge bg-amber-100 text-amber-800">SMART-LANDING + DYNAMIC SIDEBAR</span>
+  </div>
+  <p class="text-gray-600">Refined based on your feedback: dashboard lands on the <strong>quick action</strong>, not on metrics; sidebar reorders dynamically based on which modules the tenant has activated; a vertical operator (e.g. lodge) sees their tool first, base users see Content Studio first.</p>
 </header>
 
-<!-- COMPARISON SECTION -->
-<div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
-
-  <!-- CURRENT -->
-  <div>
-    <div class="flex items-center gap-3 mb-3">
-      <span class="text-2xl">🔴</span>
-      <h2 class="text-xl font-bold text-gray-900">Current — what's live now</h2>
-      <span class="badge-count">54 items / 9 sections</span>
-    </div>
-    <p class="text-sm text-gray-600 mb-3">Cognitive overload. New users see 54 things to choose from before they've done anything.</p>
-    <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
-      <div class="bg-gradient-to-r from-gray-50 to-white px-4 py-3 border-b border-gray-200 flex items-center gap-2">
-        <div class="w-8 h-8 bg-brand-charcoal rounded flex items-center justify-center text-white text-sm font-bold">D</div>
-        <span class="font-semibold">DRAGGON<span class="text-brand-crimson">NB</span> <span class="text-xs text-gray-400 font-medium">OS</span></span>
-      </div>
-      <div class="py-2 max-h-[700px] overflow-y-auto">
-        <div class="section-label">Main</div>
-        <div class="nav-item active">📊 <span>Dashboard</span></div>
-        <div class="nav-item">📈 <span>Analytics</span><span class="badge-new ml-auto">NEW</span></div>
-        <div class="nav-item">🤖 <span>Autopilot</span></div>
-        <div class="nav-item">👥 <span>CRM</span></div>
-        <div class="nav-item">🔥 <span>Lead Scoring</span><span class="badge-new ml-auto">NEW</span></div>
-        <div class="nav-item">📧 <span>Email Hub</span></div>
-        <div class="nav-item">📱 <span>Social Media</span><span class="badge-new ml-auto">NEW</span></div>
-
-        <div class="section-label">Email Marketing</div>
-        <div class="nav-item">📨 <span>Campaigns</span></div>
-        <div class="nav-item">🔄 <span>Sequences</span></div>
-        <div class="nav-item">📝 <span>Templates</span></div>
-        <div class="nav-item">🎯 <span>Outreach</span></div>
-        <div class="nav-item">📈 <span>Analytics</span></div>
-
-        <div class="section-label">Campaign Studio</div>
-        <div class="nav-item">🎬 <span>All Campaigns</span><span class="badge-new ml-auto">NEW</span></div>
-        <div class="nav-item">✨ <span>New Campaign</span></div>
-        <div class="nav-item">📊 <span>Runs</span></div>
-
-        <div class="section-label">Content Studio</div>
-        <div class="nav-item">✨ <span>Content Studio</span></div>
-        <div class="nav-item">📧 <span>Email Content</span></div>
-        <div class="nav-item">📱 <span>Social Content</span></div>
-
-        <div class="section-label">Accommodation</div>
-        <div class="nav-item">🏨 <span>Overview</span></div>
-        <div class="nav-item">🏠 <span>Properties</span></div>
-        <div class="nav-item">📋 <span>Inquiries</span></div>
-        <div class="nav-item">👤 <span>Guests</span></div>
-        <div class="nav-item">📅 <span>Bookings</span></div>
-        <div class="nav-item">📆 <span>Calendar</span></div>
-        <div class="nav-item">🔧 <span>Operations</span></div>
-        <div class="nav-item">⚡ <span>Automation</span></div>
-        <div class="nav-item">📦 <span>Stock</span></div>
-        <div class="nav-item">💰 <span>Costs</span></div>
-        <div class="nav-item">🌐 <span>Channels</span></div>
-
-        <div class="section-label">Restaurant</div>
-        <div class="nav-item">🍽️ <span>Dashboard</span><span class="badge-new ml-auto">NEW</span></div>
-        <div class="nav-item">📋 <span>Menu</span></div>
-        <div class="nav-item">🪑 <span>Tables</span></div>
-        <div class="nav-item">📅 <span>Reservations</span></div>
-        <div class="nav-item">🧾 <span>Bills</span></div>
-        <div class="nav-item">📱 <span>QR Codes</span></div>
-        <div class="nav-item">📑 <span>SOPs</span></div>
-        <div class="nav-item">👥 <span>Staff</span></div>
-        <div class="nav-item">✅ <span>Compliance</span></div>
-        <div class="nav-item">🎉 <span>Events</span><span class="badge-new ml-auto">NEW</span></div>
-
-        <div class="section-label">Security & Response</div>
-        <div class="nav-item">🛡️ <span>Elijah Dashboard</span></div>
-        <div class="nav-item">🚨 <span>Incidents</span></div>
-        <div class="nav-item">📋 <span>Roll Call</span></div>
-        <div class="nav-item">🔥 <span>Fire Ops</span></div>
-        <div class="nav-item">🗺️ <span>Fire Map</span></div>
-        <div class="nav-item">🚶 <span>Patrols</span></div>
-        <div class="nav-item">👥 <span>Members</span></div>
-
-        <div class="section-label">Admin</div>
-        <div class="nav-item">📊 <span>Business Suite</span></div>
-        <div class="nav-item">👥 <span>Clients</span></div>
-        <div class="nav-item">📦 <span>Modules</span></div>
-        <div class="nav-item">💳 <span>Pricing Matrix</span></div>
-        <div class="nav-item">🔌 <span>Integrations</span></div>
-        <div class="nav-item">📉 <span>Cost Monitoring</span></div>
-
-        <div class="section-label">Settings</div>
-        <div class="nav-item">🔗 <span>Social Accounts</span></div>
-        <div class="nav-item">💳 <span>Pricing</span></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- PROPOSED -->
-  <div>
-    <div class="flex items-center gap-3 mb-3">
-      <span class="text-2xl">🟢</span>
-      <h2 class="text-xl font-bold text-gray-900">Proposed — collapsed by user goal</h2>
-      <span class="badge-count">6 items + Admin</span>
-    </div>
-    <p class="text-sm text-gray-600 mb-3">First-impression friendly. Sub-features become in-page horizontal tabs. Mode (autopilot vs hands-on) is per-feature, not nav.</p>
-    <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
-      <div class="bg-gradient-to-r from-gray-50 to-white px-4 py-3 border-b border-gray-200 flex items-center gap-2">
-        <div class="w-8 h-8 bg-brand-charcoal rounded flex items-center justify-center text-white text-sm font-bold">D</div>
-        <span class="font-semibold">DRAGGON<span class="text-brand-crimson">NB</span> <span class="text-xs text-gray-400 font-medium">OS</span></span>
-      </div>
-      <div class="py-2">
-        <div class="nav-item">📊 <span>Dashboard</span></div>
-        <div class="nav-item active">✨ <span>Content Studio</span></div>
-        <div class="nav-item">👥 <span>Customers</span></div>
-        <div class="nav-item">🏢 <span>Operations</span></div>
-        <div class="nav-item">📈 <span>Insights</span></div>
-        <div class="nav-item">⚙️ <span>Settings</span></div>
-
-        <div class="section-label" style="margin-top: 24px;">Platform Admin</div>
-        <div class="nav-item">🔐 <span>Admin Console</span></div>
-      </div>
-      <div class="px-4 py-6 mt-4 border-t border-gray-100 text-xs text-gray-500 leading-relaxed">
-        <div class="mb-3">
-          <strong class="text-gray-700">Why this works:</strong>
-        </div>
-        <ul class="space-y-1.5 list-disc pl-4">
-          <li><strong>Content Studio is door #1</strong> — your direct quote: "Perhaps we can move Content Studio to the top of the menu bar."</li>
-          <li><strong>Customers</strong> = CRM Easy + Advanced + Lead Scoring (one click)</li>
-          <li><strong>Operations</strong> = only the verticals the tenant has activated (Accommodation / Restaurant / Elijah)</li>
-          <li><strong>Insights</strong> = Analytics + Cost Monitoring</li>
-          <li><strong>Admin</strong> only renders for platform_admin role</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- IN-PAGE TAB DEMO -->
+<!-- DASHBOARD SMART-LANDING DEMO -->
 <div class="max-w-7xl mx-auto mb-12">
-  <div class="flex items-center gap-3 mb-3">
-    <span class="text-2xl">▶</span>
-    <h2 class="text-xl font-bold text-gray-900">What "Content Studio" looks like when clicked</h2>
-  </div>
-  <p class="text-sm text-gray-600 mb-4">Each top-level sidebar item opens a page with horizontal tabs for the sub-features. Mode toggle (Autopilot vs Hands-on) sits inside each tab, not in the nav.</p>
+  <h2 class="text-xl font-bold mb-2">▶ The new Dashboard — "lands on the quick solution first"</h2>
+  <p class="text-sm text-gray-600 mb-4">Today's dashboard is a metrics overview. The redesign makes it action-first: the top card is the ONE thing this user most likely wants to do today. This applies the Phase 11 CRM Easy View pattern (3 AI cards → one click) to the whole platform.</p>
 
-  <!-- Mock dashboard frame -->
   <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
-    <!-- top breadcrumb bar -->
-    <div class="bg-gray-50 px-6 py-3 border-b border-gray-200 flex items-center justify-between">
-      <div class="text-sm text-gray-500">
-        <span class="text-gray-400">Home</span>
-        <span class="mx-1">/</span>
-        <span class="font-medium text-gray-900">Content Studio</span>
-        <span class="mx-1">/</span>
-        <span class="font-medium text-brand-crimson">Email Campaigns</span>
-      </div>
-      <div class="flex gap-3 text-xs">
-        <span class="text-gray-500">Tenant: <strong class="text-gray-800">DragoonB Business Automation</strong></span>
-      </div>
+    <div class="bg-gray-50 px-6 py-3 border-b border-gray-200 text-sm">
+      <span class="text-gray-400">Home</span> <span class="mx-1">/</span>
+      <span class="font-medium text-brand-crimson">Dashboard</span>
+      <span class="ml-auto float-right text-xs text-gray-500">Tenant: <strong>chrisctserv's Organization</strong> · Tier: <strong>Core</strong></span>
     </div>
 
-    <!-- horizontal tabs -->
-    <div class="flex border-b border-gray-200 px-6 overflow-x-auto">
-      <div class="tab">Social</div>
-      <div class="tab active">Email Campaigns</div>
-      <div class="tab">Sequences</div>
-      <div class="tab">Outreach</div>
-      <div class="tab">Drafts</div>
-      <div class="tab">Templates</div>
-      <div class="tab">Analytics</div>
-    </div>
+    <div class="p-6 space-y-6">
 
-    <!-- mode toggle + page content placeholder -->
-    <div class="p-6">
-      <div class="flex items-center justify-between mb-4">
-        <div>
-          <h3 class="text-lg font-bold">Email Campaigns</h3>
-          <p class="text-sm text-gray-500 mt-0.5">Plan, schedule, and send branded campaigns. Choose your level of involvement.</p>
-        </div>
-        <!-- AUTOPILOT vs HANDS-ON mode toggle -->
-        <div class="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1">
-          <button class="px-3 py-1.5 text-xs font-semibold rounded-md bg-white shadow-sm text-brand-crimson">⚡ Autopilot</button>
-          <button class="px-3 py-1.5 text-xs font-semibold rounded-md text-gray-500">✋ Hands-on</button>
-        </div>
-      </div>
-
-      <!-- Autopilot view content -->
-      <div class="border-2 border-dashed border-amber-200 bg-amber-50/50 rounded-lg p-6">
+      <!-- Quick action card -->
+      <div class="quick-card">
         <div class="flex items-start gap-4">
-          <div class="flex-shrink-0 w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center text-2xl">🤖</div>
+          <div class="text-4xl">✨</div>
           <div class="flex-1">
-            <h4 class="font-semibold text-gray-900 mb-1">Autopilot mode</h4>
-            <p class="text-sm text-gray-600 mb-3">DraggonnB's AI generates and schedules your campaigns using your brand voice. You approve before send.</p>
-            <div class="flex gap-2">
-              <button class="px-4 py-2 text-sm font-medium bg-brand-crimson text-white rounded-lg">Generate next campaign</button>
-              <button class="px-4 py-2 text-sm font-medium border border-gray-300 bg-white text-gray-700 rounded-lg">Review pending drafts (3)</button>
+            <div class="text-xs uppercase tracking-wider opacity-75 font-semibold mb-1">Today's quick action</div>
+            <h3 class="text-2xl font-bold mb-1">Generate this week's content</h3>
+            <p class="opacity-90 text-sm mb-4">Your brand voice + 7 days of social posts and 1 email campaign — drafted for review in 30 seconds.</p>
+            <div class="flex gap-3">
+              <button class="px-5 py-2.5 bg-white text-brand-crimson font-semibold rounded-lg shadow-sm hover:shadow-md transition">⚡ Autopilot it</button>
+              <button class="px-5 py-2.5 border-2 border-white/30 text-white font-semibold rounded-lg hover:bg-white/10 transition">✋ Walk me through it</button>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- secondary stats -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-        <div class="border border-gray-200 rounded-lg p-4">
-          <div class="text-xs text-gray-500 uppercase tracking-wider font-semibold">This month</div>
-          <div class="text-2xl font-bold mt-1">12</div>
-          <div class="text-xs text-gray-500">campaigns sent</div>
+      <!-- Secondary action cards -->
+      <div class="grid md:grid-cols-3 gap-4">
+        <div class="border border-gray-200 rounded-lg p-5 hover:border-brand-crimson hover:shadow-md transition cursor-pointer">
+          <div class="text-2xl mb-2">🔥</div>
+          <div class="font-semibold text-sm mb-1">Hot leads ready</div>
+          <div class="text-xs text-gray-500 mb-2">3 contacts waiting on follow-up</div>
+          <div class="text-xs text-brand-crimson font-medium">Engage now →</div>
         </div>
-        <div class="border border-gray-200 rounded-lg p-4">
-          <div class="text-xs text-gray-500 uppercase tracking-wider font-semibold">Open rate</div>
-          <div class="text-2xl font-bold mt-1">34%</div>
-          <div class="text-xs text-emerald-600">↑ 4% vs last month</div>
+        <div class="border border-gray-200 rounded-lg p-5 hover:border-brand-crimson hover:shadow-md transition cursor-pointer">
+          <div class="text-2xl mb-2">📨</div>
+          <div class="font-semibold text-sm mb-1">Pending drafts (3)</div>
+          <div class="text-xs text-gray-500 mb-2">Campaign Studio drafts awaiting your approval</div>
+          <div class="text-xs text-brand-crimson font-medium">Review →</div>
         </div>
-        <div class="border border-gray-200 rounded-lg p-4">
-          <div class="text-xs text-gray-500 uppercase tracking-wider font-semibold">AI-drafted</div>
-          <div class="text-2xl font-bold mt-1">9 of 12</div>
-          <div class="text-xs text-gray-500">75% autopilot</div>
+        <div class="border border-gray-200 rounded-lg p-5 hover:border-brand-crimson hover:shadow-md transition cursor-pointer">
+          <div class="text-2xl mb-2">📊</div>
+          <div class="font-semibold text-sm mb-1">This month at a glance</div>
+          <div class="text-xs text-gray-500 mb-2">12 sent · 34% open · R12.5k pipeline</div>
+          <div class="text-xs text-brand-crimson font-medium">Full report →</div>
         </div>
       </div>
+
+      <p class="text-xs text-gray-400 pt-4 border-t border-gray-100">All metrics + onboarding checklist still available — just below the fold, not blocking the action.</p>
     </div>
   </div>
 </div>
 
-<!-- ALTERNATIVE PATTERN: Customers tab demo -->
+<!-- DYNAMIC SIDEBAR — 3 TENANT SCENARIOS -->
 <div class="max-w-7xl mx-auto mb-12">
-  <div class="flex items-center gap-3 mb-3">
-    <span class="text-2xl">▶</span>
-    <h2 class="text-xl font-bold text-gray-900">"Customers" works the same way (CRM)</h2>
+  <h2 class="text-xl font-bold mb-2">▶ Sidebar reorders based on what the tenant has activated</h2>
+  <p class="text-sm text-gray-600 mb-4">Three different tenant types see three different sidebars — driven by the <code>tenant_modules</code> table. Activated vertical(s) appear first after Dashboard; base modules sit secondary; deactivated modules don't render at all.</p>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- BASE TENANT -->
+    <div>
+      <div class="flex items-center gap-2 mb-2">
+        <span class="badge bg-blue-100 text-blue-800">BASE</span>
+        <h3 class="font-semibold">Service-business tenant</h3>
+      </div>
+      <p class="text-xs text-gray-500 mb-3">No vertical add-on. Sees Content Studio as their primary marketing entry.</p>
+      <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div class="bg-gradient-to-r from-gray-50 to-white px-4 py-3 border-b border-gray-200 flex items-center gap-2">
+          <div class="w-8 h-8 bg-brand-charcoal rounded flex items-center justify-center text-white text-sm font-bold">D</div>
+          <span class="font-semibold text-sm">DRAGGON<span class="text-brand-crimson">NB</span></span>
+        </div>
+        <div class="py-2">
+          <div class="nav-item active">📊 <span>Dashboard</span></div>
+          <div class="nav-item">✨ <span>Content Studio</span></div>
+          <div class="nav-item">👥 <span>CRM</span></div>
+          <div class="nav-item">📈 <span>Insights</span></div>
+          <div class="nav-item">⚙️ <span>Settings</span></div>
+        </div>
+      </div>
+      <p class="text-xs text-gray-400 mt-2 italic">5 items. First impression = clean.</p>
+    </div>
+
+    <!-- ACCOMMODATION TENANT -->
+    <div>
+      <div class="flex items-center gap-2 mb-2">
+        <span class="badge bg-emerald-100 text-emerald-800">+ ACCOMMODATION</span>
+        <h3 class="font-semibold">Lodge / B&B tenant</h3>
+      </div>
+      <p class="text-xs text-gray-500 mb-3">Lodge owner. Lands on their vertical first; Content Studio still one click away.</p>
+      <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div class="bg-gradient-to-r from-gray-50 to-white px-4 py-3 border-b border-gray-200 flex items-center gap-2">
+          <div class="w-8 h-8 bg-brand-charcoal rounded flex items-center justify-center text-white text-sm font-bold">D</div>
+          <span class="font-semibold text-sm">DRAGGON<span class="text-brand-crimson">NB</span></span>
+        </div>
+        <div class="py-2">
+          <div class="nav-item">📊 <span>Dashboard</span></div>
+          <div class="nav-item active">🏨 <span>Accommodation</span></div>
+          <div class="nav-item">✨ <span>Content Studio</span></div>
+          <div class="nav-item">👥 <span>CRM</span></div>
+          <div class="nav-item">📈 <span>Insights</span></div>
+          <div class="nav-item">⚙️ <span>Settings</span></div>
+        </div>
+      </div>
+      <p class="text-xs text-gray-400 mt-2 italic">6 items. Vertical operator one click from their tool.</p>
+    </div>
+
+    <!-- MULTI-VERTICAL TENANT (DragoonB itself) -->
+    <div>
+      <div class="flex items-center gap-2 mb-2">
+        <span class="badge bg-purple-100 text-purple-800">+ MULTIPLE</span>
+        <h3 class="font-semibold">DragoonB Business Automation</h3>
+      </div>
+      <p class="text-xs text-gray-500 mb-3">All modules activated (your test admin org). Each vertical gets its own entry — order matches activation date.</p>
+      <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div class="bg-gradient-to-r from-gray-50 to-white px-4 py-3 border-b border-gray-200 flex items-center gap-2">
+          <div class="w-8 h-8 bg-brand-charcoal rounded flex items-center justify-center text-white text-sm font-bold">D</div>
+          <span class="font-semibold text-sm">DRAGGON<span class="text-brand-crimson">NB</span></span>
+        </div>
+        <div class="py-2">
+          <div class="nav-item">📊 <span>Dashboard</span></div>
+          <div class="nav-item">🏨 <span>Accommodation</span></div>
+          <div class="nav-item">🍽️ <span>Restaurant</span></div>
+          <div class="nav-item">🛡️ <span>Security</span></div>
+          <div class="nav-item active">✨ <span>Content Studio</span></div>
+          <div class="nav-item">👥 <span>CRM</span></div>
+          <div class="nav-item">📈 <span>Insights</span></div>
+          <div class="nav-item">⚙️ <span>Settings</span></div>
+          <div class="section-label" style="margin-top: 16px;">Platform Admin</div>
+          <div class="nav-item">🔐 <span>Admin Console</span></div>
+        </div>
+      </div>
+      <p class="text-xs text-gray-400 mt-2 italic">9 items max — only when all modules + admin role.</p>
+    </div>
   </div>
-  <p class="text-sm text-gray-600 mb-4">Same sidebar entry → tabs for the sub-features. Easy/Advanced toggle is per-tab (Phase 11 pattern preserved).</p>
+
+  <div class="mt-6 p-5 bg-gradient-to-r from-amber-50 to-amber-100/40 border border-amber-200 rounded-lg text-sm">
+    <strong class="text-amber-900">Key principle:</strong>
+    <span class="text-amber-800">Sidebar items appear ONLY for modules the tenant has activated in <code>tenant_modules</code>. No tenant ever sees the full 50-item wall of irrelevant features. New module activated mid-billing? Sidebar updates on next page render — no redeploy.</span>
+  </div>
+</div>
+
+<!-- IN-PAGE TAB DEMO — Content Studio -->
+<div class="max-w-7xl mx-auto mb-12">
+  <h2 class="text-xl font-bold mb-2">▶ "Content Studio" landing — quick path first, then options</h2>
+  <p class="text-sm text-gray-600 mb-4">Top of page surfaces the autopilot quick action; user can drop into a specific tab if they want to go deeper. Mode toggle (Autopilot / Hands-on) sits inside each tab.</p>
 
   <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
     <div class="bg-gray-50 px-6 py-3 border-b border-gray-200 text-sm text-gray-500">
       <span class="text-gray-400">Home</span> <span class="mx-1">/</span>
-      <span class="font-medium text-gray-900">Customers</span> <span class="mx-1">/</span>
-      <span class="font-medium text-brand-crimson">CRM</span>
+      <span class="font-medium text-gray-900">Content Studio</span>
     </div>
-    <div class="flex border-b border-gray-200 px-6">
-      <div class="tab active">CRM</div>
-      <div class="tab">Lead Scoring</div>
-      <div class="tab">Drafts</div>
-      <div class="tab">Activities</div>
-    </div>
-    <div class="p-6">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-bold">Customer Relationship</h3>
-        <div class="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1">
-          <button class="px-3 py-1.5 text-xs font-semibold rounded-md bg-white shadow-sm text-brand-crimson">⚡ Easy view</button>
-          <button class="px-3 py-1.5 text-xs font-semibold rounded-md text-gray-500">📊 Advanced kanban</button>
+
+    <!-- Hero quick action -->
+    <div class="px-6 pt-6 pb-4">
+      <div class="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-5">
+        <div class="flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <div class="text-xs font-semibold text-amber-700 uppercase tracking-wider mb-1">QUICK START</div>
+            <h3 class="text-lg font-bold text-gray-900">Generate this week — 7 social posts + 1 email + 1 SMS</h3>
+            <p class="text-sm text-gray-600 mt-1">Drafted in your brand voice. Review and approve before send.</p>
+          </div>
+          <div class="flex gap-2">
+            <button class="px-4 py-2 text-sm font-semibold bg-brand-crimson text-white rounded-lg hover:bg-red-900">⚡ Autopilot</button>
+            <button class="px-4 py-2 text-sm font-semibold border border-gray-300 bg-white text-gray-700 rounded-lg hover:bg-gray-50">✋ Hands-on</button>
+          </div>
         </div>
       </div>
-      <div class="border border-dashed border-gray-300 rounded-lg p-6 text-center text-gray-400 text-sm">
-        ⏰ Today's follow-ups · 🥶 Stale deals · 🔥 Hot leads — the 3 Phase 11 AI action cards render here
+    </div>
+
+    <!-- Tabs for going deeper -->
+    <div class="flex border-b border-gray-200 px-6 overflow-x-auto">
+      <div class="tab active">Overview</div>
+      <div class="tab">Social</div>
+      <div class="tab">Email Campaigns</div>
+      <div class="tab">Sequences</div>
+      <div class="tab">Outreach</div>
+      <div class="tab">Drafts <span class="text-xs ml-1 px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">3</span></div>
+      <div class="tab">Templates</div>
+      <div class="tab">Analytics</div>
+    </div>
+
+    <div class="p-6 grid md:grid-cols-2 gap-4">
+      <div class="border border-gray-200 rounded-lg p-5">
+        <div class="text-xs uppercase tracking-wider font-semibold text-gray-500 mb-2">SOCIAL</div>
+        <div class="text-2xl font-bold mb-1">7 posts</div>
+        <div class="text-xs text-gray-500 mb-3">Scheduled this week across Facebook + Instagram + LinkedIn</div>
+        <div class="text-xs text-brand-crimson font-medium">Open social tab →</div>
+      </div>
+      <div class="border border-gray-200 rounded-lg p-5">
+        <div class="text-xs uppercase tracking-wider font-semibold text-gray-500 mb-2">EMAIL</div>
+        <div class="text-2xl font-bold mb-1">2 campaigns drafted</div>
+        <div class="text-xs text-gray-500 mb-3">Newsletter + product update — ready for review</div>
+        <div class="text-xs text-brand-crimson font-medium">Open email tab →</div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- KEY PRINCIPLES -->
-<div class="max-w-7xl mx-auto bg-gradient-to-br from-gray-900 to-brand-charcoal text-white rounded-lg p-8">
-  <h2 class="text-2xl font-bold mb-4">Why this works (your words, captured)</h2>
-  <div class="grid md:grid-cols-2 gap-6 text-sm">
-    <div>
-      <h3 class="text-base font-semibold mb-2 text-amber-300">🎯 First impression matters</h3>
-      <p class="text-gray-300 leading-relaxed">"The idea that we're selling that it's quite easy to adopt or use the service looks different as soon as you open up and you see the dashboard or the menus."</p>
+<!-- LANDING DEMO — VERTICAL OPERATOR -->
+<div class="max-w-7xl mx-auto mb-12">
+  <h2 class="text-xl font-bold mb-2">▶ Same pattern for an Accommodation operator</h2>
+  <p class="text-sm text-gray-600 mb-4">Lodge owner sees their dashboard surface what matters most: today's bookings, pending guest replies (Quoter agent has drafts ready), revenue-at-a-glance.</p>
+
+  <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+    <div class="bg-gray-50 px-6 py-3 border-b border-gray-200 text-sm text-gray-500">
+      <span class="text-gray-400">Home</span> <span class="mx-1">/</span>
+      <span class="font-medium text-brand-crimson">Accommodation</span>
     </div>
-    <div>
-      <h3 class="text-base font-semibold mb-2 text-amber-300">🚪 One door per goal</h3>
-      <p class="text-gray-300 leading-relaxed">"You want to get to the social media marketing, content marketing quickly. With fast results, and then be more in-depth with the choose to."</p>
+
+    <div class="px-6 pt-6">
+      <div class="quick-card mb-6">
+        <div class="flex items-start gap-4">
+          <div class="text-4xl">📋</div>
+          <div class="flex-1">
+            <div class="text-xs uppercase tracking-wider opacity-75 font-semibold mb-1">Today's quick action</div>
+            <h3 class="text-2xl font-bold mb-1">2 new inquiries waiting</h3>
+            <p class="opacity-90 text-sm mb-4">Quoter agent has drafted personalised replies. Approve to send.</p>
+            <div class="flex gap-3">
+              <button class="px-5 py-2.5 bg-white text-brand-crimson font-semibold rounded-lg shadow-sm">⚡ Approve all (Autopilot)</button>
+              <button class="px-5 py-2.5 border-2 border-white/30 text-white font-semibold rounded-lg">✋ Review one by one</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div>
-      <h3 class="text-base font-semibold mb-2 text-amber-300">📑 Tabs, not nav</h3>
-      <p class="text-gray-300 leading-relaxed">"Email campaigns should be one tab on the left-hand side, and then the various sections across the page for the user to select whether they want to autopilot it or be more involved."</p>
+
+    <div class="flex border-b border-gray-200 px-6 overflow-x-auto">
+      <div class="tab active">Overview</div>
+      <div class="tab">Bookings <span class="text-xs ml-1 px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">4 today</span></div>
+      <div class="tab">Inquiries <span class="text-xs ml-1 px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">2</span></div>
+      <div class="tab">Calendar</div>
+      <div class="tab">Guests</div>
+      <div class="tab">Operations</div>
+      <div class="tab">Costs</div>
+      <div class="tab">Channels</div>
     </div>
-    <div>
-      <h3 class="text-base font-semibold mb-2 text-amber-300">🤖 Mode = per-feature toggle</h3>
-      <p class="text-gray-300 leading-relaxed">Autopilot vs Hands-on lives inside each feature page (the Easy/Advanced pattern Phase 11 introduced for CRM), not as separate sidebar items.</p>
+
+    <div class="p-6 grid md:grid-cols-3 gap-4">
+      <div class="border border-gray-200 rounded-lg p-4">
+        <div class="text-xs uppercase tracking-wider font-semibold text-gray-500 mb-1">CHECK-INS TODAY</div>
+        <div class="text-2xl font-bold">4</div>
+      </div>
+      <div class="border border-gray-200 rounded-lg p-4">
+        <div class="text-xs uppercase tracking-wider font-semibold text-gray-500 mb-1">OCCUPANCY THIS WEEK</div>
+        <div class="text-2xl font-bold">82%</div>
+      </div>
+      <div class="border border-gray-200 rounded-lg p-4">
+        <div class="text-xs uppercase tracking-wider font-semibold text-gray-500 mb-1">REVENUE</div>
+        <div class="text-2xl font-bold">R 18,450</div>
+      </div>
     </div>
   </div>
+</div>
+
+<!-- DECISIONS LOCKED -->
+<div class="max-w-7xl mx-auto bg-gradient-to-br from-gray-900 to-brand-charcoal text-white rounded-lg p-8">
+  <h2 class="text-2xl font-bold mb-4">Decisions locked (this version)</h2>
+  <div class="grid md:grid-cols-2 gap-6 text-sm">
+    <div>
+      <h3 class="text-base font-semibold mb-2 text-amber-300">🎯 Smart-landing dashboard</h3>
+      <p class="text-gray-300 leading-relaxed">Dashboard surfaces the ONE most-likely action at the top — autopilot it (1 click) or walk through it (hands-on). Metrics still available, just below the fold. Same pattern as Phase 11 CRM Easy View, applied platform-wide.</p>
+    </div>
+    <div>
+      <h3 class="text-base font-semibold mb-2 text-amber-300">🧭 Dynamic sidebar from tenant_modules</h3>
+      <p class="text-gray-300 leading-relaxed">Activated verticals first; Content Studio + CRM secondary. Modules a tenant doesn't have don't appear at all. Drives the hardcoded array out of <code>Sidebar.tsx</code>; reads <code>tenant_modules</code> live.</p>
+    </div>
+    <div>
+      <h3 class="text-base font-semibold mb-2 text-amber-300">🤖 Mode toggle = Autopilot / Hands-on</h3>
+      <p class="text-gray-300 leading-relaxed">Per-feature, lives inside each tab. Same Easy / Advanced pattern Phase 11 introduced for CRM. Default Autopilot for first-time users; sticky preference per user.</p>
+    </div>
+    <div>
+      <h3 class="text-base font-semibold mb-2 text-amber-300">🏷 Naming: keep "CRM"</h3>
+      <p class="text-gray-300 leading-relaxed">Industry-standard, base users already know it. "Customers" is more friendly but adds a translation step.</p>
+    </div>
+  </div>
+
+  <hr class="my-6 border-gray-700">
+
+  <h3 class="text-base font-semibold mb-3 text-amber-300">⚙ How this gets built (Phase 12 plan preview)</h3>
+  <ol class="text-gray-300 leading-relaxed text-sm space-y-1 list-decimal pl-5">
+    <li>Drop the hardcoded <code>navigation</code> array in <code>components/dashboard/Sidebar.tsx</code></li>
+    <li>Server component: read <code>tenant_modules</code> + <code>module_registry</code> for the active org</li>
+    <li>Order: Dashboard → activated verticals (by activation date) → Content Studio → CRM → Insights → Settings → [Admin if platform_admin]</li>
+    <li>Each top-level section becomes one route with <code>shadcn/ui</code> Tabs handling sub-features</li>
+    <li>Dashboard page rebuilt as smart-landing: top "Quick Action" card derived from tenant state (similar to <code>crm_action_suggestions</code> but cross-module)</li>
+    <li>Mode toggle component extracted from Phase 11 Easy/Advanced; relabeled "Autopilot" / "Hands-on" everywhere it's used</li>
+  </ol>
 </div>
 
 <footer class="max-w-7xl mx-auto mt-8 text-center text-xs text-gray-500">
-  <p>Mockup file: <code>docs/redesign/sidebar-mockup.html</code> · Live edit: refresh after edits to this file · Built 2026-04-28 from session feedback</p>
+  <p>Mockup file: <code>docs/redesign/sidebar-mockup.html</code> · Refreshed 2026-04-28 with smart-landing + dynamic sidebar decisions</p>
 </footer>
 
 </body>
