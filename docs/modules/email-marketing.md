@@ -4,6 +4,35 @@
 
 ---
 
+## Quick view
+
+```mermaid
+flowchart LR
+    User([User])
+
+    User --> TplEditor[/email/templates/editor/]
+    TplEditor --> Templates[(email_templates)]
+
+    User --> CampNew[/email/campaigns/new/]
+    CampNew --> Templates
+    CampNew --> Resend((Resend))
+    Resend --> Sends[(email_sends)]
+    Sends --> Analytics[/email/analytics/]
+
+    User --> SeqBuilder[/email/sequences/builder/]
+    SeqBuilder --> Steps[(email_sequence_steps)]
+    Steps --> Enroll[(email_sequence_enrollments)]
+    Enroll --> Resend
+
+    User --> Outreach[/email/outreach/]
+    Outreach --> Rules[(tenant_modules.config)]
+
+    classDef ext fill:#fce7f3,stroke:#be185d,color:#831843
+    class Resend ext
+```
+
+---
+
 ## What it does (in 30 seconds)
 
 The Email Marketing module is the outbound email engine. It covers three distinct surfaces: one-time campaigns (send to a list now or scheduled), automated sequences (multi-step drip flows), and a template editor (drag-and-drop or HTML). Sent emails are tracked at the individual send level — delivered, opened, clicked, bounced. Outreach rules let you configure tier-based email behaviour per audience segment.

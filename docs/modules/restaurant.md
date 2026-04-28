@@ -4,6 +4,44 @@
 
 ---
 
+## Quick view
+
+```mermaid
+flowchart LR
+    Staff([Staff])
+    Manager([Manager])
+    Customer([Customer])
+
+    Staff --> PIN[/restaurant/login PIN/]
+    PIN --> Floor[/restaurant/tables Konva/]
+    Floor --> Session[(restaurant_sessions)]
+    Session --> POS[/restaurant/pos/sessionId/]
+    POS --> Bill[(restaurant_bills)]
+    Bill --> PayFast((PayFast))
+    PayFast --> ITN[/api/restaurant/payfast/itn/]
+    ITN --> Session
+
+    Manager --> Menu[/restaurant/menu/]
+    Menu --> Items[(restaurant_menu_items)]
+    Manager --> SOPs[/restaurant/sops/]
+    SOPs --> AISop[/api/restaurant/sops/ai-create/]
+    SOPs --> RunSOP[(restaurant_sop_instances)]
+    Staff --> RunSOP
+
+    Manager --> QR[/restaurant/qr-codes/]
+    QR --> Customer
+    Customer --> DigMenu[/restaurant/menu public/]
+    DigMenu --> Items
+
+    Staff --> TempLog[/restaurant/compliance/temps/]
+    TempLog --> TempDB[(restaurant_temp_logs)]
+
+    classDef ext fill:#fce7f3,stroke:#be185d,color:#831843
+    class PayFast ext
+```
+
+---
+
 ## What it does (in 30 seconds)
 
 The Restaurant module covers a complete restaurant operation. Staff use the Konva-based visual floor plan to open sessions per table, add menu items, split bills, link tables, and process PayFast payments. Managers maintain SOPs and shift checklists that can be run as step-by-step block procedures. QR codes route customers to the digital menu. Events are managed separately. Temperature logs support health compliance.

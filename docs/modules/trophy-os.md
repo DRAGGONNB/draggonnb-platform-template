@@ -6,6 +6,48 @@
 
 ---
 
+## Quick view
+
+```mermaid
+flowchart TD
+    FarmOwner([Farm Owner])
+    Client([Client])
+    Taxidermist([Taxidermist])
+    Cron[/06:00 SAST/]
+
+    FarmOwner --> SafariPipeline[/safaris kanban/]
+    SafariPipeline --> PayFast((PayFast deposit))
+    SafariPipeline --> Safaris[(safaris)]
+    Safaris --> WfConfirm[[wf-booking-confirm planned]]
+    WfConfirm --> WA((WhatsApp))
+    WA --> Client
+
+    FarmOwner --> TrophyLog[/trophy log form/]
+    TrophyLog --> Trophies[(trophies)]
+    Trophies --> Quotas[(quotas · DEA permit)]
+    Trophies --> SupplierJob[(supplier_jobs)]
+    SupplierJob --> Taxidermist
+
+    Taxidermist --> JobUpdate[Update job status + photos]
+    JobUpdate --> SupplierJob
+    SupplierJob --> ClientPortal[/(portal) client view/]
+    Client --> ClientPortal
+
+    FarmOwner --> Firearms[/firearm register/]
+    Firearms --> TIPAlert[[wf-tip-expiry planned]]
+    TIPAlert --> WA
+
+    Cron --> WfQuota[[wf-quota-digest planned]]
+    WfQuota --> Tele((Telegram))
+
+    classDef n8n fill:#e0e7ff,stroke:#4f46e5,color:#312e81
+    classDef ext fill:#fce7f3,stroke:#be185d,color:#831843
+    class WfConfirm,WfQuota,TIPAlert n8n
+    class WA,Tele,PayFast ext
+```
+
+---
+
 ## What it does (in 30 seconds)
 
 Trophy OS manages the complete lifecycle of a Southern African hunting operation: quota allocation per species per area (with DEA permit tracking), safari booking pipeline (enquiry → deposit → in-progress → completed), trophy log with measurements (Rowland Ward / SCI scores), firearm register (TIP tracking for international clients, SAPS declarations), supplier job coordination (taxidermist, butcher, logistics), and a client portal for guests to track their trophy status. An AI assistant ("TrophyAI") is woven through each workflow.

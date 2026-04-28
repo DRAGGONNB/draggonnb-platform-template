@@ -4,6 +4,37 @@
 
 ---
 
+## Quick view
+
+```mermaid
+flowchart LR
+    User([User])
+    WebHook[/Webhook POST/]
+
+    User --> Settings[/autopilot/settings/]
+    Settings --> Profile[(client_profiles)]
+
+    User --> AutopilotUI[/autopilot/]
+    AutopilotUI --> Agent{{BusinessAutopilotAgent}}
+    Profile --> Agent
+    Agent --> Sessions[(agent_sessions)]
+    Agent --> Ledger[(ai_usage_ledger)]
+    Agent --> Calendar[Calendar entries]
+
+    User --> Refine[Refine post]
+    Refine --> Agent
+
+    WebHook --> WfContent[[wf-content-gen GPT-4o]]
+    WfContent --> Posts[(social_posts)]
+
+    classDef agent fill:#fef3c7,stroke:#d97706,color:#78350f
+    classDef n8n fill:#e0e7ff,stroke:#4f46e5,color:#312e81
+    class Agent agent
+    class WfContent n8n
+```
+
+---
+
 ## What it does (in 30 seconds)
 
 Content Studio generates social media posts and email content using the `BusinessAutopilotAgent`. The user sets up a client profile (industry, tone, platforms, content pillars, keywords) and the agent produces a full week's content calendar: social posts per platform with hashtags and image prompts, plus email campaign drafts with 3 subject line variants and short/long body options. Content is generated in brand voice and can be refined via chat.

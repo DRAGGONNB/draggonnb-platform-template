@@ -4,6 +4,41 @@
 
 ---
 
+## Quick view
+
+```mermaid
+flowchart LR
+    User([User])
+    Admin([Admin])
+
+    User --> Intent[/campaigns/new/]
+    Intent --> Drafter{{CampaignDrafterAgent}}
+    Drafter --> Drafts[(campaign_drafts)]
+
+    Drafts --> Safety{{BrandSafetyAgent}}
+    Safety --> Approve[/campaigns/studio/approve/]
+    Approve --> Campaigns[(campaigns)]
+
+    Campaigns --> Schedule[/api/campaigns/schedule/]
+    Schedule --> Execute[/api/campaigns/execute/]
+    Execute --> Resend((Resend))
+    Execute --> BulkSMS((BulkSMS))
+    Execute --> Results[(campaign_run_results)]
+
+    BulkSMS --> DLR[/api/campaigns/sms-dlr/]
+    DLR --> Results
+
+    Admin --> Kill[/admin/campaigns/kill-switch/]
+    Kill --> Execute
+
+    classDef agent fill:#fef3c7,stroke:#d97706,color:#78350f
+    classDef ext fill:#fce7f3,stroke:#be185d,color:#831843
+    class Drafter,Safety agent
+    class Resend,BulkSMS ext
+```
+
+---
+
 ## What it does (in 30 seconds)
 
 Campaign Studio lets a user describe a campaign intent ("promote our Sunday brunch special"), then generates complete multi-channel copy: 5 social posts (Facebook, Instagram, LinkedIn), 1 email (with HTML), and 1 SMS — all written in the tenant's brand voice. Every draft gets a brand safety check before scheduling. An admin kill switch can halt all pending/executing campaign runs for any org in one action.

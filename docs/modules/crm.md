@@ -4,6 +4,37 @@
 
 ---
 
+## Quick view
+
+```mermaid
+flowchart LR
+    Cron[/02:00 SAST/]
+    User([User])
+
+    Cron --> WfScore[[wf-crm-engagement-score]]
+    WfScore --> Sugg[(crm_action_suggestions)]
+
+    User --> Easy[/dashboard/crm Easy/]
+    Easy --> Sugg
+    Easy --> Stale[(deals · stale check)]
+    User --> Approve[/api/crm/easy-view/approve/]
+    Approve --> Acts[(crm_activities)]
+    Approve --> Resend((Resend))
+
+    User --> Adv[/dashboard/crm Advanced/]
+    Adv --> Deals[(deals · contacts · companies)]
+
+    Cron2[/03:00 SAST/] --> WfClean[[wf-crm-nightly-cleanup]]
+    WfClean --> Dismiss[(crm_action_dismissals)]
+
+    classDef n8n fill:#e0e7ff,stroke:#4f46e5,color:#312e81
+    classDef ext fill:#fce7f3,stroke:#be185d,color:#831843
+    class WfScore,WfClean n8n
+    class Resend ext
+```
+
+---
+
 ## What it does (in 30 seconds)
 
 The CRM stores contacts, companies, and deals in a standard pipeline (Lead → Qualified → Proposal → Negotiation → Won/Lost). It has two viewing modes: **Easy view** shows three AI-curated action cards (follow-ups, stale deals, hot leads); **Advanced view** shows the full kanban pipeline and stats. Mode preference persists per user and can be toggled at any time.

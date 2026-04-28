@@ -4,6 +4,42 @@
 
 ---
 
+## Quick view
+
+```mermaid
+flowchart LR
+    CronDaily[/Daily 08:00 SAST/]
+    Cron1st[/1st of month 02:00 SAST/]
+    Admin([Admin])
+    Tenant([Tenant])
+
+    CronDaily --> WfBilling[[wf-billing-monitor overdue]]
+    WfBilling --> Orgs[(organizations subscription_status)]
+    WfBilling --> History[(subscription_history)]
+    WfBilling --> BillingEvt[(ops_billing_events)]
+    WfBilling --> Resend((Resend reminder))
+
+    Cron1st --> WfUsage[[wf-billing-monitor usage alerts]]
+    WfUsage --> UsageSumm[(usage_summaries)]
+    WfUsage --> Resend
+
+    Admin --> CostDash[/admin/cost-monitoring/]
+    CostDash --> Ledger[(ai_usage_ledger)]
+    CostDash --> TrendChart[Cost trend chart]
+
+    Tenant --> Dashboard[Tenant dashboard]
+    Dashboard --> CeilCheck[checkCostCeiling]
+    CeilCheck -->|warning 80%| Banner[usage-warning-banner]
+    CeilCheck -->|exceeded| Modal[usage-cap-modal]
+
+    classDef n8n fill:#e0e7ff,stroke:#4f46e5,color:#312e81
+    classDef ext fill:#fce7f3,stroke:#be185d,color:#831843
+    class WfBilling,WfUsage n8n
+    class Resend ext
+```
+
+---
+
 ## What it does (in 30 seconds)
 
 Analytics in DraggonnB OS is primarily a platform operations layer rather than a standalone business intelligence product. It covers three areas: billing monitoring (overdue subscriptions, usage alerts), AI cost tracking (per-org, per-agent spend from `ai_usage_ledger`), and a dedicated admin cost monitoring dashboard. Per-module analytics (email open rates, accommodation occupancy) live within those modules, not here.

@@ -4,6 +4,42 @@
 
 ---
 
+## Quick view
+
+```mermaid
+flowchart TD
+    Cron[/06:00 SAST/]
+    Operator([Operator])
+    Member([Member])
+
+    Cron --> WfRoll[[wf-rollcall-scheduler]]
+    WfRoll --> Checkins[(elijah_rollcall_checkin)]
+    WfRoll --> WA((WhatsApp Cloud API))
+    WA --> Member
+    Member --> WA
+    WA --> WfEsc[[wf-escalation-engine]]
+    WfEsc --> Tele((Telegram control room))
+
+    Operator --> IncNew[/elijah/incidents/new/]
+    IncNew --> WfIntake[[wf-incident-intake]]
+    WfIntake --> Inc[(elijah_incident)]
+    WfIntake --> WfEsc
+
+    Operator --> FireDash[/elijah/fire/]
+    FireDash --> FireWebhook[/webhook/elijah-fire-alert/]
+    FireWebhook --> WfFire[[wf-fire-alert]]
+    WfFire --> PostGIS[(elijah_fire_water_point PostGIS)]
+    WfFire --> Farms[(elijah_fire_farm)]
+    WfFire --> WA
+
+    classDef n8n fill:#e0e7ff,stroke:#4f46e5,color:#312e81
+    classDef ext fill:#fce7f3,stroke:#be185d,color:#831843
+    class WfRoll,WfEsc,WfIntake,WfFire n8n
+    class WA,Tele ext
+```
+
+---
+
 ## What it does (in 30 seconds)
 
 Elijah is a community safety operations module. It runs a daily WhatsApp roll call to all registered households, escalates non-responses after a configurable grace period, captures and categorises incidents, coordinates fire response with nearest water point routing, and tracks patrol schedules. Everything is built around section-based organisation (a neighbourhood divided into areas) with household-level granularity.

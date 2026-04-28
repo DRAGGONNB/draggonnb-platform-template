@@ -4,6 +4,51 @@
 
 ---
 
+## Quick view
+
+```mermaid
+flowchart TD
+    Manager([Manager])
+    Guest([Guest])
+    Cron[/Daily crons/]
+
+    Manager --> Inquiry[/accommodation/inquiries/]
+    Inquiry --> Quoter{{QuoterAgent}}
+    Quoter --> QuoteEmail((Resend))
+
+    Manager --> Booking[(accommodation_bookings)]
+    Booking --> Dispatcher[emitBookingEvent]
+    Dispatcher --> WfConfirm[[wf-whatsapp-booking-confirm]]
+    Dispatcher --> OpsBot((Telegram ops bot))
+    Dispatcher --> Costs[(accommodation_costs)]
+
+    Manager --> PayFast((PayFast))
+    PayFast --> Payments[(accommodation_payments)]
+
+    Guest --> WA((WhatsApp))
+    WA --> Concierge{{ConciergeAgent}}
+
+    Manager --> ReviewPage[/accommodation/reviews/]
+    ReviewPage --> Reviewer{{ReviewerAgent}}
+
+    Manager --> PricerPage[/accommodation/automation/]
+    PricerPage --> Pricer{{PricerAgent}}
+
+    Cron --> WfBrief[[wf-accom-daily-brief]]
+    WfBrief --> OpsBot
+    Cron --> WfReminders[[wf-accom-reminders]]
+    WfReminders --> WA
+
+    classDef agent fill:#fef3c7,stroke:#d97706,color:#78350f
+    classDef n8n fill:#e0e7ff,stroke:#4f46e5,color:#312e81
+    classDef ext fill:#fce7f3,stroke:#be185d,color:#831843
+    class Quoter,Concierge,Reviewer,Pricer agent
+    class WfConfirm,WfBrief,WfReminders n8n
+    class WA,OpsBot,PayFast,QuoteEmail ext
+```
+
+---
+
 ## What it does (in 30 seconds)
 
 The Accommodation module manages the full guest lifecycle: inquiry intake, booking creation, multi-channel guest messaging, PayFast payment links, check-in/check-out, stock and costing, and review management. Four AI agents handle quoting, guest concierge queries, review analysis, and pricing recommendations. Nine N8N workflows run in the background handling reminders, daily briefs, occupancy snapshots, and stock alerts.

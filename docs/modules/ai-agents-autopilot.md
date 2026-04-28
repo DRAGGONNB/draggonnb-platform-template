@@ -4,6 +4,45 @@
 
 ---
 
+## Quick view
+
+```mermaid
+flowchart LR
+    User([User])
+    Admin([Admin])
+
+    User --> AutopilotUI[/autopilot/]
+    User --> SalesFlow[Sales qualification]
+
+    AutopilotUI --> Autopilot{{BusinessAutopilotAgent}}
+    SalesFlow --> Qualifier{{LeadQualifierAgent}}
+    Qualifier --> Proposal{{ProposalGeneratorAgent}}
+
+    Autopilot --> BaseAgent[BaseAgent framework]
+    Qualifier --> BaseAgent
+    Proposal --> BaseAgent
+
+    BaseAgent --> CeilCheck[checkCostCeiling]
+    BaseAgent --> BrandVoice[(client_profiles brand_voice)]
+    BaseAgent --> ModelSel[selectModel tier-gate]
+    BaseAgent --> Anthropic((Anthropic Claude API))
+    Anthropic --> Sessions[(agent_sessions)]
+    Anthropic --> Ledger[(ai_usage_ledger)]
+
+    CeilCheck -->|exceeded| Modal[usage-cap-modal]
+    CeilCheck -->|warning| Banner[usage-warning-banner]
+
+    Admin --> CostDash[/admin/cost-monitoring/]
+    CostDash --> Ledger
+
+    classDef agent fill:#fef3c7,stroke:#d97706,color:#78350f
+    classDef ext fill:#fce7f3,stroke:#be185d,color:#831843
+    class Autopilot,Qualifier,Proposal agent
+    class Anthropic ext
+```
+
+---
+
 ## What it does (in 30 seconds)
 
 Every AI feature on the platform runs through `BaseAgent` — a shared Claude API wrapper that enforces cost ceilings, injects brand voice, tracks tokens per session, logs every call to `ai_usage_ledger`, and applies tier-based model downgrading (Haiku for core/growth, Sonnet for scale/platform_admin). The Business Autopilot (`/autopilot`) is the primary user-facing AI surface — it generates weekly content calendars and email campaigns from a configured client profile.
