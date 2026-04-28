@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DraggonnB OS — Redesigned Dashboard Preview</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'Inter', system-ui, sans-serif; background: #f5f5f7; margin: 0; }
+  .text-brand-crimson { color: #6B1420; }
+  .bg-brand-crimson { background: #6B1420; }
+  .bg-brand-charcoal { background: #1E1B16; }
+  .border-brand-crimson { border-color: #6B1420; }
+  .gradient-quick { background: linear-gradient(135deg, #6B1420 0%, #8B1A2A 100%); }
+
+  .nav-item.active {
+    background: rgba(184,148,30,0.1);
+    color: #B8941E;
+    font-weight: 600;
+  }
+  .nav-item:hover:not(.active) { background: rgba(255,255,255,0.05); color: #FDFCFA; }
+  .nav-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 18px;
+    color: rgba(237,232,227,0.7);
+    font-size: 14px;
+    transition: all 150ms;
+    cursor: pointer;
+    border-radius: 8px;
+    margin: 2px 12px;
+  }
+  .nav-item .icon-bullet {
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,0.05);
+    border-radius: 6px;
+    font-size: 14px;
+  }
+  .nav-item.active .icon-bullet { background: rgba(184,148,30,0.15); }
+
+  .frame-shadow { box-shadow: 0 24px 64px -8px rgba(13,13,13,0.18); }
+</style>
+</head>
+<body>
+
+<!-- Browser-frame chrome (so it feels like a real screenshot) -->
+<div class="max-w-[1400px] mx-auto my-8 bg-white rounded-xl frame-shadow overflow-hidden">
+
+  <!-- Browser title bar -->
+  <div class="bg-gray-100 px-4 py-3 flex items-center gap-2 border-b border-gray-200">
+    <div class="flex gap-1.5">
+      <div class="w-3 h-3 rounded-full bg-red-400"></div>
+      <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
+      <div class="w-3 h-3 rounded-full bg-green-400"></div>
+    </div>
+    <div class="flex-1 text-center">
+      <div class="inline-flex items-center gap-2 bg-white px-4 py-1 rounded-md text-xs text-gray-600 border border-gray-200">
+        🔒 draggonnb.online/dashboard
+      </div>
+    </div>
+  </div>
+
+  <!-- App layout -->
+  <div class="flex bg-[#FDFCFA]" style="min-height: 760px;">
+
+    <!-- SIDEBAR -->
+    <aside class="bg-brand-charcoal w-60 flex-shrink-0 flex flex-col">
+      <!-- Logo -->
+      <div class="px-6 py-5 border-b border-white/5">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-[#6B1420] to-[#8B1A2A] flex items-center justify-center text-white font-bold text-lg">D</div>
+          <div>
+            <div class="text-white font-bold text-base leading-tight">DRAGGON<span class="text-[#B8941E]">NB</span></div>
+            <div class="text-[10px] uppercase tracking-wider text-white/40 font-semibold">OS · Cape Town</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Org switcher -->
+      <div class="px-4 py-3 border-b border-white/5">
+        <button class="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition text-sm">
+          <div class="flex items-center gap-2 text-white/90">
+            <div class="w-6 h-6 rounded bg-emerald-500/30 flex items-center justify-center text-xs font-bold text-emerald-300">SS</div>
+            <div class="text-left">
+              <div class="font-medium text-xs leading-tight">Swa-Zulu Safari Lodge</div>
+              <div class="text-[10px] text-white/50">Lodge · Vertical tier</div>
+            </div>
+          </div>
+          <svg class="w-3.5 h-3.5 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/></svg>
+        </button>
+      </div>
+
+      <!-- Nav -->
+      <nav class="flex-1 py-3 overflow-y-auto">
+        <div class="nav-item">
+          <div class="icon-bullet">📊</div><span>Dashboard</span>
+        </div>
+        <div class="nav-item active">
+          <div class="icon-bullet">🏨</div><span>Accommodation</span>
+        </div>
+        <div class="nav-item">
+          <div class="icon-bullet">✨</div><span>Content Studio</span>
+        </div>
+        <div class="nav-item">
+          <div class="icon-bullet">👥</div><span>CRM</span>
+        </div>
+        <div class="nav-item">
+          <div class="icon-bullet">📈</div><span>Insights</span>
+        </div>
+        <div class="nav-item">
+          <div class="icon-bullet">⚙️</div><span>Settings</span>
+        </div>
+      </nav>
+
+      <!-- Usage strip -->
+      <div class="px-4 py-3 border-t border-white/5">
+        <div class="px-3 py-2.5 rounded-lg bg-white/5 text-xs text-white/70">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="font-medium">AI usage</span>
+            <span class="text-[10px] text-emerald-400">on track</span>
+          </div>
+          <div class="h-1 rounded-full bg-white/10 overflow-hidden">
+            <div class="h-full bg-emerald-400 rounded-full" style="width: 34%"></div>
+          </div>
+          <div class="mt-1 text-[10px] text-white/50">17 / 50 generations · resets in 18 days</div>
+        </div>
+      </div>
+
+      <!-- User -->
+      <div class="px-4 py-3 border-t border-white/5">
+        <div class="flex items-center gap-3 px-2">
+          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-xs font-bold">CT</div>
+          <div class="flex-1 min-w-0">
+            <div class="text-sm text-white/90 font-medium truncate">Chris Terblanche</div>
+            <div class="text-[10px] text-white/50 truncate">tester-admin@…</div>
+          </div>
+          <svg class="w-4 h-4 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01"/></svg>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="flex-1 overflow-y-auto">
+
+      <!-- Top header bar -->
+      <header class="bg-white px-8 py-4 border-b border-gray-200 flex items-center justify-between">
+        <div>
+          <div class="text-xs text-gray-400 mb-0.5">Home / Accommodation</div>
+          <h1 class="text-xl font-bold text-gray-900">Good morning, Chris ☀</h1>
+        </div>
+        <div class="flex items-center gap-3">
+          <button class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg flex items-center gap-2">
+            <span>🔔</span>
+            <span class="hidden lg:inline">Activity</span>
+          </button>
+          <button class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg flex items-center gap-2">
+            <span>❓</span>
+            <span class="hidden lg:inline">Help</span>
+          </button>
+          <button class="px-4 py-2 bg-brand-crimson text-white text-sm font-semibold rounded-lg hover:bg-red-900 flex items-center gap-2">
+            <span>+</span>
+            <span>Add booking</span>
+          </button>
+        </div>
+      </header>
+
+      <div class="p-8 space-y-6 max-w-6xl">
+
+        <!-- TODAY'S QUICK ACTION (the headline card) -->
+        <div class="gradient-quick rounded-2xl p-7 text-white relative overflow-hidden">
+          <!-- decorative pattern -->
+          <div class="absolute top-0 right-0 opacity-5 text-[200px] leading-none">📋</div>
+
+          <div class="relative flex items-start gap-6 flex-wrap">
+            <div class="flex-1 min-w-[260px]">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="text-[10px] uppercase tracking-[0.15em] font-bold opacity-80">Today's quick action</span>
+                <span class="px-2 py-0.5 rounded-full bg-white/15 text-[10px] font-bold">AI READY</span>
+              </div>
+              <h2 class="text-3xl font-bold leading-tight mb-2">2 new inquiries waiting on you</h2>
+              <p class="text-white/85 text-sm max-w-2xl leading-relaxed mb-5">
+                The <strong>Quoter Agent</strong> has drafted personalised replies in your brand voice based on each inquiry's dates, party size, and rate. You approve, it sends — or open one for hands-on edits.
+              </p>
+              <div class="flex gap-3 flex-wrap">
+                <button class="px-6 py-3 bg-white text-brand-crimson font-bold text-sm rounded-xl shadow-lg hover:shadow-xl transition flex items-center gap-2">
+                  ⚡ Approve all & send
+                </button>
+                <button class="px-6 py-3 border-2 border-white/40 text-white font-semibold text-sm rounded-xl hover:bg-white/10 transition flex items-center gap-2">
+                  ✋ Review one by one
+                </button>
+              </div>
+            </div>
+
+            <!-- mini preview of the 2 inquiries -->
+            <div class="flex-shrink-0 w-full lg:w-72 space-y-2">
+              <div class="bg-white/15 backdrop-blur rounded-lg p-3 text-xs">
+                <div class="flex items-center justify-between mb-1">
+                  <strong class="text-sm">Sarah Mokoena</strong>
+                  <span class="text-[10px] opacity-75">2h ago</span>
+                </div>
+                <div class="text-white/85">2 adults · 3 nights · weekend rate</div>
+              </div>
+              <div class="bg-white/15 backdrop-blur rounded-lg p-3 text-xs">
+                <div class="flex items-center justify-between mb-1">
+                  <strong class="text-sm">James Pieters</strong>
+                  <span class="text-[10px] opacity-75">5h ago</span>
+                </div>
+                <div class="text-white/85">Family of 4 · 5 nights · long-stay</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ROW: Today's snapshot -->
+        <div>
+          <h3 class="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <span>Today</span>
+            <span class="text-xs font-normal text-gray-400">· Mon, 28 Apr 2026</span>
+          </h3>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition">
+              <div class="flex items-start justify-between mb-3">
+                <div class="text-3xl">🛎</div>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-1 rounded">All set</span>
+              </div>
+              <div class="text-3xl font-bold text-gray-900">4</div>
+              <div class="text-sm font-medium text-gray-700">check-ins today</div>
+              <div class="text-xs text-gray-400 mt-1">Next: 14:00 — Elsie Grobler (Suite 3)</div>
+            </div>
+
+            <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition">
+              <div class="flex items-start justify-between mb-3">
+                <div class="text-3xl">📊</div>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-50 px-2 py-1 rounded">↑ 12%</span>
+              </div>
+              <div class="text-3xl font-bold text-gray-900">82%</div>
+              <div class="text-sm font-medium text-gray-700">occupancy this week</div>
+              <div class="text-xs text-gray-400 mt-1">vs 70% same week last year</div>
+            </div>
+
+            <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition">
+              <div class="flex items-start justify-between mb-3">
+                <div class="text-3xl">💰</div>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 bg-gray-100 px-2 py-1 rounded">MTD</span>
+              </div>
+              <div class="text-3xl font-bold text-gray-900">R 18,450</div>
+              <div class="text-sm font-medium text-gray-700">revenue this week</div>
+              <div class="text-xs text-gray-400 mt-1">R 72,100 month-to-date</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ROW: Cross-module action cards -->
+        <div>
+          <h3 class="text-base font-semibold text-gray-900 mb-3">Other things ready for you</h3>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-white rounded-xl border border-gray-200 p-5 hover:border-brand-crimson hover:shadow-md transition cursor-pointer">
+              <div class="flex items-start justify-between mb-2">
+                <div class="text-2xl">🔥</div>
+                <span class="text-[10px] font-bold text-brand-crimson">3 hot</span>
+              </div>
+              <div class="font-semibold text-gray-900 mb-1">Hot leads in CRM</div>
+              <div class="text-xs text-gray-500 mb-3">Contacts engaged with last week's email — ready for follow-up</div>
+              <div class="text-xs text-brand-crimson font-medium">Engage all →</div>
+            </div>
+
+            <div class="bg-white rounded-xl border border-gray-200 p-5 hover:border-brand-crimson hover:shadow-md transition cursor-pointer">
+              <div class="flex items-start justify-between mb-2">
+                <div class="text-2xl">📨</div>
+                <span class="text-[10px] font-bold text-brand-crimson">3 drafts</span>
+              </div>
+              <div class="font-semibold text-gray-900 mb-1">Content Studio drafts</div>
+              <div class="text-xs text-gray-500 mb-3">2 social posts + 1 email campaign awaiting your approval</div>
+              <div class="text-xs text-brand-crimson font-medium">Review →</div>
+            </div>
+
+            <div class="bg-white rounded-xl border border-gray-200 p-5 hover:border-brand-crimson hover:shadow-md transition cursor-pointer">
+              <div class="flex items-start justify-between mb-2">
+                <div class="text-2xl">📅</div>
+                <span class="text-[10px] font-bold text-amber-600">2 maintenance</span>
+              </div>
+              <div class="font-semibold text-gray-900 mb-1">Operations tasks open</div>
+              <div class="text-xs text-gray-500 mb-3">Linen change · pool service due before tomorrow's check-ins</div>
+              <div class="text-xs text-brand-crimson font-medium">View tasks →</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ROW: This week's calendar preview -->
+        <div class="bg-white rounded-xl border border-gray-200 p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-base font-semibold text-gray-900">This week at a glance</h3>
+            <button class="text-xs text-brand-crimson font-medium">Open full calendar →</button>
+          </div>
+          <div class="grid grid-cols-7 gap-2">
+            <!-- 7 days -->
+            <div class="text-center">
+              <div class="text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-1">Mon</div>
+              <div class="bg-emerald-50 border-2 border-emerald-300 rounded-lg p-2 text-xs">
+                <div class="font-bold text-emerald-700">28</div>
+                <div class="text-emerald-700 mt-1">4 in</div>
+              </div>
+            </div>
+            <div class="text-center">
+              <div class="text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-1">Tue</div>
+              <div class="bg-amber-50 border border-amber-200 rounded-lg p-2 text-xs">
+                <div class="font-bold text-gray-900">29</div>
+                <div class="text-amber-700 mt-1">2 in · 1 out</div>
+              </div>
+            </div>
+            <div class="text-center">
+              <div class="text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-1">Wed</div>
+              <div class="bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs">
+                <div class="font-bold text-gray-900">30</div>
+                <div class="text-gray-500 mt-1">—</div>
+              </div>
+            </div>
+            <div class="text-center">
+              <div class="text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-1">Thu</div>
+              <div class="bg-amber-50 border border-amber-200 rounded-lg p-2 text-xs">
+                <div class="font-bold text-gray-900">1</div>
+                <div class="text-amber-700 mt-1">3 in</div>
+              </div>
+            </div>
+            <div class="text-center">
+              <div class="text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-1">Fri</div>
+              <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-2 text-xs">
+                <div class="font-bold text-gray-900">2</div>
+                <div class="text-emerald-700 mt-1">5 in</div>
+              </div>
+            </div>
+            <div class="text-center">
+              <div class="text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-1">Sat</div>
+              <div class="bg-rose-50 border border-rose-200 rounded-lg p-2 text-xs">
+                <div class="font-bold text-rose-700">3</div>
+                <div class="text-rose-700 mt-1">FULL</div>
+              </div>
+            </div>
+            <div class="text-center">
+              <div class="text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-1">Sun</div>
+              <div class="bg-amber-50 border border-amber-200 rounded-lg p-2 text-xs">
+                <div class="font-bold text-gray-900">4</div>
+                <div class="text-amber-700 mt-1">2 out</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- footer mini -->
+        <div class="text-xs text-gray-400 text-center pt-4 pb-2">
+          DraggonnB OS · Smart-landing dashboard for Swa-Zulu Safari Lodge · Last refresh 4 min ago
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Caption below the frame -->
+<div class="max-w-[1400px] mx-auto px-8 pb-12">
+  <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <div class="flex items-start gap-4 flex-wrap">
+      <div class="flex-shrink-0 w-12 h-12 rounded-lg bg-amber-50 flex items-center justify-center text-2xl">🎯</div>
+      <div class="flex-1 min-w-[260px]">
+        <div class="text-xs uppercase tracking-wider text-amber-700 font-semibold mb-1">What this is</div>
+        <h3 class="text-lg font-bold text-gray-900 mb-2">Redesigned dashboard for an Accommodation tenant (Swa-Zulu Lodge)</h3>
+        <ul class="text-sm text-gray-700 space-y-1.5 list-disc pl-5">
+          <li><strong>Sidebar collapsed to 6 items</strong> — Accommodation appears first because tenant has it activated; Content Studio second; CRM/Insights/Settings after</li>
+          <li><strong>Top of dashboard = action</strong>, not metrics — "2 inquiries waiting" with one-click Autopilot or Hands-on review</li>
+          <li><strong>Today snapshot row</strong> — 3 critical numbers (check-ins, occupancy, revenue) at a glance</li>
+          <li><strong>"Other things ready for you"</strong> — cross-module action cards (CRM hot leads, Content Studio drafts, Operations tasks)</li>
+          <li><strong>This week calendar strip</strong> — quick visual on what's coming, click to open full calendar</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
