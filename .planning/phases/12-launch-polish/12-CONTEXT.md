@@ -84,6 +84,23 @@ Phase 10's brand voice wizard (URL ingest + 5 questions + avoid-list). Failure m
 **Diagnosis priority:** HIGH (brand voice is the foundation for every Phase 10/11 AI agent — if voice wizard doesn't work, autopilot/campaigns/quoter all degrade to generic templates)
 **Likely fix size:** medium (1-3 hours)
 
+### A7. Campaign draft generation fails
+
+**Symptom:** *"I started [a campaign for] DragonnB. I can select email and LinkedIn, and then I have to generate. As soon as we generate, the draft generation [fails], 'please try again'."*
+
+User flow: `/dashboard/campaigns/new` → enters intent → selects channels (email + LinkedIn) → clicks Generate → gets "draft generation failed, please try again" error.
+
+This is the `CampaignDrafterAgent` (Phase 11) failing. Likely same root cause as A2/A4 (Anthropic credits were 0 at the time of testing); user added credits but may not have retried this specific flow yet.
+
+If retry-after-credits-fix still fails, secondary suspects:
+- LinkedIn adapter `enabled()` check passing without `LINKEDIN_CLIENT_ID` env (should grey-out the channel client-side, not error server-side)
+- BrandSafetyAgent post-draft check failing
+- A specific channel-shape mismatch in `lib/campaigns/agent/drafter.ts`
+
+**Diagnosis priority:** HIGH (Campaign Studio is the headline Phase 11 feature)
+**Likely fix size:** small if credits-only; medium if multi-channel routing bug
+**Recommended retry:** before code diagnosis, retry the same flow now that Anthropic credits are loaded.
+
 ### A6. Sidebar doesn't highlight the active section on sub-routes
 
 **Symptom:** *"When you're inside the menu, whether on the dashboard or the other modules, there's nothing to show you exactly where you are. At the top you have the [breadcrumbs] — i.e. dashboard, CRM or whatever — but if you're on it on the left-hand side in the menu bar, there's nothing highlighting that section which you're busy on."*
@@ -172,19 +189,42 @@ Settings + Account:  Social Accounts, Pricing                                   
 
 **Total: 54 sidebar items across 9 sections.** Confirmed too dense.
 
-### Proposed redesign (DRAFT — for refinement during /gsd:discuss-phase 12)
+### Proposed redesign (DRAFT — refined 2026-04-28 with Chris's clearer mental model)
+
+Chris's later feedback narrowed this further:
+
+> *"Perhaps we can move Content Studio to the top of the menu bar. On Contents, [you do] the social media sections of it. On Email content, you go then into Email campaigns and sequences and outreach depending on how inclusive or hands-on the user wants to be."*
+
+So **Content Studio becomes the primary marketing entry point** — it's the "I want to do marketing" door. Inside it: tabs for Social / Email / Campaigns / Content. Each tab has its own sub-mode (autopilot vs hands-on).
+
+He also flagged a Campaign Studio sidebar redundancy I introduced earlier (commit `e7e168d0`):
+
+> *"On the menu section, I can go to All Campaigns, which will then just launch a new campaign, and then we've got another one on the menu for New Campaign. We don't need all of that in the menu bar."*
+
+Right — the 3 Campaign Studio sidebar items (All Campaigns / New / Runs) collapse to ONE item; the page handles "new vs existing vs runs" itself.
+
+**Refined sidebar (target: 6 top-level items, ~58 → 6):**
 
 ```
-Dashboard                       (1)
-Customers                       → CRM Easy/Advanced + Lead Scoring as in-page tabs
-Marketing                       → Email · Social · Content · Campaigns as in-page tabs
-Operations                      → Accommodation · Restaurant · Elijah as in-page tabs (only ones the tenant has activated)
-Insights                        → Analytics + Cost Monitoring as in-page tabs
-Settings                        → Account · Brand Voice · Integrations · Team · Billing as in-page tabs
-[Admin]                         (only if user.role = platform_admin: Clients, Modules, Pricing Matrix, Cost Monitoring)
+1. Dashboard                    (single click — overview)
+2. Content Studio               → tabs: Social · Email Campaigns · Email Sequences · Outreach · Drafts · Analytics
+                                  (each with its own autopilot/manual mode toggle)
+3. Customers                    → tabs: CRM Easy · Advanced kanban · Lead Scoring · Drafts
+4. Operations                   → tabs ONLY for activated modules:
+                                  · Accommodation (if tenant_modules has it)
+                                  · Restaurant + Events
+                                  · Elijah / Security
+5. Insights                     → tabs: Analytics · Cost Monitoring (admin) · Reports
+6. Settings                     → tabs: Account · Brand Voice · Team · Integrations · Billing · Social Accounts
+[Admin]                         (only platform_admin: Clients · Modules · Pricing Matrix · Cost Monitoring)
 ```
 
-**Sidebar drops from 54 items to 6-7.** Each top-level click renders a page with horizontal sub-nav for the sub-features. Power users still get full breadth; first-time users see one obvious next step.
+**Net change: 58 sidebar items → 6 (or 7 with Admin).**
+
+Chris's reasoning, captured directly:
+> *"The idea that we're selling that it's quite easy to adopt or use the service looks different as soon as you open up and you see the dashboard or the menus."*
+
+The redesign is a **commercial requirement, not just polish** — the platform's "easy to use" pitch is undermined by the current 54-item sidebar. First impression matters for prospect conversion.
 
 ### Cross-cutting
 
