@@ -15,7 +15,7 @@ const navigation = [
       { name: 'CRM', href: '/crm', icon: '👥', badge: null },
       { name: 'Lead Scoring', href: '/crm/scoring', icon: '🔥', badge: 'NEW', badgeColor: 'bg-gradient-to-r from-orange-500 to-orange-600' },
       { name: 'Email Hub', href: '/email', icon: '📧', badge: null },
-      { name: 'Social Media', href: '/social', icon: '📱', badge: 'NEW', badgeColor: 'bg-gradient-to-r from-pink-500 to-pink-600' },
+      { name: 'Social Media', href: '/settings/social', icon: '📱', badge: 'NEW', badgeColor: 'bg-gradient-to-r from-pink-500 to-pink-600' },
     ],
   },
   {
@@ -160,7 +160,10 @@ export function Sidebar({ usageStats }: SidebarProps) {
               )}
               <div className="space-y-1">
                 {section.items.map((item) => {
-                  const isActive = pathname === item.href
+                  const isActive =
+                    item.href === '/dashboard'
+                      ? pathname === '/dashboard'
+                      : pathname === item.href || pathname.startsWith(item.href + '/')
                   return (
                     <Link
                       key={item.name}

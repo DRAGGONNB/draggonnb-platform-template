@@ -30,7 +30,19 @@ export default async function CRMHomePage() {
   const mode = resolveUiMode(profile?.ui_mode ?? null, userOrg.role as 'admin' | 'manager' | 'user')
   if (mode === 'advanced') redirect('/dashboard/crm/advanced')
 
-  const data = await loadEasyViewData(userOrg.organizationId, userOrg.userId)
+  let data: Awaited<ReturnType<typeof loadEasyViewData>>
+  try {
+    data = await loadEasyViewData(userOrg.organizationId, userOrg.userId)
+  } catch (err) {
+    console.error('[crm/page] loadEasyViewData threw:', err)
+    // Return safe fallback so the page renders instead of hitting the error boundary
+    data = {
+      followups: { items: [], totalCount: 0 },
+      staleDeals: { items: [], totalCount: 0 },
+      hotLeads: { items: [], totalCount: 0 },
+      hasBrandVoice: false,
+    }
+  }
 
   const cards = [
     {
