@@ -90,3 +90,47 @@ Agent configs stored in `accommodation_ai_configs` table (per-org, per-agent-typ
 - `ANTHROPIC_API_KEY` env var must be set
 - Agent type must be registered in `AgentType` union before use
 - Admin Supabase client used for session storage (service role, bypasses RLS)
+
+## Failure-mode triage — check Anthropic billing FIRST
+
+**Symptom:** An AI feature (Autopilot generate, Campaign Studio draft, Brand Voice wizard)
+surfaces a generic "failed to generate" error or returns HTTP 500/503 from an agent route.
+
+**Step 1 — Check Anthropic billing console FIRST**
+Visit https://console.anthropic.com → Billing → Usage. If credits are $0 or near-zero, all
+agent calls will fail with HTTP 401 from the Anthropic SDK. This is the most common cause
+during early-access / low-activity periods.
+
+**Step 2 — Read the error class from Vercel runtime logs**
+`vercel logs --follow` or Vercel dashboard → Runtime Logs. Look for:
+- `AgentCreditError` → billing confirmed depleted. Fund Anthropic account.
+- `AgentRateLimitError` → too many requests per minute. Retry after a brief wait; consider
+  adding a queue if this recurs under normal load.
+- `CostCeilingExceededError` → org has hit its per-period cost ceiling. Either raise the
+  ceiling in `billing_plans.limits.ai_cost_ceiling_zar_cents` or inform the tenant they
+  have exhausted their AI budget for the period.
+- Any other error → actual code bug. Investigate further.
+
+**Step 3 — Code diagnosis only after billing confirmed funded**
+If credits are present and the error class is not one of the above, inspect:
+- The agent's `parseResponse()` — Claude may be returning well-formed text that fails the JSON parser.
+- The `buildSystemBlocks()` call — brand voice prompt may be malformed.
+- The DB session insert — `agent_sessions` table schema drift.
+
+**Typed errors (exported from `lib/agents/base-agent.ts` since Phase 12):**
+```typescript
+import { AgentCreditError, AgentRateLimitError } from '@/lib/agents/base-agent'
+
+try {
+  const result = await agent.run({ ... })
+} catch (err) {
+  if (err instanceof AgentCreditError) {
+    // err.userMessage is safe to show in UI toast
+    return NextResponse.json({ error: err.userMessage }, { status: 503 })
+  }
+  if (err instanceof AgentRateLimitError) {
+    return NextResponse.json({ error: err.userMessage }, { status: 429 })
+  }
+  // ... generic fallback
+}
+```

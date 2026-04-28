@@ -104,3 +104,18 @@ Recurring issues identified across multiple sessions. Consult before making chan
   - Do not assume previous session tokens are still valid
   - Have browser ready for OAuth flow when starting Supabase work
 - **Related errors:** ERR-009
+
+## Pattern: AI feature returns generic error → check Anthropic billing FIRST
+
+- **Occurrences:** 2026-04-28 production test pass (ERR-A2, ERR-A4, ERR-A7 — autopilot, brand voice, campaign drafter all failed simultaneously)
+- **Root cause:** Anthropic account credits at $0. The SDK throws HTTP 401 which propagated as a generic "failed to generate" error before Phase 12 typed-error classification was added.
+- **Prevention:**
+  1. First action on any AI feature failure: check https://console.anthropic.com billing console.
+  2. Second action: read Vercel runtime logs for error class name:
+     - `AgentCreditError` → fund Anthropic account
+     - `AgentRateLimitError` → brief rate-limit, retry or reduce concurrency
+     - `CostCeilingExceededError` → org has hit its per-period cost ceiling in `billing_plans.limits`
+     - Any other class → code bug, dig into agent parseResponse / DB writes
+  3. Phase 12 fix: `BaseAgent.run()` now classifies HTTP 401 and `/credit|billing/i` messages as `AgentCreditError` before re-throwing. All three AI API routes (`autopilot/generate`, `campaigns/[id]/drafts`, `campaigns/[id]/drafts/[id]/regenerate`) surface `err.userMessage` to the caller instead of a generic 500.
+- **Trigger (for automated pattern detection):** 3+ catalogue errors with category `ai-failure` and root_cause matching `credit|billing` within 60 days.
+- **Related errors:** ERR-A2, ERR-A4, ERR-A7

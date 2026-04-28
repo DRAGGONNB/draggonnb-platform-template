@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getUserOrg } from '@/lib/auth/get-user-org'
 import { getClientProfile, updateCalendarGenerated } from '@/lib/autopilot/client-profile'
 import { BusinessAutopilotAgent } from '@/lib/agents/business-autopilot'
+import { AgentCreditError, AgentRateLimitError } from '@/lib/agents/base-agent'
 import { guardUsage } from '@/lib/usage/guard'
 import { UsageCapExceededError } from '@/lib/usage/types'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -110,6 +111,12 @@ export async function POST(request: NextRequest) {
     result = await agent.generateCalendar(week, orgId)
   } catch (err) {
     console.error('Autopilot generation failed:', err)
+    if (err instanceof AgentCreditError) {
+      return NextResponse.json({ error: err.userMessage }, { status: 503 })
+    }
+    if (err instanceof AgentRateLimitError) {
+      return NextResponse.json({ error: err.userMessage }, { status: 429 })
+    }
     return NextResponse.json({ error: 'Failed to generate content calendar' }, { status: 500 })
   }
 

@@ -30,6 +30,35 @@ import type {
 } from './types'
 
 // ============================================================================
+// TYPED AGENT ERRORS (Phase 12 — hotfix A2/A4/A7 / AI error surfacing)
+// ============================================================================
+
+/**
+ * Thrown when the Anthropic API rejects the call due to insufficient credits.
+ * HTTP 401 from Anthropic SDK or error messages matching credit/billing keywords.
+ * userMessage is safe to surface directly in UI toasts.
+ */
+export class AgentCreditError extends Error {
+  readonly userMessage = 'AI service is temporarily out of credits — operator has been notified'
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options)
+    this.name = 'AgentCreditError'
+  }
+}
+
+/**
+ * Thrown when the Anthropic API rejects the call due to rate limiting (HTTP 429).
+ * userMessage is safe to surface directly in UI toasts.
+ */
+export class AgentRateLimitError extends Error {
+  readonly userMessage = 'AI service is rate-limited — please retry in a moment'
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options)
+    this.name = 'AgentRateLimitError'
+  }
+}
+
+// ============================================================================
 // TYPES
 // ============================================================================
 
@@ -385,7 +414,7 @@ export abstract class BaseAgent {
         result: parsedResult,
         status,
       }
-    } catch (error) {
+    } catch (error: unknown) {
       // CostCeilingExceededError is already handled above (abort ledger + re-throw)
       if (!(error instanceof CostCeilingExceededError)) {
         await supabase
@@ -393,6 +422,29 @@ export abstract class BaseAgent {
           .update({ status: 'failed' })
           .eq('id', sessionId)
       }
+
+      // ------------------------------------------------------------------
+      // Phase 12 (hotfix): classify Anthropic SDK billing / rate-limit errors
+      // before re-throwing so callers can surface meaningful UI messages.
+      // Anthropic SDK throws with err.status (HTTP code) and err.message.
+      // ------------------------------------------------------------------
+      const err = error as { status?: number; message?: string }
+      if (
+        err?.status === 401 ||
+        /insufficient.credit|billing|your.credit.balance/i.test(err?.message ?? '')
+      ) {
+        throw new AgentCreditError(
+          `Anthropic credit error (status=${err.status ?? 'n/a'}): ${err.message ?? 'unknown'}`,
+          { cause: error }
+        )
+      }
+      if (err?.status === 429) {
+        throw new AgentRateLimitError(
+          `Anthropic rate limit (status=429): ${err.message ?? 'unknown'}`,
+          { cause: error }
+        )
+      }
+
       throw error
     }
   }

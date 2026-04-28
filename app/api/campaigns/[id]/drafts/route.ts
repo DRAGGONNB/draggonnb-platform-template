@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getUserOrg } from '@/lib/auth/get-user-org'
 import { CampaignDrafterAgent } from '@/lib/campaigns/agent/campaign-drafter'
+import { AgentCreditError, AgentRateLimitError } from '@/lib/agents/base-agent'
 
 export async function POST(
   request: Request,
@@ -63,6 +64,12 @@ export async function POST(
     })
   } catch (err) {
     console.error('drafts POST: CampaignDrafterAgent failed', err)
+    if (err instanceof AgentCreditError) {
+      return NextResponse.json({ error: err.userMessage }, { status: 503 })
+    }
+    if (err instanceof AgentRateLimitError) {
+      return NextResponse.json({ error: err.userMessage }, { status: 429 })
+    }
     return NextResponse.json({ error: 'Draft generation failed — please try again' }, { status: 500 })
   }
 
