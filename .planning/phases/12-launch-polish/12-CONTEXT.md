@@ -84,6 +84,30 @@ Phase 10's brand voice wizard (URL ingest + 5 questions + avoid-list). Failure m
 **Diagnosis priority:** HIGH (brand voice is the foundation for every Phase 10/11 AI agent — if voice wizard doesn't work, autopilot/campaigns/quoter all degrade to generic templates)
 **Likely fix size:** medium (1-3 hours)
 
+### A5. Lead Scoring crashes
+
+**Symptom:** *"Leads scoring also bombs. Page [not] found and evidence as well."* (voice-transcribed; likely "page not found" with developer/console evidence)
+
+The sidebar links to `/crm/scoring` (item: "Lead Scoring · NEW"). Possible causes:
+- Route not actually built — sidebar link 404s
+- Route exists but throws (similar pattern to A1 contact-create — likely same kind of `'use client'` boundary issue or missing page.tsx)
+
+**Diagnosis priority:** MEDIUM (Lead Scoring is marked NEW in sidebar — newer feature, less foundational than contact create)
+**Likely fix size:** small-medium (depends on whether the route exists or needs to be built)
+
+### Update — Anthropic API credits funded 2026-04-28
+
+Chris reported: *"I've just added credits to Anthropic's API. That was not, didn't have any funds there."*
+
+This is almost certainly the **single root cause for both A2 and A4**. Every `BaseAgent.run()` call (autopilot, content generation, brand voice extraction, campaign drafter, quoter, concierge, etc.) calls the Anthropic API directly. A 402-style insufficient-credits error throws from the SDK and our agents surface it as a generic "failed to generate" toast rather than something specific.
+
+**Recommended retry order before fixing:**
+1. Retry A2 (Autopilot generate) — likely works now
+2. Retry A4 (Brand voice wizard submit) — likely works now
+3. If either still fails after credits are loaded, treat as a code bug and proceed with diagnosis.
+
+This finding belongs in the **error catalogue** as a pattern: when an AI feature fails with "failed to generate", the operator should check Anthropic billing FIRST before assuming code bug. Add to `lib/agents/CLAUDE.md` and to the build reviewer's checklist.
+
 </test_findings_2026_04_28>
 
 <sidebar_redesign_brief>
