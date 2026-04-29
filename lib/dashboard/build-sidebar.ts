@@ -42,12 +42,13 @@ export function buildSidebar(activeModules: string[], role: string): SidebarItem
       href: '/content-studio',
       icon: 'Sparkles',
       tabs: [
-        { label: 'Social', href: '/content-studio/social' },
-        { label: 'Email Campaigns', href: '/content-studio/email-campaigns' },
-        { label: 'Sequences', href: '/content-studio/sequences' },
-        { label: 'Outreach', href: '/content-studio/outreach' },
-        { label: 'Drafts', href: '/content-studio/drafts' },
-        { label: 'Analytics', href: '/content-studio/analytics' },
+        { label: 'Generator', href: '/content-generator' },
+        { label: 'Social', href: '/content-generator/social' },
+        { label: 'Email Hub', href: '/email' },
+        { label: 'Email Campaigns', href: '/email/campaigns' },
+        { label: 'Sequences', href: '/email/sequences' },
+        { label: 'Outreach', href: '/email/outreach' },
+        { label: 'Multi-channel Campaigns', href: '/campaigns' },
       ],
     },
     {
@@ -56,33 +57,71 @@ export function buildSidebar(activeModules: string[], role: string): SidebarItem
       href: '/customers',
       icon: 'Users',
       tabs: [
-        { label: 'CRM Easy', href: '/customers' },
-        { label: 'Advanced Kanban', href: '/customers/advanced' },
-        { label: 'Lead Scoring', href: '/customers/scoring' },
-        { label: 'Drafts', href: '/customers/drafts' },
+        { label: 'CRM Easy', href: '/crm' },
+        { label: 'Advanced Kanban', href: '/crm/advanced' },
+        { label: 'Lead Scoring', href: '/crm/scoring' },
+        { label: 'Contacts', href: '/crm/contacts' },
+        { label: 'Deals', href: '/crm/deals' },
+        { label: 'Companies', href: '/crm/companies' },
       ],
     },
   ]
 
-  // Operations — only render if at least one vertical is activated
-  const verticalTabs: SidebarTab[] = []
+  // Operations — only render if at least one vertical is activated.
+  // Per CONTEXT decision: verticals get their own top-level entries; the
+  // Operations wrapper was rejected. Each vertical becomes its own item.
   if (activeModules.includes('accommodation')) {
-    verticalTabs.push({ label: 'Accommodation', href: '/operations/accommodation' })
+    items.push({
+      id: 'accommodation',
+      label: 'Accommodation',
+      href: '/accommodation',
+      icon: 'Hotel',
+      tabs: [
+        { label: 'Overview', href: '/accommodation' },
+        { label: 'Bookings', href: '/accommodation/bookings' },
+        { label: 'Calendar', href: '/accommodation/calendar' },
+        { label: 'Properties', href: '/accommodation/properties' },
+        { label: 'Inquiries', href: '/accommodation/inquiries' },
+        { label: 'Guests', href: '/accommodation/guests' },
+        { label: 'Operations', href: '/accommodation/operations' },
+        { label: 'Channels', href: '/accommodation/channels' },
+        { label: 'Stock', href: '/accommodation/stock' },
+        { label: 'Costs', href: '/accommodation/costs' },
+        { label: 'Automation', href: '/accommodation/automation' },
+      ],
+    })
   }
   if (activeModules.includes('restaurant')) {
-    verticalTabs.push({ label: 'Restaurant', href: '/operations/restaurant' })
+    items.push({
+      id: 'restaurant',
+      label: 'Restaurant',
+      href: '/restaurant',
+      icon: 'UtensilsCrossed',
+      tabs: [
+        { label: 'Overview', href: '/restaurant' },
+        { label: 'Menu', href: '/restaurant/menu' },
+        { label: 'Tables', href: '/restaurant/tables' },
+        { label: 'Reservations', href: '/restaurant/reservations' },
+        { label: 'SOPs', href: '/restaurant/sops' },
+        { label: 'Compliance', href: '/restaurant/compliance/temps' },
+      ],
+    })
   }
   if (activeModules.includes('elijah') || activeModules.includes('security_ops')) {
-    verticalTabs.push({ label: 'Security', href: '/operations/security' })
-  }
-
-  if (verticalTabs.length > 0) {
     items.push({
-      id: 'operations',
-      label: 'Operations',
-      href: verticalTabs[0].href,
-      icon: 'Briefcase',
-      tabs: verticalTabs,
+      id: 'elijah',
+      label: 'Security',
+      href: '/elijah',
+      icon: 'Shield',
+      tabs: [
+        { label: 'Overview', href: '/elijah' },
+        { label: 'Members', href: '/elijah/members' },
+        { label: 'Patrols', href: '/elijah/patrols' },
+        { label: 'Incidents', href: '/elijah/incidents' },
+        { label: 'Roll Call', href: '/elijah/rollcall' },
+        { label: 'Fire', href: '/elijah/fire' },
+        { label: 'SOPs', href: '/elijah/sops' },
+      ],
     })
   }
 
@@ -93,8 +132,9 @@ export function buildSidebar(activeModules: string[], role: string): SidebarItem
       href: '/insights',
       icon: 'TrendingUp',
       tabs: [
-        { label: 'Analytics', href: '/insights' },
-        { label: 'Reports', href: '/insights/reports' },
+        { label: 'Overview', href: '/insights' },
+        { label: 'Email Analytics', href: '/email/analytics' },
+        { label: 'Cost Monitoring', href: '/admin/cost-monitoring' },
       ],
     },
     {
@@ -103,12 +143,10 @@ export function buildSidebar(activeModules: string[], role: string): SidebarItem
       href: '/settings',
       icon: 'Settings',
       tabs: [
-        { label: 'Account', href: '/settings/account' },
+        { label: 'Overview', href: '/settings' },
         { label: 'Brand Voice', href: '/settings/brand-voice' },
-        { label: 'Team', href: '/settings/team' },
-        { label: 'Integrations', href: '/settings/integrations' },
-        { label: 'Billing', href: '/settings/billing' },
         { label: 'Social Accounts', href: '/settings/social' },
+        { label: 'Billing', href: '/billing' },
       ],
     },
   )

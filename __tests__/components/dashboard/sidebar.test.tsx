@@ -64,10 +64,11 @@ describe('SidebarClient', () => {
     expect(screen.getByText('Settings')).toBeInTheDocument()
   })
 
-  it('does NOT render Operations for a CRM-only user', () => {
+  it('does NOT render vertical items for a CRM-only user', () => {
     const items = buildSidebar(['crm'], 'user')
     render(<SidebarClient items={items} />)
-    expect(screen.queryByText('Operations')).not.toBeInTheDocument()
+    expect(screen.queryByText('Accommodation')).not.toBeInTheDocument()
+    expect(screen.queryByText('Restaurant')).not.toBeInTheDocument()
   })
 
   it('does NOT render Admin section for a regular user', () => {
@@ -76,10 +77,10 @@ describe('SidebarClient', () => {
     expect(screen.queryByText('Admin')).not.toBeInTheDocument()
   })
 
-  it('renders Operations for a user with accommodation module', () => {
+  it('renders Accommodation as a top-level item for a user with accommodation module', () => {
     const items = buildSidebar(['accommodation'], 'user')
     render(<SidebarClient items={items} />)
-    expect(screen.getByText('Operations')).toBeInTheDocument()
+    expect(screen.getByText('Accommodation')).toBeInTheDocument()
   })
 
   it('renders Admin section for an admin role', () => {
