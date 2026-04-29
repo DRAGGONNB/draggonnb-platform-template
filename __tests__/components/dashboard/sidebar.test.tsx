@@ -1,19 +1,42 @@
 /** @vitest-environment jsdom */
 
+/**
+ * Sidebar component tests — updated for Plan 12-06 dynamic sidebar.
+ *
+ * The old Sidebar.tsx (hardcoded 54-item navigation array) has been replaced
+ * by a server-rendered SidebarServer + SidebarClient pair. The SidebarClient
+ * is what we test here — it receives pre-built items from buildSidebar().
+ *
+ * buildSidebar() is tested exhaustively in sidebar-build.test.ts.
+ * This file tests the rendering and active-state logic of SidebarClient.
+ */
+
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { Sidebar } from '@/components/dashboard/Sidebar'
+import { SidebarClient } from '@/components/dashboard/sidebar-client'
+import { buildSidebar } from '@/lib/dashboard/build-sidebar'
 
 // Mock next/link
 vi.mock('next/link', () => ({
-  default: ({ children, href, ...props }: { children: React.ReactNode; href: string; [key: string]: unknown }) => (
-    <a href={href} {...props}>{children}</a>
+  default: ({
+    children,
+    href,
+    ...props
+  }: {
+    children: React.ReactNode
+    href: string
+    [key: string]: unknown
+  }) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
   ),
 }))
 
-// Mock next/navigation
+// Mock next/navigation — default to /dashboard
+const pathnameMock = vi.fn(() => '/dashboard')
 vi.mock('next/navigation', () => ({
-  usePathname: () => '/dashboard',
+  usePathname: () => pathnameMock(),
 }))
 
 // Mock next/image
@@ -21,90 +44,70 @@ vi.mock('next/image', () => ({
   default: (props: Record<string, unknown>) => <img {...props} />,
 }))
 
-describe('Sidebar', () => {
+describe('SidebarClient', () => {
   it('renders the DraggonnB logo text', () => {
-    render(<Sidebar />)
-    // Logo text is split: "DRAGONN" + "NB" + "OS" across spans
+    const items = buildSidebar([], 'user')
+    render(<SidebarClient items={items} />)
     expect(screen.getByText('NB')).toBeInTheDocument()
     expect(screen.getByText('OS')).toBeInTheDocument()
   })
 
-  it('renders Main navigation items', () => {
-    render(<Sidebar />)
+  it('renders exactly 5 top-level items for a CRM-only user', () => {
+    const items = buildSidebar(['crm'], 'user')
+    render(<SidebarClient items={items} />)
+    // buildSidebar is the source of truth for count — tests there cover the full logic
+    expect(items).toHaveLength(5)
     expect(screen.getByText('Dashboard')).toBeInTheDocument()
-    expect(screen.getByText('Autopilot')).toBeInTheDocument()
-    expect(screen.getByText('CRM')).toBeInTheDocument()
-    expect(screen.getByText('Email Hub')).toBeInTheDocument()
+    expect(screen.getByText('Content Studio')).toBeInTheDocument()
+    expect(screen.getByText('Customers')).toBeInTheDocument()
+    expect(screen.getByText('Insights')).toBeInTheDocument()
+    expect(screen.getByText('Settings')).toBeInTheDocument()
   })
 
-  it('renders Email Marketing section with items', () => {
-    render(<Sidebar />)
-    expect(screen.getByText('Email Marketing')).toBeInTheDocument()
-    expect(screen.getByText('Campaigns')).toBeInTheDocument()
-    expect(screen.getByText('Sequences')).toBeInTheDocument()
-    expect(screen.getByText('Templates')).toBeInTheDocument()
-    expect(screen.getByText('Outreach')).toBeInTheDocument()
-    // Analytics appears in both Main nav and Email Marketing
-    expect(screen.getAllByText('Analytics')).toHaveLength(2)
+  it('does NOT render Operations for a CRM-only user', () => {
+    const items = buildSidebar(['crm'], 'user')
+    render(<SidebarClient items={items} />)
+    expect(screen.queryByText('Operations')).not.toBeInTheDocument()
   })
 
-  it('renders Content Studio section', () => {
-    render(<Sidebar />)
-    // "Content Studio" appears in both section header and nav item
-    expect(screen.getAllByText('Content Studio').length).toBeGreaterThanOrEqual(1)
-    expect(screen.getByText('Email Content')).toBeInTheDocument()
-    expect(screen.getByText('Social Content')).toBeInTheDocument()
+  it('does NOT render Admin section for a regular user', () => {
+    const items = buildSidebar(['crm'], 'user')
+    render(<SidebarClient items={items} />)
+    expect(screen.queryByText('Admin')).not.toBeInTheDocument()
   })
 
-  it('renders Accommodation section', () => {
-    render(<Sidebar />)
-    expect(screen.getByText('Accommodation')).toBeInTheDocument()
-    expect(screen.getByText('Properties')).toBeInTheDocument()
-    expect(screen.getByText('Inquiries')).toBeInTheDocument()
-    expect(screen.getByText('Guests')).toBeInTheDocument()
+  it('renders Operations for a user with accommodation module', () => {
+    const items = buildSidebar(['accommodation'], 'user')
+    render(<SidebarClient items={items} />)
+    expect(screen.getByText('Operations')).toBeInTheDocument()
   })
 
-  it('renders correct navigation hrefs', () => {
-    render(<Sidebar />)
-    expect(screen.getByText('Dashboard').closest('a')).toHaveAttribute('href', '/dashboard')
-    expect(screen.getByText('CRM').closest('a')).toHaveAttribute('href', '/crm')
-    expect(screen.getByText('Campaigns').closest('a')).toHaveAttribute('href', '/email/campaigns')
-    expect(screen.getByText('Properties').closest('a')).toHaveAttribute('href', '/accommodation/properties')
+  it('renders Admin section for an admin role', () => {
+    const items = buildSidebar([], 'admin')
+    render(<SidebarClient items={items} />)
+    // 'Admin' appears as the link label AND as the badge text
+    expect(screen.getAllByText('Admin').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('renders NEW badges on multiple sections', () => {
-    render(<Sidebar />)
-    const badges = screen.getAllByText('NEW')
-    // Analytics, Lead Scoring, Social Media, Accommodation Overview, Elijah, Integrations
-    expect(badges).toHaveLength(6)
+  it('marks Dashboard as active when pathname is /dashboard', () => {
+    pathnameMock.mockReturnValue('/dashboard')
+    const items = buildSidebar([], 'user')
+    render(<SidebarClient items={items} />)
+    const dashLink = screen.getByText('Dashboard').closest('a')
+    expect(dashLink).toHaveAttribute('aria-current', 'page')
   })
 
-  it('renders usage progress bars with default values', () => {
-    render(<Sidebar />)
-    expect(screen.getByText('Posts This Month')).toBeInTheDocument()
-    expect(screen.getByText('AI Generations')).toBeInTheDocument()
-    expect(screen.getByText('23 / 30')).toBeInTheDocument()
-    expect(screen.getByText('45 / 50')).toBeInTheDocument()
+  it('does NOT mark Dashboard active when on a sub-route like /crm', () => {
+    pathnameMock.mockReturnValue('/crm')
+    const items = buildSidebar(['crm'], 'user')
+    render(<SidebarClient items={items} />)
+    const dashLink = screen.getByText('Dashboard').closest('a')
+    expect(dashLink).not.toHaveAttribute('aria-current', 'page')
   })
 
-  it('renders usage stats when provided', () => {
-    render(
-      <Sidebar
-        usageStats={{
-          postsUsed: 10,
-          postsLimit: 100,
-          aiGenerationsUsed: 25,
-          aiGenerationsLimit: 200,
-        }}
-      />
-    )
-    expect(screen.getByText('10 / 100')).toBeInTheDocument()
-    expect(screen.getByText('25 / 200')).toBeInTheDocument()
-  })
-
-  it('renders Upgrade Plan link', () => {
-    render(<Sidebar />)
-    expect(screen.getByText('Upgrade Plan')).toBeInTheDocument()
-    expect(screen.getByText('Upgrade Plan').closest('a')).toHaveAttribute('href', '/pricing')
+  it('renders org name in footer when provided', () => {
+    const items = buildSidebar([], 'user')
+    render(<SidebarClient items={items} orgName="Acme Corp" />)
+    expect(screen.getByText('Acme Corp')).toBeInTheDocument()
   })
 })
