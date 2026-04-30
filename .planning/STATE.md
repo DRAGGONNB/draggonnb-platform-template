@@ -12,13 +12,17 @@ See: .planning/PROJECT.md (updated 2026-04-24)
 
 Milestone: v3.0 Commercial Launch (started 2026-04-24)
 Phase: 12 of 12 (Launch Polish) — **IN PROGRESS**
-Plan: 12-01 COMPLETE (hotfix sweep, 2026-04-28). 7/8 items resolved (7 hotfixes + 1 AI error surfacing).
-Status: Production hotfixes shipped. CRM SSR crash fixed. Missing routes created. Sidebar active-state fixed. Social link fixed. BaseAgent typed credit/rate-limit errors added. A2/A4/A7 resolved by Anthropic credit funding.
-Last activity: 2026-04-28 — Phase 12 Plan 12-01 COMPLETE. Commits: a1778d97, 88ac4d10.
+Plan: 12-06 COMPLETE (dynamic sidebar shell, 2026-04-30). 6-item tenant_modules-driven sidebar replaces 54-item hardcoded array; ModeToggle primitive shipped; 4 new top-level overview pages added.
+Status: Wave 3 unblocked. 12-01 + 12-06 done. 25 sidebar/mode-toggle tests passing. tsc clean (no new errors). 4 commits ahead of origin/main awaiting final docs commit + push to deploy to production.
+Last activity: 2026-04-30 — Phase 12 Plan 12-06 COMPLETE. Commits: d5d1e7fe (wip), 44f26f4a (wip), 98c86f71, bf560137.
 
 ## Resume Next Session
 
-**Phase 12 Plan 12-01 COMPLETE. Continue with 12-02 (promised-vs-delivered audit) or 12-03 (mobile sweep).**
+**Phase 12 Plans 12-01 + 12-06 COMPLETE. Wave 3 next: 12-07 (smart-landing dashboard) + 12-08 (module landing redesign) — independent, can run in parallel.**
+
+**Before 12-07/12-08:**
+1. Browser smoke-test sidebar on production (or local) as `tester-admin@draggonnb.test` (DragoonB org, all 11 modules) — verify 9 items shown, flyout works, no 404s, active-state on sub-routes.
+2. Phase 11 Easy/Advanced toggle refactor to consume `<ModeToggle>` (single-file deferred — batch with 12-07 dashboard rebuild).
 
 **Hard runtime checks still pending (from Phase 11 — must do before first paying client):**
 1. Set `CAMPAIGN_EXECUTE_HMAC_SECRET` in Vercel (without it, execute endpoint rejects all calls).
@@ -29,6 +33,7 @@ Last activity: 2026-04-28 — Phase 12 Plan 12-01 COMPLETE. Commits: a1778d97, 8
 
 **Phase 12 completed plans:**
 - 12-01 DONE: hotfix sweep (CRM SSR, routes, sidebar, BaseAgent errors)
+- 12-06 DONE: dynamic sidebar shell + ModeToggle primitive + 4 overview pages (`/content-studio`, `/customers`, `/insights`, `/settings`)
 
 **Phase 11 COMPLETE. Open fresh session to start Phase 12 OR address runtime deferrals.**
 
@@ -69,7 +74,7 @@ Progress: [██████████] 100% (12/12 Phase 11 plans done) · v
 | **09 (v3.0)** | **5/5** | **Complete 2026-04-26** |
 | **10 (v3.0)** | **7/7** | **Complete 2026-04-27** |
 | **11 (v3.0)** | **12/12** | **Complete 2026-04-27** |
-| 12 (v3.0) | 0/TBD | Not started |
+| 12 (v3.0) | 2/10 | In progress (12-01 + 12-06 done) |
 
 *Updated after each plan completion*
 
@@ -116,8 +121,22 @@ Progress: [██████████] 100% (12/12 Phase 11 plans done) · v
 
 ## Session Continuity
 
-Last session: 2026-04-28 — Plan 12-01 execution: 7 hotfixes + AI error surfacing. Commits: a1778d97, 88ac4d10, plus final docs commit. tsc clean. 807 tests passing (35 pre-existing failures in base-agent.test.ts / elijah / social test files — env-singleton issue, not introduced here).
-Resume file: None
+Last session: 2026-04-30 — Resumed mid-12-06 from `.continue-here.md` checkpoint. Found Wave 3 sidebar work had progressed past checkpoint (commits 98c86f71 + bf560137 added overview pages + rewired routes). Closed plan: ran tsc (3 pre-existing errors, none new) + vitest (25/25 pass) + wrote 12-06-SUMMARY.md + STATE update. 4 commits ahead of origin/main; final docs commit pending. Wave 2 + Wave 4 still parked per user.
+Resume file: none (12-06 closed; remove `.continue-here.md` on next push).
+
+### Session (2026-04-30) — Phase 12 Plan 12-06: Dynamic Sidebar Shell COMPLETE
+
+**What was done:**
+1. Resumed mid-12-06 from `.continue-here.md`. Verified WIP commits had progressed: d5d1e7fe (component scaffolding) → 44f26f4a (paused checkpoint) → 98c86f71 (rewire to existing routes + flatten verticals) → bf560137 (4 overview pages: /content-studio, /customers, /insights, /settings).
+2. Ran `npx tsc --noEmit` — 3 pre-existing errors in elijah-full + social-content-full test files (last touched in commit e2a66f04, NOT introduced by 12-06). 12-06 surface clean.
+3. Ran vitest on 3 sidebar/mode-toggle test files — 25/25 passing (sidebar-build.test.ts: 10, sidebar.test.tsx: 9, mode-toggle.test.tsx: 6).
+4. Wrote `.planning/phases/12-launch-polish/12-06-SUMMARY.md` documenting deviations: verticals flat (not under Operations wrapper) per CONTEXT decision; tabs link to existing routes (not net-new URLs) so shell ships without 12-07/12-08; ModeToggle Phase 11 callsite refactor deferred to 12-07; Settings overview page added (not in plan files_modified — plan said "verify exists" but route had no page.tsx).
+5. Updated STATE.md.
+6. REQ-IDs closed: none directly (foundational IA redesign, net-new scope from CONTEXT not REQUIREMENTS).
+
+**Next: Browser smoke-test sidebar (production or local) → push → execute 12-07 + 12-08 in parallel.**
+
+
 
 ### Session (2026-04-27) — Phase 11 Plan 11-12: Integration Tests + Docs (PHASE 11 COMPLETE)
 
