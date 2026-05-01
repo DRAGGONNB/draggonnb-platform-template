@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>DraggonnB OS — Architecture Atlas</title>
+<style>
+  :root {
+    --primary: #6B1420;
+    --accent: #FCB827;
+    --warn-c: #DE3831;
+    --ok-c: #21822F;
+    --bg: #0e1116;
+    --bg2: #161b24;
+    --bg3: #1d2330;
+    --line: rgba(255,255,255,0.08);
+    --line2: rgba(255,255,255,0.18);
+    --txt: #e6ecf5;
+    --txt2: #9aa7bd;
+    --txt3: #6878a0;
+    --warn: #ff9a3c;
+    --crit: #ff5d6c;
+    --ok: #4ade80;
+    --hunt: #c5965e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: linear-gradient(180deg, #060912 0%, #0e1116 100%);
+    color: var(--txt);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  header {
+    background: linear-gradient(135deg, var(--primary) 0%, #2a0810 50%, #000 100%);
+    padding: 36px 48px 28px;
+    border-bottom: 2px solid var(--accent);
+  }
+  .brand {
+    display: flex; align-items: center; gap: 14px; margin-bottom: 18px;
+  }
+  .brand-mark {
+    width: 44px; height: 44px; border-radius: 10px;
+    background: var(--accent); color: #2a0810;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 22px; letter-spacing: -1px;
+  }
+  .brand-name { font-weight: 800; font-size: 20px; letter-spacing: -0.3px; }
+  .brand-sub { color: rgba(255,255,255,0.72); font-size: 12px; letter-spacing: 1px; text-transform: uppercase; }
+  h1 { margin: 0 0 6px; font-size: 30px; letter-spacing: -0.5px; }
+  .sub { color: rgba(255,255,255,0.72); font-size: 14px; }
+  .meta-bar {
+    display: flex; gap: 12px; margin-top: 14px; flex-wrap: wrap;
+    font-size: 12px; color: var(--txt2);
+  }
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 999px;
+    background: rgba(255,255,255,0.06); border: 1px solid var(--line);
+  }
+  .pill.ok { color: var(--ok); border-color: rgba(74,222,128,0.35); }
+  .pill.warn { color: var(--warn); border-color: rgba(255,154,60,0.35); }
+  .pill.crit { color: var(--crit); border-color: rgba(255,93,108,0.35); }
+  .pill.future { color: #5fb9ff; border-color: rgba(95,185,255,0.35); }
+  main { padding: 32px 48px 80px; max-width: 1400px; margin: 0 auto; }
+  section { margin-bottom: 56px; }
+  h2 {
+    font-size: 22px; margin: 0 0 4px; letter-spacing: -0.2px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  h2::before {
+    content: ""; width: 4px; height: 24px; background: var(--accent);
+    border-radius: 2px;
+  }
+  h3 { font-size: 16px; margin: 0 0 8px; letter-spacing: -0.1px; }
+  h4 { margin: 0 0 8px; font-size: 14px; }
+  .lede { color: var(--txt2); font-size: 14px; margin-bottom: 18px; max-width: 800px; }
+  .callout {
+    background: linear-gradient(135deg, rgba(255,93,108,0.08), rgba(255,154,60,0.06));
+    border: 1px solid rgba(255,93,108,0.35);
+    border-left: 4px solid var(--crit);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+  }
+  .callout.warn { border-left-color: var(--warn); border-color: rgba(255,154,60,0.35); }
+  .callout.aligned {
+    background: linear-gradient(135deg, rgba(74,222,128,0.08), rgba(74,222,128,0.04));
+    border: 1px solid rgba(74,222,128,0.35);
+    border-left: 4px solid var(--ok);
+  }
+  .callout.investor {
+    background: linear-gradient(135deg, rgba(252,184,39,0.10), rgba(107,20,32,0.08));
+    border: 1px solid rgba(252,184,39,0.4);
+    border-left: 4px solid var(--accent);
+  }
+  .callout h3 { color: var(--crit); font-size: 16px; margin-bottom: 10px; }
+  .callout.warn h3 { color: var(--warn); }
+  .callout.aligned h3 { color: var(--ok); }
+  .callout.investor h3 { color: var(--accent); }
+  .callout p { margin: 0 0 8px; color: var(--txt); font-size: 14px; }
+  .callout code { background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 4px; font-size: 12px; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 18px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 18px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 18px; }
+  @media (max-width: 1100px) { .grid-3, .grid-4 { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 700px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+  .card.live { border-color: rgba(74,222,128,0.35); background: linear-gradient(135deg, rgba(74,222,128,0.05), var(--bg2)); }
+  .card.gap { border-color: rgba(255,154,60,0.4); background: linear-gradient(135deg, rgba(255,154,60,0.06), var(--bg2)); }
+  .card.future { border-color: rgba(95,185,255,0.35); background: linear-gradient(135deg, rgba(95,185,255,0.06), var(--bg2)); }
+  .card.crit { border-color: rgba(255,93,108,0.4); background: linear-gradient(135deg, rgba(255,93,108,0.06), var(--bg2)); }
+  .card.hunt { border-color: rgba(197,150,94,0.4); background: linear-gradient(135deg, rgba(197,150,94,0.08), var(--bg2)); }
+  .card-head {
+    font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    color: var(--txt3); margin-bottom: 8px;
+  }
+  .card.live .card-head { color: var(--ok); }
+  .card.gap .card-head { color: var(--warn); }
+  .card.future .card-head { color: #5fb9ff; }
+  .card.crit .card-head { color: var(--crit); }
+  .card.hunt .card-head { color: var(--hunt); }
+  .card .field { font-family: "SF Mono", Consolas, monospace; font-size: 12px; color: var(--txt2); margin-top: 6px; }
+  .card .label { display: inline-block; min-width: 76px; color: var(--txt3); }
+  .card ul { font-size: 13px; color: var(--txt2); padding-left: 18px; margin: 8px 0 0; }
+  .card ul li { margin-bottom: 4px; }
+  .card .num { font-size: 28px; font-weight: 800; color: var(--accent); letter-spacing: -1px; line-height: 1; }
+  .card .num-label { font-size: 11px; color: var(--txt3); letter-spacing: 1px; text-transform: uppercase; margin-top: 4px; }
+
+  .stack { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  .layer {
+    border-radius: 14px;
+    padding: 18px 22px;
+    border: 1px solid var(--line);
+    background: var(--bg2);
+  }
+  .layer-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 14px;
+  }
+  .layer-name { font-weight: 700; font-size: 16px; }
+  .layer-tech { color: var(--txt3); font-size: 12px; font-family: monospace; }
+  .layer.client { border-left: 4px solid var(--ok-c); }
+  .layer.api { border-left: 4px solid var(--accent); }
+  .layer.data { border-left: 4px solid var(--warn-c); }
+  .layer.ext { border-left: 4px solid var(--primary); background: var(--bg3); }
+  .modules { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+  .mod {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+  .mod .mod-name { font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+  .mod .mod-path { font-family: monospace; font-size: 11px; color: var(--txt3); }
+  .mod .mod-desc { color: var(--txt2); font-size: 12px; margin-top: 4px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+  .dot.live { background: var(--ok); }
+  .dot.gap { background: var(--warn); }
+  .dot.future { background: #5fb9ff; }
+  .dot.crit { background: var(--crit); }
+  .badge {
+    font-size: 9px; padding: 2px 6px; border-radius: 4px; font-weight: 700;
+    letter-spacing: 0.5px; text-transform: uppercase;
+    background: rgba(255,255,255,0.08); color: var(--txt2); margin-left: auto;
+  }
+  .badge.gap { background: rgba(255,154,60,0.2); color: var(--warn); }
+  .badge.cron { background: rgba(95,185,255,0.2); color: #5fb9ff; }
+  .badge.svc { background: rgba(222,56,49,0.2); color: #ff8e88; }
+
+  .flow {
+    background: var(--bg2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 22px 24px;
+    margin-top: 16px;
+    overflow-x: auto;
+  }
+  .flow-title { font-weight: 700; margin-bottom: 14px; display: flex; gap: 10px; align-items: center; }
+  .flow-title .ix {
+    width: 24px; height: 24px; border-radius: 6px;
+    background: var(--accent); color: #2a0810; font-size: 13px;
+    display: flex; align-items: center; justify-content: center; font-weight: 800;
+  }
+  .row {
+    display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; min-width: max-content;
+    margin-bottom: 10px;
+  }
+  .step {
+    background: var(--bg3); border: 1px solid var(--line2); border-radius: 8px;
+    padding: 10px 14px; font-size: 13px; min-width: 130px;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .step .lbl { font-size: 10px; color: var(--txt3); text-transform: uppercase; letter-spacing: 0.5px; }
+  .step .name { font-weight: 600; }
+  .step .src { font-family: monospace; font-size: 10px; color: var(--txt3); }
+  .step.client { border-color: rgba(33,130,47,0.5); }
+  .step.api { border-color: rgba(252,184,39,0.5); }
+  .step.data { border-color: rgba(222,56,49,0.5); }
+  .step.ext { border-color: rgba(107,20,32,0.7); background: rgba(107,20,32,0.18); }
+  .step.future { border-color: rgba(95,185,255,0.5); background: rgba(95,185,255,0.1); }
+  .arr { color: var(--txt3); font-size: 18px; }
+
+  .ecosystem {
+    display: grid; grid-template-columns: 1fr; gap: 12px;
+    margin-top: 18px;
+  }
+  .eco-layer {
+    border-radius: 14px;
+    padding: 22px 28px;
+    border: 1px solid var(--line);
+    position: relative;
+  }
+  .eco-layer::after {
+    content: "↑"; position: absolute; left: 50%; bottom: -22px;
+    color: var(--txt3); font-size: 24px; font-weight: 800;
+    transform: translateX(-50%);
+  }
+  .eco-layer:last-child::after { display: none; }
+  .eco-layer.l3 { background: linear-gradient(135deg, rgba(252,184,39,0.10), rgba(107,20,32,0.10)); border-color: rgba(252,184,39,0.4); }
+  .eco-layer.l2 { background: linear-gradient(135deg, rgba(74,222,128,0.06), rgba(95,185,255,0.06)); border-color: rgba(95,185,255,0.3); }
+  .eco-layer.l1 { background: linear-gradient(135deg, rgba(74,222,128,0.10), rgba(33,130,47,0.10)); border-color: rgba(74,222,128,0.4); }
+  .eco-layer h3 { color: var(--accent); }
+  .eco-layer.l2 h3 { color: #5fb9ff; }
+  .eco-layer.l1 h3 { color: var(--ok); }
+  .eco-layer p { color: var(--txt2); font-size: 14px; margin: 6px 0 8px; }
+  .eco-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .eco-tag {
+    font-size: 11px; padding: 3px 9px; border-radius: 4px;
+    background: rgba(255,255,255,0.06); color: var(--txt2); border: 1px solid var(--line2);
+  }
+
+  table.matrix {
+    width: 100%; border-collapse: collapse;
+    background: var(--bg2); border-radius: 12px; overflow: hidden;
+    margin-top: 14px; font-size: 13px;
+  }
+  table.matrix th {
+    background: var(--bg3); padding: 12px 14px; text-align: left;
+    font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--txt2);
+    border-bottom: 1px solid var(--line2);
+  }
+  table.matrix td {
+    padding: 12px 14px; border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  table.matrix tr:last-child td { border-bottom: none; }
+  table.matrix tr.featured { background: rgba(252,184,39,0.06); }
+  .price { font-family: monospace; font-weight: 700; color: var(--accent); }
+  .gate { font-family: monospace; font-size: 11px; color: var(--txt3); }
+  .legend {
+    display: flex; gap: 18px; flex-wrap: wrap; font-size: 12px;
+    color: var(--txt2); margin-top: 10px; align-items: center;
+  }
+  .legend > span { display: inline-flex; align-items: center; gap: 6px; }
+
+  .channels {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 18px;
+  }
+  @media (max-width: 900px) { .channels { grid-template-columns: 1fr; } }
+  .channel {
+    border-radius: 12px; padding: 18px 20px;
+    background: var(--bg2); border: 1px solid var(--line);
+  }
+  .channel.staff { border-left: 4px solid #5fb9ff; }
+  .channel.client { border-left: 4px solid var(--ok); }
+  .channel.experience { border-left: 4px solid var(--accent); }
+  .channel h4 { font-size: 15px; margin-bottom: 4px; }
+  .channel .who { font-size: 11px; color: var(--txt3); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+  .channel .cost { font-family: monospace; font-size: 11px; color: var(--accent); margin-top: 8px; }
+
+  footer { text-align: center; color: var(--txt3); font-size: 12px; margin-top: 60px; }
+  footer code { background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 4px; }
+  footer a { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-mark">DB</div>
+    <div>
+      <div class="brand-name">DraggonnB OS</div>
+      <div class="brand-sub">Operating system · agent layer · marketplace</div>
+    </div>
+  </div>
+  <h1>Architecture Atlas — DraggonnB OS</h1>
+  <div class="sub">Multi-tenant B2B operating system for South African operators · Verified against <code>362d4344</code> (production) / <code>bedaff0e</code> (working)</div>
+  <div class="meta-bar">
+    <span class="pill ok">● production: deployed · 362d4344</span>
+    <span class="pill ok">● tests: 720+ passing</span>
+    <span class="pill ok">● tsc: clean</span>
+    <span class="pill ok">● build: green</span>
+    <span class="pill warn">⚠ 3 N8N workflows pending manual activation</span>
+    <span class="pill warn">⚠ Meta credentials not provisioned</span>
+    <span class="pill future">▶ Wave A planning in progress</span>
+  </div>
+</header>
+
+<main>
+
+<section>
+  <h2>The product in 60 seconds</h2>
+  <div class="callout investor">
+    <h3>The DraggonnB OS thesis</h3>
+    <p>
+      DraggonnB is not "a CRM with a hospitality module." It is a <strong>three-layer ecosystem</strong> for South African
+      operators in tourism, hunting, hospitality, restaurants, and community safety:
+    </p>
+    <p>
+      <strong>(1) Operational Core</strong> — multi-tenant database of record with RLS-isolated tenants, modular activation,
+      automated provisioning, and 10 production AI agents.
+      <strong>(2) AI Agency &amp; Approval Spine</strong> — per-role agents that propose, owners that approve, RLS enforcing who can do what.
+      <strong>(3) Public Network Surfaces</strong> — vertical sites (GoHunting.com) and location marketplaces (Plett-stays) that
+      turn operational data into demand-generation.
+    </p>
+    <p>
+      Anchored in the <strong>Southern African hunting + game-lodge vertical</strong>, the same pattern reuses across every
+      adjacent vertical (guest houses, fishing, safari, restaurants, residential security). Pilot lodge: <strong>Swazulu Game Lodge</strong>
+      (uses accommodation + trophy modules; their domain <code>swazulu.com</code> linked once stable).
+    </p>
+    <div class="grid-4" style="margin-top: 22px;">
+      <div class="card live"><div class="num">230+</div><div class="num-label">DB tables live</div></div>
+      <div class="card live"><div class="num">270+</div><div class="num-label">API routes</div></div>
+      <div class="card live"><div class="num">82</div><div class="num-label">UI pages</div></div>
+      <div class="card live"><div class="num">10</div><div class="num-label">AI agents</div></div>
+      <div class="card live"><div class="num">22</div><div class="num-label">N8N workflows</div></div>
+      <div class="card live"><div class="num">61</div><div class="num-label">Migrations</div></div>
+      <div class="card live"><div class="num">720+</div><div class="num-label">Tests passing</div></div>
+      <div class="card live"><div class="num">11</div><div class="num-label">Module verticals</div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Promised vs shipped — gap audit</h2>
+  <p class="lede">What landing copy and pricing claim vs what's actually wired up. The first thing to read.</p>
+
+  <div class="callout aligned">
+    <h3>● Aligned: Hero + trust trio + pricing</h3>
+    <p>
+      Hero copy <em>"Run your lodge on autopilot"</em> matches shipped accommodation module (4 AI agents, 12 N8N workflows, 84 tables).
+      Trust trio <em>"3 business days to go live · Pay in Rands · Cancel anytime"</em> all backed by code:
+      <code>lib/provisioning/</code> saga (3-day onboarding), PayFast integration in ZAR (<code>lib/payments/payfast*.ts</code>),
+      no contract lock-in. Pitfall F (legacy "14-day free trial" copy) was scrubbed in Phase 10.
+    </p>
+  </div>
+
+  <div class="callout warn">
+    <h3>⚠ Gap 1: Meta-channel campaigns advertised, credentials not provisioned</h3>
+    <p>
+      <code>docs/modules/campaign-studio.md</code> says <em>"social channels wired and ready for Meta credentials"</em> —
+      but <code>META_APP_ID</code> / <code>META_APP_SECRET</code> / <code>META_BUSINESS_PORTFOLIO_ID</code> have never been set
+      (flagged in <code>.planning/STATE.md</code> blockers). All FB/IG/LinkedIn campaigns will currently fail at the OAuth handshake.
+      Email + SMS execute paths are live; social paths are credential-gated stubs.
+    </p>
+  </div>
+
+  <div class="callout warn">
+    <h3>⚠ Gap 2: 3 N8N workflows in repo but not activated in production</h3>
+    <p>
+      <code>n8n/wf-crm-engagement-score.json</code> (02:00 SAST), <code>n8n/wf-crm-nightly-cleanup.json</code> (03:00 SAST),
+      and the new <code>n8n/wf-dashboard-action-suggestions.json</code> (04:30 SAST) all live in the repo but require manual import + activation
+      via the N8N UI on <code>n8n.srv1114684.hstgr.cloud</code>. Until activated, the CRM Easy view's hot-leads/follow-ups cards
+      and the new dashboard quick-action card stay empty. No data corruption — just degraded UX.
+    </p>
+  </div>
+
+  <div class="callout warn">
+    <h3>⚠ Gap 3: <code>organizations.activated_at</code> column missing in live DB</h3>
+    <p>
+      Code in <code>lib/billing/subscriptions.ts</code> (<code>isInNewTenantPeriod()</code>) falls back to <code>created_at</code>
+      since the column was never applied. Migration is queued for Wave 2 (parked) but has not run. Affects: trial-period gating
+      logic. Workaround in place; needs proper migration before first paying client onboards.
+    </p>
+  </div>
+
+  <div class="callout warn">
+    <h3>⚠ Gap 4: Migration 51 (<code>dashboard_action_suggestions</code>) committed but not applied</h3>
+    <p>
+      The new dashboard quick-action card reads from a table that doesn't yet exist in <code>psqfgzbjbgqrmjskdavs</code>.
+      <code>Promise.allSettled()</code> in <code>app/(dashboard)/dashboard/page.tsx</code> degrades gracefully to the
+      "You're all caught up" empty state. Needs <code>scripts/migrations/phase-12/apply-migration.mjs</code> run with the management API PAT.
+    </p>
+  </div>
+
+  <div class="callout warn">
+    <h3>⚠ Gap 5: DNS — apex A record wrong, www hijacked by Hostinger CDN</h3>
+    <p>
+      Wildcard subdomains (<code>*.draggonnb.co.za</code>) work cleanly via Vercel. But the bare apex (<code>draggonnb.co.za</code>)
+      and <code>www.draggonnb.co.za</code> don't resolve to the Vercel deployment — A record points elsewhere and
+      Hostinger CDN intercepts <code>www</code>. Doesn't block tenant subdomains; does block the marketing root.
+      Tracked as carry-forward in <code>.planning/STATE.md</code>.
+    </p>
+  </div>
+</section>
+
+<section>
+  <h2>The three-layer ecosystem</h2>
+  <p class="lede">
+    What you're building, in one picture. Layer 1 is shipped. Layer 2 is the next architectural shift (Wave A).
+    Layer 3 is the investor-narrative play (Wave C, but the pitch artifact lives in Wave A).
+  </p>
+
+  <div class="ecosystem">
+    <div class="eco-layer l3">
+      <h3>Layer 3 — Public network surfaces</h3>
+      <p>
+        Vertical sites (GoHunting.com) and location marketplaces (<code>plett-stays.co.za</code>-style) that aggregate
+        operational data into discoverable, monetisable destinations. Vendors subscribe for placement; operators feed
+        approved content; guests generate traffic. Network effects: every new operator makes the public surface richer,
+        which generates leads back to operators.
+      </p>
+      <div class="eco-tags">
+        <span class="eco-tag">GoHunting.com (vertical)</span>
+        <span class="eco-tag">Plett guest-house marketplace (location)</span>
+        <span class="eco-tag">Go-X template (reusable)</span>
+        <span class="eco-tag">Vendor subscriptions = revenue layer</span>
+      </div>
+    </div>
+    <div class="eco-layer l2">
+      <h3>Layer 2 — AI agency &amp; approval spine</h3>
+      <p>
+        Per-role agents (owner / manager / lodge / vendor) that <em>propose</em> actions; humans <em>approve</em> via
+        Telegram or web. RLS enforces who can approve what. Damage auto-billing, rate adjustments, special offers,
+        content publishing, vendor jobs — all flow through the same approval queue. Turns AI from "generator" into
+        "agent" without losing human control.
+      </p>
+      <div class="eco-tags">
+        <span class="eco-tag">approval_requests table (new)</span>
+        <span class="eco-tag">Per-role permission lattice</span>
+        <span class="eco-tag">Owner Telegram tap-to-approve</span>
+        <span class="eco-tag">Damage flag → auto-charge</span>
+      </div>
+    </div>
+    <div class="eco-layer l1">
+      <h3>Layer 1 — Operational core <span style="color: var(--txt3); font-size: 12px;">(shipped today)</span></h3>
+      <p>
+        Multi-tenant Next.js + Supabase platform with RLS-isolated tenants. 11 modules (CRM, email, social, content
+        studio, accommodation, restaurant, elijah, autopilot, AI agents, analytics, billing) gated by
+        <code>tenant_modules</code>. 9-step automated provisioning saga delivers a working tenant in 3 business days.
+        10 production AI agents extending <code>BaseAgent</code> with cost ceilings, advisory locks, and per-tenant cache isolation.
+      </p>
+      <div class="eco-tags">
+        <span class="eco-tag">Single Supabase + RLS tenant isolation</span>
+        <span class="eco-tag">Wildcard subdomain routing</span>
+        <span class="eco-tag">Module-gated activation</span>
+        <span class="eco-tag">Automated provisioning</span>
+        <span class="eco-tag">Telegram + WhatsApp + Resend + PayFast</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Full module map — 4 architectural layers</h2>
+  <p class="lede">Every page, every endpoint folder, every table cluster, every external service. Read top → bottom: client → API → data → external.</p>
+
+  <div class="stack">
+
+    <div class="layer client">
+      <div class="layer-head">
+        <span class="layer-name">① Client — 82 page.tsx routes</span>
+        <span class="layer-tech">Next.js 14.2.33 App Router · TypeScript · Tailwind · shadcn/ui</span>
+      </div>
+      <div class="modules">
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>Dashboard<span class="badge">/dashboard</span></div>
+          <div class="mod-path">app/(dashboard)/dashboard/page.tsx</div>
+          <div class="mod-desc">Smart-landing: quick-action card + summary tiles + activity (12-07)</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>CRM Easy + Advanced<span class="badge">/crm</span></div>
+          <div class="mod-path">app/(dashboard)/crm/{page,advanced,scoring,contacts,deals,companies}</div>
+          <div class="mod-desc">AI follow-ups + hot leads (Easy) · kanban (Advanced)</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>Accommodation<span class="badge">/accommodation</span></div>
+          <div class="mod-path">app/(dashboard)/accommodation/*</div>
+          <div class="mod-desc">10 sub-pages: bookings, calendar, properties, inquiries, guests, ops, channels, stock, costs, automation</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>Restaurant<span class="badge">/restaurant</span></div>
+          <div class="mod-path">app/restaurant/*</div>
+          <div class="mod-desc">Konva floor plan + POS + SOPs + QR menus + compliance</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>Elijah Security<span class="badge">/elijah</span></div>
+          <div class="mod-path">app/(dashboard)/elijah/*</div>
+          <div class="mod-desc">Roll call + incidents + fire dispatch + patrols</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>Email + Campaigns<span class="badge">/email · /campaigns</span></div>
+          <div class="mod-path">app/(dashboard)/email · /campaigns/*</div>
+          <div class="mod-desc">Email Hub + Campaign Studio (multi-channel)</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>Content Studio<span class="badge">/content-generator</span></div>
+          <div class="mod-path">app/(dashboard)/content-{generator,studio}</div>
+          <div class="mod-desc">AI content for social + email + long-form</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>Autopilot<span class="badge">/autopilot</span></div>
+          <div class="mod-path">app/(dashboard)/autopilot/{page,settings}</div>
+          <div class="mod-desc">Weekly content scheduler across activated channels</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>Settings + Brand Voice<span class="badge">/settings</span></div>
+          <div class="mod-path">app/(dashboard)/settings/{page,brand-voice,social}</div>
+          <div class="mod-desc">Brand voice + integrations + billing + social accounts</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>Admin suite<span class="badge">/admin</span></div>
+          <div class="mod-path">app/(dashboard)/admin/*</div>
+          <div class="mod-desc">Platform-admin only · clients · modules · pricing · cost monitoring</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>Pricing + Signup<span class="badge">/pricing · /signup</span></div>
+          <div class="mod-path">app/{pricing,signup,login,qualify,checkout,payment/success}</div>
+          <div class="mod-desc">Module picker · self-serve signup · qualify funnel</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>Guest portal<span class="badge">/guest/[bookingId]</span></div>
+          <div class="mod-path">app/guest/[bookingId]/page.tsx</div>
+          <div class="mod-desc">Per-booking guest view · seed for PWA experience surface</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>QR table flow<span class="badge">/t/[token]</span></div>
+          <div class="mod-path">app/t/[token]/{page,menu,bill}</div>
+          <div class="mod-desc">QR-scan customer flow for restaurant module</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>Embedded social<span class="badge">/embed/social</span></div>
+          <div class="mod-path">app/(embed)/embed/social/page.tsx</div>
+          <div class="mod-desc">Embeddable social widget</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="layer api">
+      <div class="layer-head">
+        <span class="layer-name">② API routes — 259 route.ts files across 28 domains</span>
+        <span class="layer-tech">Next.js Route Handlers · Edge + Node runtimes</span>
+      </div>
+      <div class="modules">
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>Accommodation<span class="badge">102</span></div>
+          <div class="mod-path">app/api/accommodation/*</div>
+          <div class="mod-desc">Bookings · inquiries · guests · payments · AI agents · costs · stock · ops · telegram brief · whatsapp queue</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>Restaurant<span class="badge">~40</span></div>
+          <div class="mod-path">app/api/restaurant/*</div>
+          <div class="mod-desc">Sessions · bills · POS · menu · SOPs · checklists · auth/PIN · payfast · QR</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>CRM + Campaigns<span class="badge">~30</span></div>
+          <div class="mod-path">app/api/crm · app/api/campaigns · app/api/email</div>
+          <div class="mod-desc">Contacts · deals · easy-view approve · campaign drafts · execute · kill switch</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>Elijah<span class="badge">~30</span></div>
+          <div class="mod-path">app/api/elijah/*</div>
+          <div class="mod-desc">Rollcall · incidents · fire dispatch · members · patrols · postgis routes</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>Auth + Billing<span class="badge">~25</span></div>
+          <div class="mod-path">app/api/auth · app/api/billing · app/api/payments</div>
+          <div class="mod-desc">Signup · org/user provisioning · PayFast ITN · subscription composition · plan switches</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>Provisioning saga<span class="badge">9-step</span></div>
+          <div class="mod-path">app/api/provisioning · lib/provisioning/</div>
+          <div class="mod-desc">Idempotent steps · rollback cascade · 3-business-day delivery</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>AI agents<span class="badge">10</span></div>
+          <div class="mod-path">app/api/{autopilot,brand-voice,content,leads}/*</div>
+          <div class="mod-desc">Lead qualifier · proposal · onboarding · 4 accommodation agents · campaign drafter · brand safety</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>Webhooks<span class="badge">/api/webhooks</span></div>
+          <div class="mod-path">app/api/webhooks/* · app/api/external/*</div>
+          <div class="mod-desc">PayFast ITN · Resend · WhatsApp · Telegram · BulkSMS DLR</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>Usage + cost<span class="badge">guarded</span></div>
+          <div class="mod-path">app/api/usage/* · lib/usage/{guard,meter}.ts</div>
+          <div class="mod-desc">Per-tenant ceilings · advisory locks · ai_usage_ledger</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>Health + ops<span class="badge">/api/health</span></div>
+          <div class="mod-path">app/api/health · app/api/ops</div>
+          <div class="mod-desc">Onboarding progress · readiness checks</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="layer data">
+      <div class="layer-head">
+        <span class="layer-name">③ Data — Supabase psqfgzbjbgqrmjskdavs · 230+ tables · 61 migrations</span>
+        <span class="layer-tech">Postgres 15 · RLS-tenant-isolated · FORCE ROW LEVEL SECURITY</span>
+      </div>
+      <div class="modules">
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>organizations + tenant_modules</div>
+          <div class="mod-path">multi-tenant root · module_registry catalog</div>
+          <div class="mod-desc">tenant_modules.config JSONB · subdomain · subscription_tier · activated_at (gap)</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>RLS tenant isolation</div>
+          <div class="mod-path">get_user_org_id() STABLE · all tables FORCE RLS</div>
+          <div class="mod-desc">Single fn called by every policy · cached per query</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>CRM cluster<span class="badge">~15</span></div>
+          <div class="mod-path">contacts · deals · companies · crm_activities · crm_action_suggestions · entity_drafts</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>Accommodation cluster<span class="badge">84</span></div>
+          <div class="mod-path">accommodation_bookings · units · properties · guests · inquiries · payments · events · messages · costs · stock · reviews · ai_configs</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>Restaurant cluster</div>
+          <div class="mod-path">restaurant_sessions · bills · menu_items · sop_instances · checklists · staff · temp_logs</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>Elijah cluster</div>
+          <div class="mod-path">elijah_rollcall_checkin · incidents · fire_water_point (PostGIS) · fire_farm · whatsapp_messages</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>Campaign cluster</div>
+          <div class="mod-path">campaigns · campaign_drafts · campaign_runs · campaign_run_items</div>
+          <div class="mod-desc">Kill switch in tenant_modules.config.campaigns.kill_switch_active</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>Billing cluster</div>
+          <div class="mod-path">billing_plans · billing_addons_catalog · subscription_history · payfast_subscription_token</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>Usage + cost cluster</div>
+          <div class="mod-path">usage_events · ai_usage_ledger · agent_sessions · daily_cost_rollup</div>
+          <div class="mod-desc">Migration 35 dropped client_usage_metrics · migration 28 advisory lock</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot gap"></span>dashboard_action_suggestions<span class="badge gap">staged</span></div>
+          <div class="mod-path">supabase/migrations/51 · NOT yet applied</div>
+          <div class="mod-desc">Org-scoped quick-action cache · feeds /dashboard hero card</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="layer ext">
+      <div class="layer-head">
+        <span class="layer-name">④ External services</span>
+        <span class="layer-tech">3rd-party deps · all env-keyed</span>
+      </div>
+      <div class="modules">
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>Anthropic Claude</div>
+          <div class="mod-path">@anthropic-ai/sdk@0.73 · BaseAgent</div>
+          <div class="mod-desc">Haiku 4.5 default · Sonnet allow-listed · per-tenant cache isolation</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>PayFast<span class="badge svc">payments</span></div>
+          <div class="mod-path">PAYFAST_MERCHANT_ID · payfast.ts</div>
+          <div class="mod-desc">Subscriptions + ad-hoc · ZAR · ITN webhook · sandbox-validated</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>Resend<span class="badge svc">email</span></div>
+          <div class="mod-path">RESEND_API_KEY · noreply@draggonnb.online</div>
+          <div class="mod-desc">Transactional + campaign sends · domain warm-up done</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>WhatsApp Cloud API<span class="badge svc">client comms</span></div>
+          <div class="mod-path">WHATSAPP_ACCESS_TOKEN · concierge agent</div>
+          <div class="mod-desc">Booking confirms · concierge replies · reminders · queue</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>Telegram Bot API<span class="badge svc">staff comms</span></div>
+          <div class="mod-path">TELEGRAM_BOT_TOKEN · ops bot</div>
+          <div class="mod-desc">Daily briefs · alerts · damage flags · approvals queue</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>BulkSMS<span class="badge svc">SMS</span></div>
+          <div class="mod-path">campaign execute · SA carrier</div>
+          <div class="mod-desc">Sender ID pre-registration pending</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot gap"></span>Meta (FB / IG)<span class="badge gap">creds pending</span></div>
+          <div class="mod-path">FACEBOOK_APP_ID · FACEBOOK_APP_SECRET</div>
+          <div class="mod-desc">OAuth not provisioned · social campaigns gated</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot gap"></span>LinkedIn<span class="badge gap">creds pending</span></div>
+          <div class="mod-path">LINKEDIN_CLIENT_ID · LINKEDIN_CLIENT_SECRET</div>
+          <div class="mod-desc">OAuth not provisioned · social campaigns gated</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>N8N (VPS-hosted)<span class="badge cron">22 workflows</span></div>
+          <div class="mod-path">n8n.srv1114684.hstgr.cloud · DraggonnB Supabase credential</div>
+          <div class="mod-desc">3 workflows pending manual activation</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>Vercel<span class="badge svc">hosting</span></div>
+          <div class="mod-path">draggonnb-platform.vercel.app · *.draggonnb.co.za</div>
+          <div class="mod-desc">Wildcard domain · auto-deploy on main · webhook flakiness intermittent</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>Hostinger VPS<span class="badge svc">infra</span></div>
+          <div class="mod-path">srv1114684.hstgr.cloud · ssh hostinger-vps</div>
+          <div class="mod-desc">N8N + Gitea (state docs) · key-auth SSH</div>
+        </div>
+        <div class="mod">
+          <div class="mod-name"><span class="dot live"></span>GitHub<span class="badge svc">code</span></div>
+          <div class="mod-path">DRAGGONNB/draggonnb-platform · main branch</div>
+          <div class="mod-desc">Code source-of-truth · Vercel auto-deploys</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="legend">
+    <span><span class="dot live"></span>shipped &amp; verified</span>
+    <span><span class="dot gap"></span>partial / promised-not-shipped</span>
+    <span><span class="dot future"></span>planned (Wave A/B/C)</span>
+    <span><span class="dot crit"></span>production blocker</span>
+  </div>
+</section>
+
+<section>
+  <h2>Critical end-to-end flows</h2>
+  <p class="lede">The five pipelines that define the product today. Each is a left-to-right read.</p>
+
+  <div class="flow">
+    <div class="flow-title"><span class="ix">1</span> Self-serve signup → live tenant in 3 business days</div>
+    <div class="row">
+      <div class="step client"><span class="lbl">prospect</span><span class="name">/qualify</span><span class="src">app/qualify/page.tsx</span></div>
+      <span class="arr">→</span>
+      <div class="step client"><span class="lbl">prospect</span><span class="name">/pricing module picker</span><span class="src">app/pricing/_components/module-picker.tsx</span></div>
+      <span class="arr">→</span>
+      <div class="step client"><span class="lbl">prospect</span><span class="name">/signup</span><span class="src">app/signup/page.tsx</span></div>
+      <span class="arr">→</span>
+      <div class="step api"><span class="lbl">POST</span><span class="name">/api/auth/signup</span><span class="src">create org + admin user</span></div>
+      <span class="arr">→</span>
+      <div class="step ext"><span class="lbl">PayFast</span><span class="name">subscription init</span><span class="src">payfast-link.ts</span></div>
+      <span class="arr">→</span>
+      <div class="step api"><span class="lbl">POST</span><span class="name">/api/webhooks/payfast (ITN)</span><span class="src">verify + branch</span></div>
+      <span class="arr">→</span>
+      <div class="step api"><span class="lbl">SAGA</span><span class="name">provisioning 9-step</span><span class="src">lib/provisioning/</span></div>
+      <span class="arr">→</span>
+      <div class="step data"><span class="lbl">DB</span><span class="name">tenant_modules · subdomain</span><span class="src">activated</span></div>
+      <span class="arr">→</span>
+      <div class="step ext"><span class="lbl">Resend</span><span class="name">welcome email</span><span class="src">noreply@draggonnb.online</span></div>
+    </div>
+  </div>
+
+  <div class="flow">
+    <div class="flow-title"><span class="ix">2</span> Accommodation booking → guest comms → cost &amp; review lifecycle</div>
+    <div class="row">
+      <div class="step client"><span class="lbl">manager</span><span class="name">/accommodation/inquiries</span><span class="src">app/(dashboard)/accommodation/inquiries</span></div>
+      <span class="arr">→</span>
+      <div class="step api"><span class="lbl">AI</span><span class="name">QuoterAgent</span><span class="src">lib/accommodation/agents/quoter-agent.ts</span></div>
+      <span class="arr">→</span>
+      <div class="step ext"><span class="lbl">Resend</span><span class="name">quote email</span><span class="src">brand-voice rendered</span></div>
+      <span class="arr">→</span>
+      <div class="step data"><span class="lbl">DB</span><span class="name">accommodation_bookings</span><span class="src">status=confirmed</span></div>
+      <span class="arr">→</span>
+      <div class="step api"><span class="lbl">FN</span><span class="name">emitBookingEvent()</span><span class="src">events/dispatcher.ts</span></div>
+      <span class="arr">→</span>
+      <div class="step ext"><span class="lbl">N8N</span><span class="name">wf-whatsapp-booking-confirm</span><span class="src">guest WA confirm</span></div>
+      <span class="arr">→</span>
+      <div class="step ext"><span class="lbl">Telegram</span><span class="name">ops bot</span><span class="src">staff alert</span></div>
+    </div>
+    <div class="row" style="margin-left: 20px;">
+      <span class="arr">↳</span>
+      <div class="step api"><span class="lbl">AI</span><span class="name">ConciergeAgent</span><span class="src">incoming WA → reply</span></div>
+      <span class="arr">→</span>
+      <div class="step data"><span class="lbl">DB</span><span class="name">accommodation_messages</span><span class="src">logged</span></div>
+      <span class="arr">→</span>
+      <div class="step api"><span class="lbl">AI</span><span class="name">ReviewerAgent</span><span class="src">post-stay sentiment + draft</span></div>
+    </div>
+  </div>
+
+  <div class="flow">
+    <div class="flow-title"><span class="ix">3</span> CRM nightly engagement → Easy-view approve → email send</div>
+    <div class="row">
+      <div class="step ext"><span class="lbl">cron</span><span class="name">02:00 SAST · wf-crm-engagement-score</span><span class="src">N8N workflow</span></div>
+      <span class="arr">→</span>
+      <div class="step data"><span class="lbl">DB</span><span class="name">crm_action_suggestions</span><span class="src">upsert per org</span></div>
+      <span class="arr">→</span>
+      <div class="step client"><span class="lbl">user</span><span class="name">/crm Easy view</span><span class="src">3 cards · hot leads + follow-ups + stale</span></div>
+      <span class="arr">→</span>
+      <div class="step api"><span class="lbl">POST</span><span class="name">/api/crm/easy-view/approve</span><span class="src">undo toast 5s</span></div>
+      <span class="arr">→</span>
+      <div class="step ext"><span class="lbl">Resend</span><span class="name">brand-voice email</span><span class="src">composeFollowupEmail()</span></div>
+      <span class="arr">→</span>
+      <div class="step data"><span class="lbl">DB</span><span class="name">crm_activities</span><span class="src">source=easy_view</span></div>
+    </div>
+  </div>
+
+  <div class="flow">
+    <div class="flow-title"><span class="ix">4</span> Campaign Studio → AI draft → brand-safety → approve → schedule → execute</div>
+    <div class="row">
+      <div class="step client"><span class="lbl">user</span><span class="name">/campaigns/new</span><span class="src">campaign intent + audience</span></div>
+      <span class="arr">→</span>
+      <div class="step api"><span class="lbl">AI</span><span class="name">CampaignDrafterAgent</span><span class="src">multi-channel drafts</span></div>
+      <span class="arr">→</span>
+      <div class="step api"><span class="lbl">AI</span><span class="name">BrandSafetyAgent</span><span class="src">Haiku temp=0 classify</span></div>
+      <span class="arr">→</span>
+      <div class="step data"><span class="lbl">DB</span><span class="name">campaign_drafts</span><span class="src">status=pending_approval</span></div>
+      <span class="arr">→</span>
+      <div class="step client"><span class="lbl">user</span><span class="name">approve</span><span class="src">/campaigns/[id] approve</span></div>
+      <span class="arr">→</span>
+      <div class="step api"><span class="lbl">FN</span><span class="name">pg_cron schedule</span><span class="src">migration 50 RPC</span></div>
+      <span class="arr">→</span>
+      <div class="step api"><span class="lbl">HMAC</span><span class="name">/api/campaigns/execute</span><span class="src">CAMPAIGN_EXECUTE_HMAC_SECRET</span></div>
+      <span class="arr">→</span>
+      <div class="step ext"><span class="lbl">Resend / BulkSMS</span><span class="name">multi-channel send</span><span class="src">email + SMS · social gated</span></div>
+      <span class="arr">→</span>
+      <div class="step data"><span class="lbl">DB</span><span class="name">campaign_run_results</span><span class="src">DLR webhook updates</span></div>
+    </div>
+  </div>
+
+  <div class="flow">
+    <div class="flow-title"><span class="ix">5</span> Elijah daily roll call → escalation → control room</div>
+    <div class="row">
+      <div class="step ext"><span class="lbl">cron</span><span class="name">06:00 SAST · wf-rollcall-scheduler</span><span class="src">N8N workflow</span></div>
+      <span class="arr">→</span>
+      <div class="step ext"><span class="lbl">WhatsApp</span><span class="name">"Reply SAFE/HELP/AWAY"</span><span class="src">all households</span></div>
+      <span class="arr">→</span>
+      <div class="step data"><span class="lbl">DB</span><span class="name">elijah_rollcall_checkin</span><span class="src">pending rows</span></div>
+      <span class="arr">→</span>
+      <div class="step ext"><span class="lbl">grace</span><span class="name">configured per schedule</span><span class="src">wait grace_minutes</span></div>
+      <span class="arr">→</span>
+      <div class="step ext"><span class="lbl">N8N</span><span class="name">wf-escalation-engine</span><span class="src">non-responders</span></div>
+      <span class="arr">→</span>
+      <div class="step ext"><span class="lbl">Telegram</span><span class="name">control room alert</span><span class="src">section coordinator</span></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Pricing &amp; module-activation matrix</h2>
+  <p class="lede">v3.0 commercial pricing. Module gates enforced server-side via <code>tenant_modules</code>; rates checked at every protected route.</p>
+
+  <table class="matrix">
+    <thead>
+      <tr>
+        <th>Plan / module</th>
+        <th>Price (ZAR/mo)</th>
+        <th>What's included</th>
+        <th>Server gate</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="featured">
+        <td><strong>Core</strong></td>
+        <td><span class="price">R599</span></td>
+        <td>CRM + Email + Social + Content Studio + Autopilot</td>
+        <td class="gate">tenant_modules.module_id ∈ {crm,email,social,content_studio,ai_agents}</td>
+      </tr>
+      <tr>
+        <td><strong>Vertical: Accommodation</strong></td>
+        <td><span class="price">R1,199</span></td>
+        <td>Core + lodge / B&amp;B / guesthouse module (4 AI agents · 12 N8N workflows · 84 tables)</td>
+        <td class="gate">tenant_modules.module_id = 'accommodation'</td>
+      </tr>
+      <tr>
+        <td><strong>Vertical: Restaurant</strong></td>
+        <td><span class="price">R1,199</span></td>
+        <td>Core + restaurant module (Konva floor plan · POS · SOPs · QR menus · compliance)</td>
+        <td class="gate">tenant_modules.module_id = 'restaurant'</td>
+      </tr>
+      <tr>
+        <td><strong>Setup fee</strong></td>
+        <td><span class="price">R1,499</span></td>
+        <td>One-off · 3-business-day provisioning · brand voice setup · onboarding</td>
+        <td class="gate">subscription_history.event_type = 'setup_fee'</td>
+      </tr>
+      <tr>
+        <td><strong>Add-ons</strong></td>
+        <td><span class="price">variable</span></td>
+        <td>Per-channel overage packs · seat increases · vertical bundles</td>
+        <td class="gate">billing_addons_catalog · BILL-02 source-of-truth</td>
+      </tr>
+      <tr>
+        <td><strong>VAT</strong></td>
+        <td><span class="price">+15%</span></td>
+        <td>SA VAT applied at checkout · <code>Math.round(cents * 1.15)</code></td>
+        <td class="gate">lib/billing/vat.ts</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p class="lede" style="margin-top: 18px;">
+    <strong>AI cost guardrails</strong>: every BaseAgent call runs through <code>checkCostCeiling()</code> (advisory lock, per-tenant budget),
+    inserts an <code>ai_usage_ledger</code> row, and trips a soft-stop when the tenant's per-day cost ceiling is hit. Prevents runaway spend
+    even on abusive workloads.
+  </p>
+</section>
+
+<section>
+  <h2>Role &amp; RLS matrix (current)</h2>
+  <p class="lede">Postgres role enum: <code>{admin, manager, user, client}</code>. <code>platform_admin</code> is a superset (admin role + email allow-list).</p>
+
+  <table class="matrix">
+    <thead>
+      <tr>
+        <th>Role</th>
+        <th>Scope</th>
+        <th>Can</th>
+        <th>Cannot</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>platform_admin</strong></td>
+        <td>cross-org</td>
+        <td>Read all orgs · run admin actions · trigger provisioning · activate modules</td>
+        <td>Bypass org RLS without service-role context</td>
+      </tr>
+      <tr class="featured">
+        <td><strong>admin</strong></td>
+        <td>own org</td>
+        <td>All actions within org · invite users · approve campaigns · activate add-ons · billing</td>
+        <td>See other orgs · cross-tenant queries</td>
+      </tr>
+      <tr>
+        <td><strong>manager</strong></td>
+        <td>own org</td>
+        <td>Operational actions · CRM · bookings · campaigns · approvals (Wave A target)</td>
+        <td>Billing · plan changes · user invites</td>
+      </tr>
+      <tr>
+        <td><strong>user</strong></td>
+        <td>own org</td>
+        <td>Read most · write what role permits · use AI agents within tier</td>
+        <td>Approve campaigns · change rates · admin actions</td>
+      </tr>
+      <tr>
+        <td><strong>client</strong></td>
+        <td>scoped</td>
+        <td>Per-booking guest portal · trophy chain visibility (Trophy module)</td>
+        <td>Internal data · staff actions</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p class="lede" style="margin-top: 14px;">
+    <strong>Wave A extension</strong>: vendor role tier (butchery / taxidermist / restaurant / shopping / etc.)
+    will join as a first-class participant scoped to their slice of the operational graph.
+    Approval-threshold-by-role lattice ships as part of the same wave.
+  </p>
+</section>
+
+<section>
+  <h2>Three-channel communication doctrine</h2>
+  <p class="lede">
+    Architectural test for any new comms flow: is this <em>staff-facing</em>, <em>client-facing</em>, or <em>experience-facing</em>?
+    Mismatched routing burns money on per-message API costs.
+  </p>
+
+  <div class="channels">
+    <div class="channel staff">
+      <div class="who">Staff-facing</div>
+      <h4>Telegram (free / near-zero)</h4>
+      <p style="font-size: 13px; color: var(--txt2); margin: 4px 0 0;">
+        Daily briefs · damage flags · approvals queue · photo intake · ops alerts
+      </p>
+      <div class="cost">cost: bot infra only</div>
+    </div>
+    <div class="channel client">
+      <div class="who">Client-facing</div>
+      <h4>WhatsApp Cloud API</h4>
+      <p style="font-size: 13px; color: var(--txt2); margin: 4px 0 0;">
+        Booking confirms · concierge replies · payment links · reminders · review requests
+      </p>
+      <div class="cost">cost: Meta per-message</div>
+    </div>
+    <div class="channel experience">
+      <div class="who">Experience-facing (Wave A)</div>
+      <h4>PWA + per-farm web app</h4>
+      <p style="font-size: 13px; color: var(--txt2); margin: 4px 0 0;">
+        <code>stay.draggonnb.co.za/{booking-id}</code> · per-farm public surface · post-stay content
+      </p>
+      <div class="cost">cost: one-time build, reuse per booking/farm</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Roadmap status</h2>
+  <p class="lede">From <code>.planning/ROADMAP.md</code>, <code>.planning/STATE.md</code>, recent commits, and locked decisions D1–D8.</p>
+
+  <div class="grid-3">
+    <div class="card live">
+      <div class="card-head">● Live in production (v3.0)</div>
+      <h4>Phases 09 + 10 + 11 complete · 12 in progress</h4>
+      <ul>
+        <li>Phase 09: Foundations + guard rails (5/5)</li>
+        <li>Phase 10: Pricing + provisioning + onboarding (7/7)</li>
+        <li>Phase 11: Easy/Advanced CRM + Campaign Studio (12/12)</li>
+        <li>Phase 12: Launch polish — 3/10 done (12-01 · 12-06 · 12-08)</li>
+        <li>27/29 v3.0 plans · ~720 tests · 61 migrations</li>
+      </ul>
+    </div>
+
+    <div class="card future">
+      <div class="card-head">▶ Next: Phase 12 finishing + Wave A</div>
+      <h4>What's queued</h4>
+      <ul>
+        <li>12-07: smart-landing dashboard (committed bedaff0e, push pending)</li>
+        <li>Phase 13 (Wave A): vendor-as-first-class · approval spine · damage auto-billing</li>
+        <li>Investor pitch artifact (this file)</li>
+        <li>Swazulu pilot intake gathering</li>
+      </ul>
+    </div>
+
+    <div class="card gap">
+      <div class="card-head">⚠ Promised, schema gap</div>
+      <h4>Highest-risk open</h4>
+      <ul>
+        <li>organizations.activated_at column missing</li>
+        <li>3 N8N workflows in repo, not activated</li>
+        <li>Migration 51 staged, not applied</li>
+        <li>CAMPAIGN_EXECUTE_HMAC_SECRET not set in Vercel</li>
+      </ul>
+    </div>
+
+    <div class="card future">
+      <div class="card-head">▶ Wave A — architectural shift (60 days)</div>
+      <h4>The three big ones</h4>
+      <ul>
+        <li>Vendor-as-first-class user model · extend organization_users + RLS</li>
+        <li>approval_requests table + per-role threshold lattice · Telegram tap-to-approve</li>
+        <li>Damage auto-billing flow · staff flag → guest charge in seconds</li>
+      </ul>
+    </div>
+
+    <div class="card future">
+      <div class="card-head">▶ Wave B — vertical depth (60–120 days)</div>
+      <h4>Game-lodge specifics</h4>
+      <ul>
+        <li>Game-lodge deep-onboarding intake (rules · waivers · SOPs)</li>
+        <li>Per-carcass routing pipeline · butcher + taxidermist as vendor SOPs</li>
+        <li>Farmer photo classification via Telegram · genetic tree · camp movement</li>
+        <li>Multi-hunter split-billing · optional accommodation link</li>
+      </ul>
+    </div>
+
+    <div class="card future">
+      <div class="card-head">▶ Wave C — public surfaces (120 days+)</div>
+      <h4>Network revenue layer</h4>
+      <ul>
+        <li>GoHunting.com — content approval pipeline → public site</li>
+        <li>Plett-style location marketplaces (vendor subscriptions)</li>
+        <li>Go-X template (replace slug, deploy new vertical site)</li>
+        <li>Closed-loop content flywheel: lodge → guest → public → leads</li>
+      </ul>
+    </div>
+
+    <div class="card crit">
+      <div class="card-head">⚠ Tech debt / blockers</div>
+      <h4>Open before scale</h4>
+      <ul>
+        <li>DNS: apex A record + www CDN hijack (Hostinger)</li>
+        <li>Meta credentials (Phase 08) blocking social campaigns</li>
+        <li>BulkSMS sender ID pre-registration with SA carrier</li>
+        <li>Vercel webhook flakiness (workaround in place)</li>
+      </ul>
+    </div>
+
+    <div class="card hunt">
+      <div class="card-head">▶ Pilot — Swazulu Game Lodge</div>
+      <h4>First commercial validation</h4>
+      <ul>
+        <li>Activates accommodation + trophy modules</li>
+        <li>Owns swazulu.com — link as custom domain once stable</li>
+        <li>Intake material being gathered: rules · regs · waivers · staff structure</li>
+        <li>Drives Wave A scope (real lodge constraints, not synthetic)</li>
+      </ul>
+    </div>
+
+    <div class="card future">
+      <div class="card-head">▶ Investor</div>
+      <h4>Active interest</h4>
+      <ul>
+        <li>Excited investor in conversation</li>
+        <li>This atlas + a 1-pager are the staging artifacts</li>
+        <li>Build cadence runs at full speed regardless</li>
+        <li>Aggressive launch posture: "things nobody else has"</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Strategic backlog (May 2026 capture)</h2>
+  <p class="lede">
+    Seven items captured in conversation, mapped to architectural shifts and waves.
+    These resolve into <strong>three architectural shifts</strong>, not seven independent features.
+  </p>
+
+  <table class="matrix">
+    <thead>
+      <tr><th>#</th><th>Backlog item</th><th>Architectural shift</th><th>Wave</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td><strong>Game-lodge deep-onboarding intake</strong> — rules, regulations, waivers, must-sign documents fed to AI for analysis and adoption into the accommodation model. Staff-management + checklists fully automated.</td>
+        <td>Vertical depth</td>
+        <td>Wave B</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td><strong>Manager / owner dedicated AI agent + RLS-gated approvals</strong> — proposes rate changes, specials, drafts, posts. Owner approves via Telegram. RLS enforces who can approve what.</td>
+        <td>Approval spine</td>
+        <td>Wave A</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td><strong>Damages / breakage auto-billing flow</strong> — staff Telegram damage flag during turnover → system auto-calculates → guest charged via PayFast hold or token.</td>
+        <td>Approval spine</td>
+        <td>Wave A</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td><strong>Trophy OS ↔ Lodge integration</strong> — hunting service inside lodge, multi-hunter split-billing, per-carcass routing pipeline, vendors (butcher + taxidermist) as first-class users with SOPs + deposits + notifications. Farmer animal-classification via Telegram + genetic tree.</td>
+        <td>Vendor-as-first-class</td>
+        <td>Wave A + B</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td><strong>Hunt bookings with optional accommodation link</strong> — independent hunt bookings, optionally linked to a stay. One person responsible across linked bookings; multi-hunter split-billing inside.</td>
+        <td>Vendor-as-first-class</td>
+        <td>Wave A</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td><strong>Hunt-event content pipeline → GoHunting.com</strong> — photos + write-ups uploaded by lodges, approval workflow, publishable as blog/gallery on a public vertical site (Go-X template).</td>
+        <td>Public surfaces</td>
+        <td>Wave C</td>
+      </tr>
+      <tr>
+        <td>7</td>
+        <td><strong>Guest-house vendor-services marketplace</strong> — local services pay subscription for placement on a location-anchored site (e.g. Plett guest houses). New revenue layer.</td>
+        <td>Public surfaces</td>
+        <td>Wave C</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2>Locked decisions (D1–D8)</h2>
+  <p class="lede">Captured this session. Anchor for Wave A planning.</p>
+
+  <table class="matrix">
+    <thead>
+      <tr><th style="width: 10%;">ID</th><th style="width: 35%;">Decision</th><th>Rationale &amp; implication</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>D1</strong></td>
+        <td>Build aggressively regardless of investor</td>
+        <td>Investor interested but not gating cadence. Differentiation target: "things nobody else has."</td>
+      </tr>
+      <tr>
+        <td><strong>D2</strong></td>
+        <td>Pilot lodge: Swazulu Game Lodge</td>
+        <td>Real intake (rules / regs / waivers / staff structure) drives Wave A scope. Avoids synthetic test data.</td>
+      </tr>
+      <tr class="featured">
+        <td><strong>D3</strong></td>
+        <td>Trophy OS = module inside DraggonnB OS, not separate product</td>
+        <td>Single Supabase. Single auth. Same RLS. Activated via <code>module_registry</code>. Massive simplification vs prior two-product split.</td>
+      </tr>
+      <tr class="featured">
+        <td><strong>D4</strong></td>
+        <td>Three-channel communication doctrine: Telegram (staff) · WhatsApp (clients) · PWA + per-farm web (experience)</td>
+        <td>Cost test: any new comms flow must justify channel by audience.</td>
+      </tr>
+      <tr>
+        <td><strong>D5</strong></td>
+        <td>Personal guest app = PWA at <code>stay.draggonnb.co.za/{booking-id}</code></td>
+        <td>Zero install friction. Linkable from WhatsApp confirmation. Per-stay personalised.</td>
+      </tr>
+      <tr>
+        <td><strong>D6</strong></td>
+        <td>Swazulu activates accommodation + trophy modules. Custom domain swazulu.com linked once stable.</td>
+        <td>Sub-path first; custom domain as upgrade tier. Pattern reused for premium farms.</td>
+      </tr>
+      <tr class="featured">
+        <td><strong>D7</strong></td>
+        <td>Vendor billing = subscription-as-a-service, comms allowances bounded by API costs</td>
+        <td>No transaction take-rate complexity. Tiered subscriptions. Vendors pay for visibility + system access; lodges pay vendors directly.</td>
+      </tr>
+      <tr>
+        <td><strong>D8</strong></td>
+        <td>Workflow: architecture map → Wave A formal plan</td>
+        <td>This document seeds <code>/gsd:plan-phase</code> with the architectural anchor. Same artifact serves investor pitch and engineering planning.</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2>What "things nobody else has" means concretely</h2>
+  <p class="lede">Five differentiators from the strategic backlog. Three of them ship in Wave A (60 days).</p>
+
+  <div class="grid-2">
+    <div class="card hunt">
+      <div class="card-head">▶ Wave A · 60 days</div>
+      <h4>Owner-approved AI agent loop</h4>
+      <p style="color: var(--txt2); font-size: 13px; margin: 6px 0 0;">
+        AI drafts a special / rate change / damage charge → owner taps <em>approve</em> in Telegram → system executes (post to social, update PMS, charge guest).
+        Existing PMS systems (Cloudbeds, Little Hotelier, RoomRaccoon) have <strong>no AI agent layer at all</strong>.
+      </p>
+    </div>
+    <div class="card hunt">
+      <div class="card-head">▶ Wave A · 60 days</div>
+      <h4>Damage auto-billing in seconds</h4>
+      <p style="color: var(--txt2); font-size: 13px; margin: 6px 0 0;">
+        Staff Telegram flag → system auto-calculates → guest WhatsApp charge confirmation. End-to-end in seconds.
+        Closest competitor stack: SiteMinder + Stripe + manual reconciliation = ~30 minutes per incident.
+      </p>
+    </div>
+    <div class="card hunt">
+      <div class="card-head">▶ Wave A + B · 90 days</div>
+      <h4>Carcass-routing pipeline with vendor SOPs</h4>
+      <p style="color: var(--txt2); font-size: 13px; margin: 6px 0 0;">
+        Lodge → butcher → taxidermist with deposits, special instructions, notifications, approval gates.
+        <strong>No global hunting software has this.</strong> SA hunting tools today = spreadsheet replacements.
+      </p>
+    </div>
+    <div class="card future">
+      <div class="card-head">▶ Wave B · 120 days</div>
+      <h4>Genetic-tree game-farm tracking</h4>
+      <p style="color: var(--txt2); font-size: 13px; margin: 6px 0 0;">
+        Farmer Telegram photo upload → AI auto-classifies (species, body condition, horn measurements) → logs to hierarchical genetic tree.
+        Replaces 3 competing apps farmers currently use badly.
+      </p>
+    </div>
+    <div class="card future">
+      <div class="card-head">▶ Wave C · 120 days+</div>
+      <h4>Closed-loop content marketplace</h4>
+      <p style="color: var(--txt2); font-size: 13px; margin: 6px 0 0;">
+        Per-stay PWA → guest content upload → approval → publish to Layer 3 public site → drives leads back to the lodge.
+        Network effect: every guest stay enriches the public surface, which feeds the next booking.
+      </p>
+    </div>
+    <div class="card hunt">
+      <div class="card-head">● Already shipped</div>
+      <h4>11-module multi-tenant SA-localised platform</h4>
+      <p style="color: var(--txt2); font-size: 13px; margin: 6px 0 0;">
+        ZAR-native (PayFast + 15% VAT), 3-business-day automated provisioning, RLS-isolated tenants, brand-voice AI agents,
+        wildcard subdomains. No competing platform combines this scope with SA-specific operational depth.
+      </p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  Generated 2026-05-01 · main @ <code>362d4344</code> (production) · working @ <code>bedaff0e</code><br/>
+  Production: <a href="https://draggonnb.online">draggonnb.online</a> ·
+  Vercel: <a href="https://draggonnb-platform.vercel.app">draggonnb-platform.vercel.app</a> ·
+  Supabase project: <code>psqfgzbjbgqrmjskdavs</code>
+</footer>
+
+</main>
+</body>
+</html>
