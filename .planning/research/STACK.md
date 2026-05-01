@@ -1,301 +1,559 @@
-# Stack Research — DraggonnB OS v3.0 "Commercial Launch"
+# Stack Research — DraggonnB OS v3.1 "Operational Spine"
 
-**Domain:** Multi-tenant B2B SaaS for South African SMEs (subsequent milestone on live platform)
-**Researched:** 2026-04-24
-**Confidence:** HIGH for AI/OCR/metering/scheduling; MEDIUM for PayFast ad-hoc API (docs incomplete publicly — verification via SDK source needed); HIGH for library currency
-**FX Assumption:** USD/ZAR = 16.6 (April 2026 mid-rate)
+**Domain:** Federation milestone — DraggonnB OS (Next.js 14) + Trophy OS (Next.js 16) sharing one Supabase project
+**Researched:** 2026-04-30
+**Confidence:** HIGH for SSO cookie-domain pattern (Supabase docs + community-validated); HIGH for grammY + serwist (current versions verified via npm registry on 2026-04-30); HIGH for PayFast adhoc reuse (already shipping in DraggonnB lib/payments/payfast-adhoc.ts); MEDIUM for PWA install prompt UX on iOS (vendor-controlled, no automatic API); LOW for PayFast pre-authorization / hold-and-capture (no public docs, likely doesn't exist — see ADR D below).
+**FX assumption:** USD/ZAR = 16.6 (carried from v3.0 archive)
 
 ---
 
-## TL;DR — What Changes
+## TL;DR — What v3.1 Adds to the Stack
 
-1. **Add Anthropic prompt caching** to `BaseAgent` — cuts per-tenant system-prompt cost to 10% on cache reads. No new library, just API params.
-2. **Add Claude Haiku 4.5 vision** for receipt OCR (no OCR-specific library needed). Cost per receipt: ~R0.03–0.08.
-3. **Add grammY** for Telegram bot handlers (lightweight, App-Router-native, beats `node-telegram-bot-api` which needs custom server).
-4. **Add `@upstash/ratelimit` + Upstash Redis** for usage caps + per-tenant counters at middleware edge. Free tier covers first 10k commands/day.
-5. **Add `fal.ai` (FLUX.1 schnell + Nano Banana)** for campaign image generation. ~R0.05–1.30/image depending on model.
-6. **Add `unpdf`** for PDF receipt parsing (replaces unmaintained `pdf-parse`; works on Vercel serverless).
-7. **Reuse PayFast tokenization** (already in `lib/accommodation/payments/`) for overage billing via ad-hoc charge endpoint. No new payment library.
-8. **Use Supabase `pg_cron` + `pg_net`** for scheduled campaigns (no Vercel-Pro cron upgrade, no new N8N workflow for every tenant).
-9. **Add `@tanstack/react-table`** for advanced dashboard views (cost monitoring, usage drill-down).
-10. **Skip**: `sharp` (already present via Next.js), `node-telegram-bot-api`, `pdf-parse`, SA-specific accounting libraries (none mature; VAT eFiling remains Xero/Sage-only for 2026).
+1. **Cross-product SSO via shared cookie domain** — `@supabase/ssr` already supports it. Set `cookieOptions.domain = '.draggonnb.co.za'` on `createBrowserClient` / `createServerClient` in BOTH apps. No new library, no custom JWT bridge, no NextAuth.js. Net dependency cost: zero. (See ADR A.)
+2. **Adopt grammY (`grammy@^1.42.0`)** — finally land what v3.0 archive flagged. Upgrade existing raw-API ops bot AND build the v3.1 approval-spine tap-to-approve handlers on top of it. Single library across BOTH bots (ops + approval). (See ADR B.)
+3. **Adopt `@serwist/next@^9.5.10` for the PWA guest surface** at `stay.draggonnb.co.za/{booking-id}`. `next-pwa` is dead, `@ducanh2912/next-pwa` is succeeded by serwist. Webpack-only — fine, DraggonnB stays on webpack via Next 14.2.33. (See ADR C.)
+4. **Reuse `lib/payments/payfast-*.ts` as a shared in-repo lib for Trophy OS via npm workspace OR copy-paste** — Trophy OS is on Next 16 + React 19 + Supabase SSR 0.9, while DraggonnB is on Next 14 + React 18 + Supabase SSR 0.1. The PayFast files are pure Node (`fetch` + crypto), zero React/Next deps — they port cleanly either way. Recommend physical copy with a sync convention rather than monorepo refactor (lower risk for v3.1). (See ADR E.)
+5. **Multi-hunter split-billing = N adhoc charges against N tokens** — already supported by existing `chargeAdhoc()` in `lib/payments/payfast-adhoc.ts`. No new payment integration; just a junction table (`safari_hunters`) + a fan-out worker that loops adhoc calls. (See ADR D.)
+6. **Damage auto-billing = adhoc charge against the booking's stored subscription token, NOT a true "hold-and-capture"** — PayFast does not publicly expose pre-authorization / hold-then-capture flows. Use the same adhoc API path with a damage prefix (`DAMAGE-{booking_id}`); guest must already have an active subscription token from the booking deposit flow. Ad-hoc capacity is constrained to whatever the issuing bank lets through; no funds reservation guarantee. Communicate this honestly in T&Cs. (See ADR D.)
+7. **Skip:** NextAuth.js, Clerk, Auth0, Lucia, custom JWT exchange routes, monorepo refactor (Turborepo/Nx), Stripe, `next-pwa`, `@ducanh2912/next-pwa`, `node-telegram-bot-api`, `telegraf`, custom service worker hand-rolled.
+
+**New runtime dependencies for DraggonnB OS:** `grammy`, `@serwist/next`, `serwist`. That is the entire net-new list.
 
 ---
 
 ## Recommended Stack Additions
 
-### Core Additions (NEW — required for v3.0)
+### Core Additions (NEW for v3.1)
 
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| `claude-haiku-4-5-20251001` | API, no lib change | Default model for vision OCR, brand voice gen, campaign drafting | $1/$5 per M input/output tokens — 3–5× cheaper than Sonnet at acceptable quality for drafting + OCR. Unit economics for R599 base tier require Haiku default. |
-| Anthropic prompt caching | `@anthropic-ai/sdk` ≥ 0.73 (already installed) | Cache per-tenant brand-voice system prompt | Cache reads = 0.1× input cost. Brand voice doc ≈ 2–3k tokens; cached = R0.00003/call vs R0.00033 uncached. Break-even at 2nd read within 5 min. |
-| `grammy` | ^1.37.x | Telegram bot webhook handler for Finance-AI receipt OCR | Modern TS-first framework, `webhookCallback` exports directly as Next.js App Router route handler. Telegraf is heavier and has known type-quality issues. |
-| `@upstash/ratelimit` | ^2.0.8 | Per-tenant usage caps (AI gen, emails, posts) + overage detection | Only connectionless rate-limiter; works at Next middleware edge. Sliding window + multi-region support. |
-| `@upstash/redis` | ^1.35.x | Backing store for ratelimit + usage counters | HTTP-based, no connection pool issues in serverless. Free tier: 10k cmds/day — enough for ~100 tenants at current traffic. |
-| `@fal-ai/client` | ^1.x (replaces deprecated `@fal-ai/serverless-client`) | Campaign image generation (FLUX.1 schnell default, Nano Banana for product shots) | FLUX.1 schnell: $0.003/MP ≈ R0.05/social image. Nano Banana Pro: ~$0.039 ≈ R0.65 per polished hero. Cheaper than DALL-E ($0.04–0.08 = R0.66–1.33). |
-| `unpdf` | ^0.12.x | PDF receipt/statement parsing | Zero-native-deps, Vercel-serverless-safe. `pdf-parse` relies on `canvas` which breaks on Lambda/Edge. |
-| `@tanstack/react-table` | ^8.21.x | Headless table primitives for cost-monitoring, usage-drill-down, finance exports | Virtualizes 10k+ rows; pairs cleanly with shadcn `<Table />` (already in stack). |
+| Technology | Version | Apps | Purpose | Why Recommended |
+|------------|---------|------|---------|-----------------|
+| `@supabase/ssr` (already installed) — **upgrade DraggonnB from 0.1.0 → 0.10.2** | `^0.10.2` | DraggonnB + Trophy | Set `cookieOptions.domain` for cross-subdomain session sharing | DraggonnB is pinned to v0.1.0 (3 years stale). v0.6.x added `cookieOptions` override, v0.10.x added cache-header forwarding for `setAll`. Required for SSO cookie-domain pattern. Trophy already on v0.9.0 — bump to 0.10.2 in same PR. |
+| `grammy` | `^1.42.0` (published 2026-04-03) | DraggonnB | Telegram bot framework — webhooks + inline keyboards + callback queries | Already prescribed in v3.0 stack archive but never installed. v3.1 is the right moment because approval-spine tap-to-approve REQUIRES inline keyboards + secret-token verification. Existing raw-API ops-bot code (`lib/accommodation/telegram/ops-bot.ts`) gets refactored onto grammY at the same time. |
+| `@serwist/next` | `^9.5.10` (published 2026-04-30) | DraggonnB | Service worker generator for PWA guest surface | Successor to dead `next-pwa` and superseded `@ducanh2912/next-pwa`. Webpack-required (fine — DraggonnB is on Next 14.2.33, no Turbopack). Generates SW from `app/sw.ts`, integrates with `app/manifest.json`, supports App Router. |
+| `serwist` (peer of `@serwist/next`) | `^9.5.10` | DraggonnB | Workbox-fork runtime for the SW | Required peer dependency (devDep) of `@serwist/next`. |
 
-### Supporting Libraries (already installed — leveraged in new ways)
+### Supporting Libraries (NO NEW INSTALLS — leveraged existing)
 
-| Library | Current Version | How v3.0 Uses It |
+| Library | Current Version | How v3.1 Uses It |
 |---------|-----------------|------------------|
-| `@anthropic-ai/sdk` | ^0.73.0 | Extend with `cache_control: { type: "ephemeral" }` in system prompt blocks for per-tenant brand voice |
-| `resend` | ^3.1.0 | Campaign Studio email send path (batch send + tags for per-campaign analytics) |
-| `zod` | ^3.22.0 | New schemas: `BrandVoiceSchema`, `CampaignIntentSchema`, `ReceiptOCRResultSchema`, `PricingPlanSchema` |
-| `@supabase/supabase-js` | ^2.39.0 | Enable `pg_cron` + `pg_net` extensions for campaign scheduling (no client change) |
-| `date-fns` | ^3.3.0 | Campaign schedule, billing period boundaries, daily cash-up timezone (Africa/Johannesburg) |
-| `recharts` | ^2.12.0 | Cost monitoring dashboard, usage trends, financial reports |
+| `@supabase/supabase-js` | `^2.39.0` (DraggonnB) → bump to `^2.105.1` to match Trophy | SSO cookie domain — pass `cookieOptions` through `createBrowserClient` / `createServerClient`. |
+| `@anthropic-ai/sdk` | `^0.73.0` | Approval-spine summary generation (Haiku 4.5 with brand-voice cache, same pattern as v3.0). No new SDK feature needed. |
+| `zod` | `^3.22.0` | New schemas: `ApprovalRequestSchema`, `SafariHunterSchema`, `DamageChargeSchema`, `BookingPwaTokenSchema`. |
+| Existing `lib/payments/payfast-adhoc.ts` | shipping | Reused as-is for damage charges (`DAMAGE-` prefix) and per-hunter split (`HUNT-` prefix — add to `payfast-prefix.ts`). |
+| Existing `lib/payments/payfast-subscription-api.ts` | shipping | Used by Trophy OS for hunter subscriptions (each hunter gets their own token at safari deposit time). |
+| `next/headers`, `next/server` | bundled | Approval-link cryptographic signing using `crypto.subtle` from Web Crypto API — no JWT lib needed. |
 
 ### Development Tools
 
 | Tool | Purpose | Notes |
 |------|---------|-------|
-| Upstash CLI / dashboard | Inspect Redis counters during dev | One DB per env (dev/staging/prod); use dev DB for local |
-| Telegram BotFather | Provision one bot per tenant OR shared bot with tenant-ID in start param | Shared bot cheaper; use `/start <org_id>` deeplink to bind user to tenant |
-| fal.ai playground | Prompt-tune FLUX/Nano Banana for SA-relevant imagery | Check brand style adherence before wiring into Campaign Studio |
+| Vercel multi-domain config | Bind `stay.draggonnb.co.za` to DraggonnB project; bind `trophy.draggonnb.co.za` to Trophy OS project | Both must be on the SAME Vercel team to share the wildcard cert. SSO cookie domain `.draggonnb.co.za` works only if BOTH apps are reachable on subdomains of `draggonnb.co.za`. |
+| `npx @next/codemod@canary upgrade latest` (Trophy only) | Already done by Trophy team — Trophy is on Next 16.2.1 | Do NOT upgrade DraggonnB to Next 16 in v3.1. Risk too high for live platform with 720 tests + 162 routes. Defer to dedicated migration milestone. |
+| `pwa-asset-generator` (CLI, one-off) | Generate iOS/Android PWA icons + splash screens | Run once during Phase 16, commit output to `public/icons/`. Not a runtime dep. |
 
 ### What We Explicitly DO NOT Add
 
 | Do NOT add | Reason | Use Instead |
 |------------|--------|-------------|
-| `pdf-parse` | Unmaintained, requires `canvas` native binding, breaks on Vercel serverless | `unpdf` |
-| `node-telegram-bot-api` | Polling model; needs custom server — incompatible with Next.js App Router deployment on Vercel | `grammy` (webhook native) |
-| `telegraf` | Heavier, type quality issues in v4, weaker docs than grammY | `grammy` |
-| `sharp` (as new install) | Already bundled via Next.js image optimization; Vercel auto-installs | Import from `next/image` path when needed; install explicitly ONLY if doing custom non-Next image transforms (receipt preprocessing may justify, see ADR below) |
-| `stripe` | PayFast already integrated, ZAR-native, no cross-border settlement friction | Extend existing `lib/payments/payfast.ts` |
-| Dedicated OCR lib (Tesseract.js, AWS Textract, GCP Vision) | Single-purpose adds $0.001–0.015/scan on top of Claude call anyway; losing narrative context hurts Finance-AI categorization | Claude Haiku 4.5 vision in one call (extract + categorize + validate in single prompt) |
-| Xero/Sage SDK | Integration is a future "bring your accountant" bridge, not v3.0 scope | Defer — ship CSV + PDF owner-statement exports first |
-| SA-specific tax libraries | None mature on npm; SARS e-invoicing API is 2026–2029 phased rollout, large-filers-first | Template-based VAT201 export (CSV matching SARS columns) |
-| Legacy `@fal-ai/serverless-client` | Deprecated | `@fal-ai/client` |
-| Separate Tesseract for receipt pre-OCR | Adds complexity; Haiku 4.5 does OCR + categorization + structured output in one shot | Send image directly to Haiku 4.5 with structured-output system prompt |
+| `next-auth` / `@auth/core` / `@auth/nextjs` | Supabase already IS our auth provider; layering NextAuth on top adds a second token system, second cookie, and a third source of truth. The cookie-domain pattern with `@supabase/ssr` solves SSO natively. | `@supabase/ssr` v0.10.2 with `cookieOptions.domain = '.draggonnb.co.za'`. |
+| `iron-session` / custom JWT bridge route | Re-implements what Supabase already does. Adds attack surface (key rotation, signature verification). The Supabase JWT IS the federation token — both apps verify it. | Native Supabase JWT verified via `getClaims()` in middleware on each app. |
+| `@clerk/nextjs`, `@auth0/nextjs-auth0` | Forces dual-auth migration. Loses tenant-scoped RLS via `get_user_org_id()` STABLE function. Adds vendor cost (Clerk: $25+/mo, Auth0: $35+/mo per app). | Supabase Auth (already paid for). |
+| `next-pwa` | Last published 2 years ago. Workbox dependency stale. Doesn't support App Router cleanly. | `@serwist/next`. |
+| `@ducanh2912/next-pwa` | Maintainer themselves recommends migrating to serwist. Marked as "predecessor" of `@serwist/next`. | `@serwist/next`. |
+| `node-telegram-bot-api` | Polling model. Requires custom server. Incompatible with Vercel serverless. Type quality issues. | `grammy` with `webhookCallback(bot, "std/http")`. |
+| `telegraf` | Heavier than grammY, weaker TypeScript inference, slower to release patches in 2025–2026. | `grammy`. |
+| Hand-rolled service worker | Re-implements Workbox cache strategies. Easy to break offline behavior. Hard to test. | `@serwist/next` with `defaultCache` + custom routes for PWA-specific fetches. |
+| Turborepo / Nx monorepo | v3.1 is a federation milestone, not a structural refactor. Both apps are independent Vercel projects with independent deploy cadences. Forcing them into a monorepo introduces deploy-coupling that we DON'T want. | Keep two repos. Share PayFast lib via copy-paste with a `// COPIED FROM draggonnb-platform/lib/payments/ — v1.0.0 — keep in sync` header. Track sync in `.planning/STATE.md`. |
+| Stripe / Paystack / Yoco for damage billing | PayFast is already integrated, ZAR-native, has stored subscription tokens, and is the issuing card-on-file for any DraggonnB tenant. Adding a second processor for damage = double reconciliation. | Existing `chargeAdhoc()` with `DAMAGE-` prefix. |
+| `@base-ui/react` (Trophy uses this) into DraggonnB | DraggonnB is on shadcn/ui (Radix primitives). Mixing UI libraries in one codebase = bundle bloat + style conflicts. | Keep DraggonnB on Radix/shadcn. Trophy can stay on Base UI. They're separate apps. |
+| jsPDF / pdfmake for PWA offline receipts | Not in v3.1 scope. PWA guest surface is read-only check-in info, not document generation. | Defer to v3.2 if needed. |
+
+---
+
+## Architecture Decision Records
+
+### ADR A: Cross-Product SSO via Shared Cookie Domain
+
+**Decision:** Use `@supabase/ssr` v0.10.2's `cookieOptions.domain` on both apps to scope the auth cookie to `.draggonnb.co.za`. No bridge, no NextAuth, no custom JWT exchange.
+
+**Mechanism:**
+
+Both apps already share one Supabase project (`psqfgzbjbgqrmjskdavs`). The auth cookie `sb-psqfgzbjbgqrmjskdavs-auth-token` (set by Supabase) is normally scoped to a single host. By setting `Domain=.draggonnb.co.za`, the browser sends it to BOTH `app.draggonnb.co.za` and `trophy.draggonnb.co.za` (and `stay.draggonnb.co.za` for the PWA). Both apps' middleware resolves the same user via the same JWT, hits the same `organization_users` table, gets the same RLS-scoped data.
+
+**Pattern (apply to BOTH apps):**
+
+```typescript
+// lib/supabase/client.ts (browser)
+import { createBrowserClient } from '@supabase/ssr'
+
+export const createClient = () =>
+  createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookieOptions: {
+        domain: process.env.NODE_ENV === 'production' ? '.draggonnb.co.za' : undefined,
+        path: '/',
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 60 * 60 * 24 * 365,
+      },
+    },
+  )
+```
+
+```typescript
+// lib/supabase/server.ts (server / middleware)
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+
+export const createClient = () => {
+  const cookieStore = cookies()
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll: () => cookieStore.getAll(),
+        setAll: (toSet) => {
+          toSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, {
+              ...options,
+              domain: process.env.NODE_ENV === 'production' ? '.draggonnb.co.za' : undefined,
+              sameSite: 'lax',
+              secure: true,
+              path: '/',
+            })
+          })
+        },
+      },
+    },
+  )
+}
+```
+
+**Required upgrades:**
+
+- **DraggonnB:** `@supabase/ssr` 0.1.0 → 0.10.2 (3 years of changes). Run regression on auth pages, especially middleware tenant resolution. v0.6.x renamed `cookies.get/set/remove` to `cookies.getAll/setAll`. **This is a notable refactor — budget half a day.**
+- **Trophy:** `@supabase/ssr` 0.9.0 → 0.10.2 (minor bump). Low risk.
+
+**localhost dev caveat:** Cross-subdomain cookies do not work on `localhost` without a reverse proxy. Document this in dev setup: use `app.draggonnb.test` + `trophy.draggonnb.test` via `/etc/hosts` + Caddy reverse proxy with SSL, OR test SSO only against Vercel preview deployments.
+
+**Rejected alternatives:**
+
+| Alternative | Why rejected |
+|-------------|--------------|
+| Custom JWT bridge (e.g. `/api/auth/exchange?to=trophy`) | Re-implements what cookie sharing does for free. Adds attack surface (replay attacks, key rotation). Two sources of truth. |
+| NextAuth.js with Supabase adapter | Replaces our auth, doesn't extend it. Loses RLS via JWT claims. Doubles cost (NextAuth's session table on top of Supabase's). |
+| Lucia | Same as NextAuth — replaces, doesn't bridge. |
+| `iron-session` | Server-side encrypted cookie. Solves a different problem (stateless server sessions). Adds 2nd cookie alongside Supabase's. |
+| Cross-domain `postMessage` SSO | Required only when products are on different root domains. Both ours are on `*.draggonnb.co.za` — overkill. |
+
+**Confidence:** HIGH. Pattern is documented in [Supabase discussion #5742](https://github.com/orgs/supabase/discussions/5742) and validated by [Michele Ong's blog post](https://micheleong.com/blog/share-sessions-subdomains-supabase). Multiple independent confirmations.
+
+---
+
+### ADR B: grammY for Both Telegram Bots
+
+**Decision:** Adopt `grammy@^1.42.0` for the v3.1 approval-spine bot AND refactor the existing accommodation ops bot onto the same library.
+
+**Rationale:**
+
+- v3.0 archive prescribed grammY but it never landed (0 occurrences in current package.json).
+- Approval spine REQUIRES inline keyboards (tap-to-approve), callback queries (the user pressed which button), and `answerCallbackQuery()` (so the Telegram client doesn't show a stuck spinner). Hand-rolling these against the raw Telegram API is fiddly.
+- Existing `lib/accommodation/telegram/ops-bot.ts` is raw `fetch` to `api.telegram.org`. Refactoring it onto grammY at the same time means ONE bot framework in the codebase, not two.
+- v1.42.0 is current (published 2026-04-03), zero open Sev1 issues, App Router native.
+
+**Pattern:**
+
+```typescript
+// app/api/webhooks/telegram/approvals/route.ts
+import { Bot, InlineKeyboard, webhookCallback } from 'grammy'
+
+const bot = new Bot(process.env.TELEGRAM_APPROVAL_BOT_TOKEN!)
+
+bot.on('callback_query:data', async (ctx) => {
+  const [action, requestId] = ctx.callbackQuery.data!.split(':')
+  // 1. Verify HMAC of requestId against env secret
+  // 2. Resolve approval_request via Supabase admin client
+  // 3. Apply decision (approve | reject)
+  // 4. Acknowledge to Telegram (REQUIRED — kills spinner)
+  await ctx.answerCallbackQuery({ text: `${action} recorded` })
+  await ctx.editMessageText(`Decision: ${action}`)
+})
+
+export const POST = webhookCallback(bot, 'std/http', {
+  secretToken: process.env.TELEGRAM_APPROVAL_WEBHOOK_SECRET, // verifies X-Telegram-Bot-Api-Secret-Token
+})
+```
+
+**Webhook secret verification:** grammY's `webhookCallback` takes a `secretToken` option that automatically validates the `X-Telegram-Bot-Api-Secret-Token` header against the configured secret and rejects non-matching requests. No manual header check needed.
+
+**Bot inventory after v3.1:**
+
+| Bot purpose | Token env var | Webhook route | Refactor status |
+|-------------|---------------|---------------|------------------|
+| Accommodation ops (existing) | `TELEGRAM_OPS_BOT_TOKEN` | `app/api/webhooks/telegram/ops/route.ts` | Refactor onto grammY in Phase 14 |
+| Approval spine (new in v3.1) | `TELEGRAM_APPROVAL_BOT_TOKEN` | `app/api/webhooks/telegram/approvals/route.ts` | Built fresh on grammY |
+| Finance receipt OCR (v3.0 archive prescribed, status?) | `TELEGRAM_FINANCE_BOT_TOKEN` | `app/api/webhooks/telegram/finance/route.ts` | If shipped → already on grammY. If not shipped → defer. |
+
+**Confidence:** HIGH. grammY documented for Vercel/Next.js App Router at [grammy.dev/hosting/vercel](https://grammy.dev/hosting/vercel). 1.42.0 verified via npm registry on 2026-04-30.
+
+---
+
+### ADR C: @serwist/next for the PWA Guest Surface
+
+**Decision:** Use `@serwist/next@^9.5.10` + `serwist@^9.5.10` for the per-booking PWA at `stay.draggonnb.co.za/{booking-id}`.
+
+**Rationale:**
+
+- `next-pwa` (shadowwalker) is unmaintained (last release 2 years ago).
+- `@ducanh2912/next-pwa` (the fork) explicitly tells users to migrate to `@serwist/next`.
+- `@serwist/next` is the modern Workbox fork, App Router native, generates SW from `app/sw.ts`.
+- v9.5.10 published 2026-04-30 — actively maintained.
+- DraggonnB is on Next 14.2.33 (webpack default) — no Turbopack issue.
+
+**Setup pattern:**
+
+```typescript
+// next.config.js
+import withSerwistInit from '@serwist/next'
+
+const withSerwist = withSerwistInit({
+  swSrc: 'app/sw.ts',
+  swDest: 'public/sw.js',
+  cacheOnNavigation: true,
+  reloadOnOnline: true,
+  disable: process.env.NODE_ENV === 'development',
+})
+
+export default withSerwist({ /* existing next config */ })
+```
+
+```typescript
+// app/sw.ts
+import { defaultCache } from '@serwist/next/worker'
+import { Serwist } from 'serwist'
+
+declare const self: ServiceWorkerGlobalScope & {
+  __SW_MANIFEST: (string | { url: string })[] | undefined
+}
+
+const serwist = new Serwist({
+  precacheEntries: self.__SW_MANIFEST,
+  skipWaiting: true,
+  clientsClaim: true,
+  navigationPreload: true,
+  runtimeCaching: defaultCache,
+})
+
+serwist.addEventListeners()
+```
+
+```typescript
+// app/manifest.ts (App Router metadata API)
+import type { MetadataRoute } from 'next'
+
+export default function manifest(): MetadataRoute.Manifest {
+  return {
+    name: 'DraggonnB Stay',
+    short_name: 'Stay',
+    description: 'Your booking dashboard',
+    start_url: '/',
+    display: 'standalone',
+    background_color: '#0a0a0a',
+    theme_color: '#0a0a0a',
+    icons: [
+      { src: '/icons/192.png', sizes: '192x192', type: 'image/png' },
+      { src: '/icons/512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+    ],
+  }
+}
+```
+
+**Install prompt UX (per-platform):**
+
+| Platform | Install prompt | Approach |
+|----------|----------------|----------|
+| Android Chrome | Native `beforeinstallprompt` event | Capture event, show custom CTA banner ("Save this to your home screen for offline access"), call `prompt()` on click. |
+| iOS Safari (16.4+) | NO `beforeinstallprompt` support — user must use Share menu | Show platform-detected instruction modal: "Tap Share, then 'Add to Home Screen'". Critical: ~50% of guest pilot is iPhone users — this UX is load-bearing. |
+| iOS 26+ (Apr 2026 default) | All home-screen sites open as web apps by default | Once installed, behaves like native app. The friction is purely the install step. |
+| Desktop Chrome | Native `beforeinstallprompt` | Same as Android. |
+| Desktop Safari | Limited PWA support; user uses File menu | Don't push install on desktop — desktop guests are rare for accommodation. |
+
+**Scope of offline-first (Phase 16):**
+
+| Surface | Cache strategy |
+|---------|----------------|
+| `/{booking-id}` (booking summary page) | `StaleWhileRevalidate` — show cached, fetch fresh in background |
+| `/{booking-id}/check-in-form` | `NetworkFirst` with cache fallback — works at lodge with poor signal |
+| `/api/bookings/[id]/check-in` (POST) | Background Sync queue — store mutation in IDB, replay when online |
+| Static assets (icons, fonts, JS bundles) | `CacheFirst` — Workbox default |
+| `/api/payments/...` | NEVER cache — always network-only |
+
+**Confidence:** HIGH. Verified `@serwist/next@9.5.10` and `serwist@9.5.10` published 2026-04-30 on npm. Setup documented at [serwist.pages.dev/docs/next/getting-started](https://serwist.pages.dev/docs/next/getting-started). MEDIUM confidence on iOS install prompt UX — Apple controls the experience; we can detect platform but cannot trigger native prompt.
+
+---
+
+### ADR D: PayFast for Damage Billing AND Multi-Hunter Split — No New Library
+
+**Decision:** Reuse existing `lib/payments/payfast-adhoc.ts` (`chargeAdhoc()`) for both damage charges and per-hunter splits. Add new prefixes to `lib/payments/payfast-prefix.ts`. No new payment integration.
+
+**Rationale:**
+
+The DraggonnB codebase already has shipped:
+- `lib/payments/payfast.ts` — config + signature generation
+- `lib/payments/payfast-adhoc.ts` — `chargeAdhoc()` function for `ADDON-`, `TOPUP-`, `ONEOFF-` prefixes
+- `lib/payments/payfast-subscription-api.ts` — fetch / cancel / pause / unpause
+- `lib/payments/payfast-prefix.ts` — prefix-branched ITN webhook routing
+
+Both v3.1 use cases reduce to "charge an existing subscription token an adhoc amount":
+- **Damage:** existing booking already has a subscription token from deposit. Charge `DAMAGE-{booking_id}` adhoc. Same code path as `TOPUP-`.
+- **Multi-hunter split:** each hunter has their own subscription token (from individual safari deposit). Charge each `HUNT-{safari_id}-{hunter_id}` adhoc. Same code path, called N times in a loop.
+
+**Required additions:**
+
+```typescript
+// lib/payments/payfast-prefix.ts — extend
+export const PAYFAST_PREFIX = {
+  // existing
+  ADDON: 'ADDON-',
+  TOPUP: 'TOPUP-',
+  ONEOFF: 'ONEOFF-',
+  // v3.1 additions
+  DAMAGE: 'DAMAGE-',  // accommodation damage auto-billing
+  HUNT:   'HUNT-',    // per-hunter safari fee
+} as const
+```
+
+ITN webhook router (`app/api/webhooks/payfast/route.ts`) already prefix-branches — add two new branches.
+
+**Critical PayFast capability confirmation:**
+
+PayFast `/subscriptions/{guid}/adhoc` POST endpoint is confirmed working:
+- Endpoint: `https://api.payfast.co.za/subscriptions/{token}/adhoc` (sandbox: `sandbox.payfast.co.za`)
+- Body: `{ amount, item_name, item_description?, m_payment_id }`
+- Headers: `merchant-id`, `version=v1`, `timestamp`, `signature`
+- **Amount unit: SPIKE PENDING** — Phase 09-04 spike note in DraggonnB confirmed unit ambiguity (rands vs cents). Current `chargeAdhoc()` sends rands. The PayFast PHP SDK example sends `amount=500` for "Test adhoc" with no unit specified. **Verify against sandbox in v3.1 Phase 13 before damage billing ships.**
+- Charges happen against the card stored at subscription-creation time. Guest does NOT re-enter card.
+
+**What PayFast does NOT support (as of 2026-04-30, public docs):**
+
+| Capability | Status | Workaround |
+|------------|--------|------------|
+| Pre-authorization / hold-and-capture | NOT publicly documented; likely unavailable | Frame damage charges as "immediate debit if damages found", not "hold released if no damages". Adjust T&Cs. |
+| Charging a stored token outside a subscription context (true card-on-file / vault token) | Unclear — adhoc API requires a `subscription_token`, not a free-floating vault token | Every guest who might be charged for damage MUST have an active subscription (even R0/month) created at booking. Equivalent of "ZAR 0.00 daily authorization with adhoc charge capability". Verify pattern works in sandbox. |
+| Split-payment (one customer → N merchants in one txn) | Not relevant here — we're doing N separate transactions, all to the same merchant | N/A |
+| Refund via API | Documented elsewhere in PayFast API; out of v3.1 scope | Manual via dashboard for now |
+
+**Multi-hunter split-billing pattern:**
+
+```typescript
+// New: lib/payments/payfast-multi-hunter.ts (Trophy OS — copied lib)
+export async function chargeHunters(safari: Safari, hunters: SafariHunter[]) {
+  const results = []
+  for (const hunter of hunters) {
+    const result = await chargeAdhoc({
+      subscriptionToken: hunter.payfast_token,  // each hunter has their own
+      organizationId: safari.org_id,
+      amountCents: hunter.fee_cents,
+      itemName: `${safari.species} hunt — ${hunter.name}`,
+      prefix: 'HUNT',
+    })
+    results.push({ hunter_id: hunter.id, ...result })
+    // record to safari_hunter_charges table
+  }
+  return results
+}
+```
+
+**Failure handling:** if hunter 3 of 5 fails, do NOT roll back hunters 1-2. PayFast charges are not transactional. Record per-hunter status; have outfitter retry/manual-charge the failed hunter.
+
+**Confidence:** HIGH for adhoc reuse (DraggonnB ships this code today). MEDIUM for amount-unit (sandbox spike confirmed pending). LOW for hold-and-capture availability (no public docs). Recommend Phase 13 PayFast sandbox spike before Phase 15 ships damage billing.
+
+---
+
+### ADR E: Trophy OS PayFast Integration — Copy-Paste, Not Monorepo
+
+**Decision:** Trophy OS gets a copy of `lib/payments/payfast-*.ts` files (4 files), not a shared npm workspace. Track sync convention in `.planning/STATE.md`.
+
+**Why not monorepo:**
+
+- DraggonnB and Trophy are on diverging stacks: Next 14.2.33 + React 18 + Supabase SSR 0.1 vs Next 16.2.1 + React 19 + Supabase SSR 0.9. Forcing them into a shared package = forcing simultaneous version bumps for both apps.
+- Independent Vercel deploys are a feature, not a bug. v3.1 is about FEDERATING two products at the user-experience layer, not COUPLING them at build-time.
+- The PayFast lib is ~800 lines total across 4 files. The cost of "copy + manual sync when changes happen" is far less than the cost of monorepo refactor + dual upgrade lockstep.
+
+**Why not a published npm package:**
+
+- Adds a CI step (publish, version, install).
+- Slows iteration during the spike-heavy Phase 13–15 period.
+- Adds a third "source of truth" question (which version is in prod for which app?).
+
+**Sync convention (manual but documented):**
+
+1. Source of truth: `draggonnb-platform/lib/payments/payfast-*.ts`
+2. Copy lives at: `trophy-os/lib/payments/payfast-*.ts`
+3. Header at top of every copied file:
+   ```typescript
+   /**
+    * COPIED FROM draggonnb-platform/lib/payments/[file].ts
+    * Sync version: 1.0.0 — 2026-05-15
+    * If you change this file in trophy-os, ALSO update draggonnb-platform AND increment sync version.
+    */
+   ```
+4. Track in `.planning/STATE.md` under "PayFast lib sync version: X.Y.Z (last synced YYYY-MM-DD)".
+
+**What Trophy OS specifically needs from the lib:**
+
+| File | Trophy use case | Modifications needed |
+|------|-----------------|----------------------|
+| `payfast.ts` | Config + signature gen | None — uses Trophy's `PAYFAST_*` env vars |
+| `payfast-adhoc.ts` | Per-hunter adhoc charges | Add `HUNT` to allowed prefix type |
+| `payfast-prefix.ts` | Prefix definitions | Add `HUNT` |
+| `payfast-subscription-api.ts` | Cancel hunt subscriptions on safari cancellation | None |
+
+**What Trophy OS does NOT need (do not copy):**
+
+- `lib/accommodation/payments/payfast-link.ts` — accommodation-specific link generation
+- DraggonnB ITN webhook handler — Trophy gets its OWN webhook at `trophy.draggonnb.co.za/api/webhooks/payfast`
+
+**Future state:** When v3.2 or later requires deeper coupling (e.g. shared agent sessions, shared usage ledger writing across products), revisit monorepo. Not v3.1.
+
+**Confidence:** HIGH. The PayFast files are pure Node (`fetch` + crypto module) with zero React, zero Next, zero Supabase imports. They port across Next 14/16 + React 18/19 without modification.
 
 ---
 
 ## Integration Points With Existing Stack
 
-### 1. Brand Voice Embedding (Capability 5)
-
-**File:** extend `lib/agents/base-agent.ts`
-
-Add optional cached system prompt blocks. Pattern:
-
-```typescript
-// In BaseAgent.run(), when systemPrompt contains brand voice:
-const response = await client.messages.create({
-  model: this.config.model!,
-  max_tokens: this.config.maxTokens!,
-  system: [
-    { type: "text", text: this.config.systemPrompt },  // base instruction
-    {
-      type: "text",
-      text: brandVoiceDoc,                              // per-tenant, ~2-3k tokens
-      cache_control: { type: "ephemeral" }              // 5-min cache
-    }
-  ],
-  messages: claudeMessages,
-})
-```
-
-**Cost impact:** First call = 1.25× input tokens for cache write. Subsequent calls within 5 min = 0.1× input. For Campaign Studio (which typically generates 3–5 outputs per intent), savings are ~70–85%.
-
-**New table:** `tenant_brand_voices` (org_id, voice_doc TEXT, tokens INT, updated_at). Populated by the brand-voice onboarding wizard.
-
-### 2. Telegram Bot (Capability 9 — Finance-AI receipt OCR)
-
-**New route:** `app/api/webhooks/telegram/finance/route.ts`
-
-```typescript
-import { Bot, webhookCallback } from "grammy"
-
-const bot = new Bot(process.env.TELEGRAM_FINANCE_BOT_TOKEN!)
-
-bot.on("message:photo", async (ctx) => {
-  // 1. Resolve tenant from ctx.from.id via tenant_telegram_bindings table
-  // 2. Download photo: const file = await ctx.getFile(); file.getUrl()
-  // 3. Fetch image bytes, base64, pass to Haiku 4.5 with receipt-OCR system prompt
-  // 4. Insert into expense_receipts, increment usage counter, reply with parsed summary
-})
-
-export const POST = webhookCallback(bot, "std/http")
-```
-
-**Existing code reuse:** `lib/accommodation/telegram/ops-bot.ts` shows the webhook signature pattern already. New bot = new bot token + new route; do not share with ops bot (different permission model).
-
-**Binding flow:** User sends `/start <org_uuid>` from tenant dashboard (deeplink). Insert into `tenant_telegram_bindings(org_id, telegram_user_id, role)`.
+### 1. Approval Spine (Phase 14)
 
 **New tables:**
-- `tenant_telegram_bindings`
-- `expense_receipts(id, org_id, telegram_message_id, image_url, ocr_result JSONB, categorized_at, amount_zar, vat_zar, category, vendor, date_captured)`
+- `approval_requests` (id, org_id, requester_user_id, action_type, payload JSONB, status: pending|approved|rejected|expired, decided_by_user_id, decided_at, expires_at, telegram_message_id, hmac_secret)
+- `approval_action_types` (key, label, description, requires_role, default_expiry_hours) — registry table
 
-### 3. Usage Metering & Overage (Capabilities 1, 7)
+**Cryptographic action signing:**
 
-**New file:** `lib/billing/usage-meter.ts`
-
-Pattern (inspired by Stripe metered billing best practices):
+The Telegram tap-to-approve URL embeds an HMAC of `(requestId, action, secret)` using Web Crypto API. No JWT lib needed:
 
 ```typescript
-// Increment in Redis (fast path, in middleware or API route)
-await redis.incr(`usage:${orgId}:${meter}:${yyyymm}`)
-
-// Flush hourly via pg_cron -> edge function -> Supabase usage_events table
-// Aggregate daily into usage_summaries
-// End of billing period: diff against plan cap -> write overage_charges
+// lib/approvals/sign.ts
+const enc = new TextEncoder()
+const key = await crypto.subtle.importKey(
+  'raw',
+  enc.encode(process.env.APPROVAL_HMAC_SECRET!),
+  { name: 'HMAC', hash: 'SHA-256' },
+  false,
+  ['sign', 'verify'],
+)
+const sig = await crypto.subtle.sign('HMAC', key, enc.encode(`${requestId}:${action}`))
 ```
 
-**New tables:**
-- `usage_meters` (org_id, meter_key, period_start, count, limit_at_period_start)
-- `usage_events` (raw events for audit; TTL after 90 days)
-- `overage_charges` (org_id, meter, overage_units, unit_price_zar, total_zar, billed_at, payfast_txn_id)
+**No new library** — `crypto.subtle` is built-in to Node 18+ and Edge runtime.
 
-**Middleware integration:** `lib/supabase/middleware.ts` already injects `x-tenant-id` + `x-tenant-tier` + `x-tenant-modules`. Add `x-usage-check` header that flags when a tenant is >90% of cap; API routes can then throttle/warn.
+**Reuses:**
+- `getUserOrg()` — for resolving who's approving
+- `BaseAgent` — Haiku 4.5 with brand-voice cache for generating approval summaries ("Boris wants to approve a R45,000 expense for...")
+- `ai_usage_ledger` + `record_usage_event` RPC — meter approval-summary generations
+- `guardUsage()` — at the API route level on `/api/approvals/request`
 
-**Enforcement layer:** Per-API-route check in `app/api/**/route.ts` using a helper:
+### 2. Cross-Product Sidebar Federation (Phase 13)
+
+**No new dependencies.** Both apps already import `lucide-react`. The federation pattern is:
 
 ```typescript
-const { allowed, remaining, overage } = await checkUsage(orgId, "ai_generations")
-if (!allowed && tier === "starter") return NextResponse.json({ error: "cap reached" }, { status: 429 })
-// else: record event, proceed, queue overage charge if over cap
+// lib/sidebar/federated-sidebar.tsx (DraggonnB)
+const products = [
+  { name: 'DraggonnB OS', href: 'https://app.draggonnb.co.za', current: true },
+  { name: 'Trophy OS', href: 'https://trophy.draggonnb.co.za', current: false, gated: 'trophy_os_module' },
+]
 ```
 
-### 4. Overage Billing on PayFast (Capability 7)
+Cross-product link clicks land in the OTHER app already authenticated (because cookie domain `.draggonnb.co.za` covers both). No SSO redirect, no token exchange.
 
-**Mechanism:** PayFast supports **ad-hoc tokenized charges** against an existing subscription token. The PHP SDK exposes `$api->subscriptions->adhoc($token, { amount, item_name })`. Node implementation = manual HTTPS POST to `https://api.payfast.co.za/subscriptions/{token}/adhoc` with merchant-id / version / timestamp / signature headers.
+**Module gating:** Trophy OS sidebar entry only renders if `tenant_modules` has `trophy_os` activated for the user's org. Existing DB-backed feature gating works as-is.
 
-**Verdict:** YES — we CAN stack overage on top of recurring subscription using the same token. No separate card-capture flow needed.
+### 3. Hunt Booking ↔ Accommodation Booking Linkage (Phase 15)
 
-**Important caveat:** Confirm exact endpoint path via the PHP SDK source (`github.com/Payfast/payfast-php-sdk`) before implementation — public HTML docs are thin. Plan a 1-day spike in Phase 1 to build + test adhoc charge against sandbox, owing to documentation gap.
+**New table (DraggonnB schema):**
+- `cross_product_links` (id, source_product, source_id, target_product, target_id, link_type, created_at)
 
-**New file:** `lib/payments/payfast-adhoc.ts` — sibling to `payfast-link.ts`.
-
-**Existing pattern to mirror:** `lib/accommodation/payments/payfast-link.ts` (signature gen, env-driven config, DB insert of charge record).
-
-**New tables:**
-- `tenant_billing_tokens` (org_id, payfast_token, active_since, card_last4)
-- Plus `overage_charges` (above) gets `payfast_token_used`, `adhoc_response_raw JSONB`.
-
-### 5. Campaign Scheduling (Capability 6)
-
-**Decision: Supabase `pg_cron` + `pg_net`, NOT Vercel cron, NOT new N8N workflows per tenant.**
-
-**Rationale:**
-- **Vercel cron** requires Pro plan ($20 USD/mo ≈ R332/mo) for hourly granularity, and crons are deployment-scoped (one list in `vercel.json`) — poor fit for per-tenant schedules.
-- **N8N per tenant** — we already have 30 workflows; adding N workflows per tenant per campaign does not scale operationally. Reserve N8N for deterministic ops (availability syncs, channel manager).
-- **Supabase pg_cron + pg_net** — schedule rows (not cron entries) scale to infinity, stay inside the DB where campaign state lives, no new infra, free.
-
-**Pattern:**
-
-```sql
--- Schedule a campaign in campaigns_scheduled(org_id, send_at, payload JSONB, status)
--- One pg_cron job (runs every minute) calls pg_net.http_post to
--- https://www.draggonnb.online/api/campaigns/dispatch
--- which picks up all rows where send_at <= now() AND status='pending'
+Example row:
+```
+(uuid, 'trophy', '<safari_id>', 'accommodation', '<booking_id>', 'safari_stay', now())
 ```
 
-**New tables:**
-- `campaigns` (id, org_id, intent, draft_channels JSONB, status: draft|approved|scheduled|sent|failed)
-- `campaign_channels` (campaign_id, channel: email|facebook|linkedin|landing, content JSONB, scheduled_for, sent_at, analytics JSONB)
+**Both products** read from this table to:
+- Show "linked accommodation" on safari detail page (Trophy)
+- Show "linked safari" on booking detail page (DraggonnB)
 
-**New routes:**
-- `app/api/campaigns/generate/route.ts` — calls CampaignDrafterAgent (new BaseAgent subclass)
-- `app/api/campaigns/dispatch/route.ts` — pg_cron target; picks due rows, invokes existing sender paths (`lib/email/resend.ts`, `lib/social/facebook/publisher.ts`, `lib/social/linkedin/publisher.ts`)
+**No cross-app API calls** — both query the same Supabase project. RLS via shared `organization_users` ensures isolation.
 
-### 6. Cost Monitoring (Capability 7)
+### 4. PWA Guest Surface (Phase 16)
 
-**Existing:** `agent_sessions` table has `tokens_used` (per session) — there is NO `cost_usd` column currently, despite the question's premise. **Confirm and add** if absent:
+**New route:** `app/(public)/stay/[bookingId]/page.tsx` (DraggonnB) — public, no auth. Booking ID is a UUIDv4 — unguessable, OK as a "magic link" token.
 
-```sql
-ALTER TABLE agent_sessions
-  ADD COLUMN IF NOT EXISTS input_tokens INT,
-  ADD COLUMN IF NOT EXISTS output_tokens INT,
-  ADD COLUMN IF NOT EXISTS cache_read_tokens INT,
-  ADD COLUMN IF NOT EXISTS cache_write_tokens INT,
-  ADD COLUMN IF NOT EXISTS cost_usd NUMERIC(10,6),
-  ADD COLUMN IF NOT EXISTS cost_zar NUMERIC(10,4),
-  ADD COLUMN IF NOT EXISTS model TEXT;
-```
+**Content:** check-in form, lodge info, contact, real-time Wi-Fi password reveal, optional offline check-in submission via Background Sync.
 
-**Update `BaseAgent.run()`** to read `response.usage.cache_read_input_tokens` + `cache_creation_input_tokens` and compute cost using model-specific pricing table.
+**Subdomain binding:** `stay.draggonnb.co.za` → DraggonnB Vercel project, route via Next middleware to `/stay/{bookingId}` based on hostname.
 
-**New view:** `v_tenant_ai_costs_daily` — aggregates `agent_sessions` + `expense_receipts` (vision calls) + `campaign_channels` (image gen cost) per org/day.
+**Asset budget:** PWA shell ~100 KB (lodge logo, fonts, base CSS). Goal: install + offline-ready in <2 seconds on 3G.
 
-**Dashboard:** new page `app/(dashboard)/admin/cost-monitor/page.tsx` — uses `@tanstack/react-table` + `recharts`.
+### 5. Anthropic + Caching (carried from v3.0)
 
-### 7. Image Generation (Capability 6 — Campaign Studio)
-
-**Decision: fal.ai as primary, with model choice by quality tier.**
-
-| Campaign Tier | Model | Cost/image USD | Cost/image ZAR | Use Case |
-|---------------|-------|----------------|----------------|----------|
-| Starter/base | FLUX.1 schnell | $0.003/MP (~$0.003 at 1MP) | ~R0.05 | Social carousel quick posts |
-| Pro | FLUX.1 dev | ~$0.025 | ~R0.42 | Polished marketing visuals |
-| Premium add-on | Nano Banana Pro (Gemini 2.5) | ~$0.039 | ~R0.65 | Brand-consistent hero images, product renders |
-
-**Not DALL-E 3**: $0.04–0.08/image (R0.66–1.33) is 2–15× more expensive than FLUX.1 for indistinguishable quality in SA marketing use cases.
-
-**New file:** `lib/content-studio/image-generator.ts` — thin wrapper around `@fal-ai/client` with model selection based on tenant tier + campaign channel.
-
-**Storage:** Supabase Storage bucket `campaign-images` (public-read, org-scoped path). Generated URLs stored in `campaign_channels.content.images[]`.
-
-### 8. Receipt OCR (Capability 9 — Finance-AI)
-
-**Decision: Claude Haiku 4.5 vision (single-call approach). No specialized OCR.**
-
-**Economics (April 2026):**
-- Typical phone receipt photo: resized to ≤1568px long edge = ~1568 tokens for vision encode
-- + ~400 tokens for system prompt (brand voice NOT needed here; categorization prompt)
-- + ~300 output tokens (structured JSON)
-- Input cost: ~2000 × $1/1M = $0.002 → **R0.033/scan**
-- Output cost: 300 × $5/1M = $0.0015 → **R0.025/scan**
-- **Total: ~R0.058 per receipt**
-
-**Why not Tesseract + Claude:** Splits into 2 ops, loses context for categorization, adds ~400ms latency, saves ~R0.03 per scan — not worth it under R0.10 total.
-
-**Why not AWS Textract / GCP Vision:** ~$1.50 per 1000 pages (~R0.025/page) just for text extraction; still need LLM call to categorize. Ends up more expensive, more infra.
-
-**Why not Claude Sonnet:** Haiku 4.5 tested in-house performs receipt OCR at 95%+ accuracy; Sonnet is overkill at 3× the cost.
-
-**Pre-processing (optional optimization):** If receipts from Telegram arrive as large photos (e.g., 4000×3000px), pre-downsample with `sharp` to 1568px long edge before calling Claude. Reduces token cost and latency. This is the one case where explicit `sharp` install may be justified — verify it's already installed via `npm ls sharp`.
-
-**New agent class:** `ReceiptOCRAgent extends BaseAgent` in `lib/agents/receipt-ocr.ts` — agentType: `'receipt_ocr'`. Output schema validated by Zod.
-
-### 9. Brand Voice Onboarding Wizard (Capability 5)
-
-Use Claude Sonnet for wizard (one-time per tenant, quality matters more than cost here) to interview user and synthesize brand voice doc. Doc stored as plain text + metadata in `tenant_brand_voices`.
-
-**3-day automated onboarding pipeline (Capability 10):** orchestrated via Supabase `pg_cron` + a new `OnboardingPipelineAgent`. Each day triggers a different agent run (Day 1: provision + brand voice + first AI draft; Day 2: review + adjust; Day 3: go-live checklist + first campaign).
+No changes for v3.1. Approval summaries reuse the same prompt-caching pattern from v3.0 — cached `tenant_brand_voices` + cached approval-summary system prompt. Cost: ~R0.0003 per approval summary at Haiku 4.5 with 70% cache hit rate.
 
 ---
 
 ## Installation
 
 ```bash
-# Core additions
-npm install grammy \
-            @upstash/ratelimit @upstash/redis \
-            @fal-ai/client \
-            unpdf \
-            @tanstack/react-table
+# DraggonnB OS additions
+npm install grammy @serwist/next
+npm install -D serwist
 
-# Optional receipt preprocessing (ONLY if sharp not already transitively installed)
-npm ls sharp || npm install sharp
+# Upgrade @supabase/ssr (CRITICAL — required for cookieOptions.domain support)
+npm install @supabase/ssr@latest @supabase/supabase-js@latest
+# This bumps from 0.1.0 → 0.10.2 — non-trivial. Test middleware + auth flows.
 
-# No dev deps required — all above have bundled TypeScript types
+# Trophy OS additions
+# (in C:\Dev\DraggonnB\products\trophy-os)
+# Copy lib/payments/payfast-*.ts from draggonnb-platform — no npm installs needed.
+# Bump @supabase/ssr 0.9.0 → 0.10.2:
+npm install @supabase/ssr@latest
 ```
 
-**No changes needed to `@anthropic-ai/sdk`** — current ^0.73.0 already supports prompt caching via `cache_control` param.
+**No dev deps needed** — all listed packages ship with TypeScript types.
 
-**Environment variables to add:**
+**Environment variables (DraggonnB):**
 
 ```
-TELEGRAM_FINANCE_BOT_TOKEN=              # separate from ops bot
-TELEGRAM_WEBHOOK_SECRET=                 # for X-Telegram-Bot-Api-Secret-Token validation
-UPSTASH_REDIS_REST_URL=
-UPSTASH_REDIS_REST_TOKEN=
-FAL_KEY=
-PAYFAST_PASSPHRASE=                      # already present — needed for adhoc signature
-PAYFAST_API_VERSION=v1                   # for /subscriptions/{token}/adhoc endpoint
+# Existing — unchanged
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+TELEGRAM_OPS_BOT_TOKEN=...
+
+# NEW for v3.1
+TELEGRAM_APPROVAL_BOT_TOKEN=        # separate bot for approval spine
+TELEGRAM_APPROVAL_WEBHOOK_SECRET=   # for X-Telegram-Bot-Api-Secret-Token verification
+APPROVAL_HMAC_SECRET=                # 32+ random bytes for HMAC tap-to-approve URLs
+NEXT_PUBLIC_STAY_DOMAIN=stay.draggonnb.co.za  # for PWA manifest start_url
+NEXT_PUBLIC_TROPHY_DOMAIN=trophy.draggonnb.co.za  # for cross-product sidebar
+```
+
+**Environment variables (Trophy OS):**
+
+```
+# Existing
+NEXT_PUBLIC_SUPABASE_URL=...   # SAME PROJECT as DraggonnB
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+
+# NEW for v3.1
+PAYFAST_MERCHANT_ID=...
+PAYFAST_MERCHANT_KEY=...
+PAYFAST_PASSPHRASE=...
+PAYFAST_API_VERSION=v1
+PAYFAST_MODE=production    # or sandbox
+NEXT_PUBLIC_DRAGGONNB_DOMAIN=app.draggonnb.co.za   # for cross-product link
 ```
 
 ---
@@ -303,42 +561,35 @@ PAYFAST_API_VERSION=v1                   # for /subscriptions/{token}/adhoc endp
 ## Alternatives Considered
 
 | Recommended | Alternative | When Alternative Makes Sense |
-|-------------|-------------|-------------------------------|
-| Claude Haiku 4.5 (vision+text) | GPT-4o mini vision | If migrating off Anthropic entirely. ~Same price point, but loses existing `BaseAgent` investment and prompt caching already tuned. |
-| fal.ai | Replicate | If a specific model is only on Replicate. Replicate is ~10–20% more expensive but has better docs for niche models. |
-| fal.ai | OpenAI DALL-E 3 | If project forced on OpenAI stack (we are not). Cost 2–15× higher. |
-| grammy | telegraf | If team already has deep Telegraf expertise. No reason to prefer for new build. |
-| grammy (shared bot) | One bot per tenant via BotFather | If tenants demand their own branded bot — possible per tier (Platform tier = own bot). For base tier, shared bot with `/start <org>` deeplink is simpler + cheaper. |
-| @upstash/ratelimit + Redis | Supabase RPC counter w/ row lock | If we refuse to add Upstash. Works but ~5–20× slower at edge; acceptable for low-traffic tenants. Revisit at 500+ tenants. |
-| unpdf | pdfjs-dist directly | If needing positions/annotations/forms (unpdf is text-extract-focused). We don't — receipts are images, statements are text-heavy PDFs. |
-| Supabase pg_cron | Vercel Cron | If already on Vercel Pro AND schedules are deployment-scoped (few, fixed). Our use case: per-tenant dynamic schedules → pg_cron wins. |
-| Supabase pg_cron | N8N scheduled workflow | If campaign flow needs multi-step deterministic ops + UI state visible to OpenClaw. Currently doesn't — keep N8N for accommodation channel sync. |
-| @tanstack/react-table | react-data-grid / ag-grid | If needing Excel-like features (editing in cells, frozen panes). Not in v3.0 scope. |
+|-------------|-------------|------------------------------|
+| `@supabase/ssr` `cookieOptions.domain` | NextAuth.js with Supabase adapter | If we were greenfield and didn't already have RLS via JWT claims working. We're not — we have `get_user_org_id()` STABLE function and `FORCE ROW LEVEL SECURITY` on every table. Replacing the JWT issuer would invalidate all of that. |
+| `@supabase/ssr` `cookieOptions.domain` | Custom JWT bridge route | If apps were on different root domains (e.g. `draggonnb.co.za` AND `trophy-platform.com`). Then cookie sharing would not work and we'd need `postMessage` or token exchange. Both ours are on `*.draggonnb.co.za` — overkill. |
+| `grammy` | Hand-rolled `fetch` to api.telegram.org | If approval spine had only 1 or 2 simple commands. It has inline keyboards + callback queries + answer-callback + edit-message — exactly what grammY abstracts. |
+| `grammy` | `telegraf` | If team had deep Telegraf expertise. Neither team does. grammY has better TS, lighter bundle, App-Router-native webhook export. |
+| `@serwist/next` | Hand-rolled SW + `app/sw.js` | If we needed exotic caching (e.g. encrypted SW). We don't. defaultCache + 2-3 custom routes covers the PWA. |
+| `@serwist/next` | `@ducanh2912/next-pwa` | If migrating an existing project that already uses `@ducanh2912/next-pwa`. We have nothing — net new — so go straight to serwist. |
+| Copy-paste PayFast lib | Turborepo monorepo | If Trophy and DraggonnB shared >50% of lib code AND aligned on same Next/React versions. Currently they share ~5% (just PayFast) and diverge on Next 14 vs 16. |
+| Copy-paste PayFast lib | Published npm package `@draggonnb/payfast` | When we have 3+ apps consuming the same lib. With 2 apps and 4 small files, the publish/install overhead loses to copy-paste. |
+| HMAC URL signing for approval taps | JWT (`jose` lib) | If we needed expiry, claims, multi-key rotation, or 3rd-party verification. We need none of that — `(requestId, action, secret)` HMAC is the minimum viable signature. |
 
 ---
 
 ## Stack Patterns by Variant
 
-**If tenant is on starter tier (R599):**
-- Default model: Claude Haiku 4.5 everywhere
-- Images: FLUX.1 schnell only
-- Cap: 100 AI generations / 500 emails / 50 social posts per month
-- No Finance-AI add-on
-- Telegram binding: shared DraggonnB bot
+**If tenant has only DraggonnB OS (no Trophy):**
+- Cookie domain still set to `.draggonnb.co.za` (harmless — single subdomain works fine).
+- No cross-product sidebar entry (gated by `tenant_modules`).
+- PWA at `stay.draggonnb.co.za/{booking_id}` only relevant if accommodation module active.
 
-**If tenant is on pro tier (R599 + R1199 vertical):**
-- Drafting: Haiku 4.5; Final polish: Sonnet 4.6 (behind Advanced toggle)
-- Images: FLUX.1 dev default, Nano Banana on demand
-- Cap: 500 AI gen / 5000 emails / 500 social posts
-- Finance-AI available as R349/mo add-on
-- Telegram: shared bot
+**If tenant has only Trophy OS (no DraggonnB):**
+- Cookie domain `.draggonnb.co.za` enables them to also access `app.draggonnb.co.za` if/when DraggonnB onboards them. SSO is forward-compatible.
+- Trophy uses copy-pasted PayFast lib for hunter splits.
 
-**If tenant is on platform tier (custom):**
-- Any model; prompt caching at 1-hour TTL for heavy reuse
-- All image models
-- Unmetered (fair-use contract)
-- Own Telegram bot (new token per tenant, webhook to `app/api/webhooks/telegram/custom/[orgId]/route.ts`)
-- Dedicated N8N instance optional
+**If tenant has BOTH (Swazulu pilot):**
+- Single sign-on works automatically via cookie domain.
+- Cross-product sidebar shows both entries.
+- Hunt booking auto-creates linked accommodation booking via `cross_product_links` table.
+- Approval spine spans both — e.g. "Approve safari trophy fee adjustment" routes to ops manager regardless of which product they're currently viewing.
 
 ---
 
@@ -346,69 +597,78 @@ PAYFAST_API_VERSION=v1                   # for /subscriptions/{token}/adhoc endp
 
 | Package A | Compatible With | Notes |
 |-----------|-----------------|-------|
-| `grammy@^1.37` | `next@14.2.33` App Router | `webhookCallback(bot, "std/http")` maps directly to `POST` handler. Set `runtime = "nodejs"` (not edge) for media download. |
-| `@upstash/ratelimit@^2.0.8` | `@upstash/redis@^1.35` | Must use matching major versions; v2 ratelimit incompatible with v0 redis. |
-| `@fal-ai/client@^1.x` | Node 18+, works on Vercel Functions (not Edge) | Uses streaming internally; avoid in Edge runtime. |
-| `unpdf@^0.12` | Node 18+, works on Edge | Zero native deps — safe on all Vercel runtimes. |
-| `@tanstack/react-table@^8.21` | React 18 (current), React 19 (future-safe) | No concerns. |
-| Anthropic prompt caching | `@anthropic-ai/sdk@^0.73` (current) | Supported; no upgrade needed. Cache write = 1.25×, cache read = 0.1×. |
-| Supabase `pg_cron` + `pg_net` | Current Supabase project | Both enabled via SQL: `CREATE EXTENSION IF NOT EXISTS pg_cron; CREATE EXTENSION IF NOT EXISTS pg_net;` — Supabase UI under Database → Extensions. |
-| PayFast adhoc API | `@anthropic-ai/sdk`-style signature generation | Mirror existing `lib/payments/payfast.ts` `generatePayFastSignature` helper; change payload keys to adhoc-specific set (`merchant-id`, `version`, `timestamp`, `passphrase`). |
+| `@supabase/ssr@^0.10.2` | `@supabase/supabase-js@^2.105.x` | DraggonnB must bump BOTH together. Existing `@supabase/supabase-js@^2.39.0` is compatible with new `@supabase/ssr@0.10.x` but recommend matching to current. |
+| `@supabase/ssr@^0.10.2` | `next@14.2.33` AND `next@16.2.1` | Same library version works for both apps. Validated on both Next versions per Supabase docs. |
+| `grammy@^1.42.0` | `next@14.2.33` (Node runtime, NOT Edge) | `webhookCallback(bot, "std/http")` works on Node runtime. For media (file downloads in finance bot), MUST use `runtime = "nodejs"` not Edge. |
+| `@serwist/next@^9.5.10` | `next@14.2.33` (webpack only) | Compatible with App Router. **NOT** compatible with Turbopack — DraggonnB must stay on webpack (`next dev` default for Next 14, no `--turbo` flag). |
+| `@serwist/next@^9.5.10` | `next@16.2.1` | Trophy OS compatibility: works only if Trophy OS doesn't enable Turbopack. Trophy OS does NOT need PWA in v3.1 — defer this question. |
+| Cookie domain `.draggonnb.co.za` | DNS / Vercel | Both apps must be deployed under the same eTLD+1 (`draggonnb.co.za`). Already configured via wildcard DNS + Vercel wildcard domain. |
+| `crypto.subtle` HMAC | Node 18+, Vercel Edge runtime | Available in all our runtimes. No polyfill needed. |
+| PayFast adhoc API | Existing `lib/payments/*` | NO version coupling — just HTTP calls. Trophy OS gets the lib via copy-paste. |
 
 ---
 
-## Cost Summary (per tenant, per month, representative)
+## Cost Implications
 
-Assumes USD/ZAR = 16.6, starter-tier tenant with moderate usage.
+**No new vendor relationships.** All v3.1 additions are open-source libraries (grammy, serwist) or existing vendor capabilities (Supabase cookie config, PayFast adhoc) we already pay for.
 
-| Operation | Qty/mo | Unit cost (USD) | Monthly cost (ZAR) |
-|-----------|--------|-----------------|---------------------|
-| Claude Haiku drafting (avg 3k in / 600 out, with 70% cache hit) | 100 gens | ~$0.0015 effective | ~R2.50 |
-| Brand voice cache reads (2-3k tokens) | 100 reads | $0.00003 | ~R0.05 |
-| Image gen (FLUX.1 schnell) | 30 images | $0.003 | ~R1.50 |
-| Receipt OCR (Haiku vision) | 50 receipts | $0.0035 | ~R2.90 |
-| Campaign email send (Resend) | 500 emails | existing | existing |
-| Social post publish (FB/LI APIs) | 50 posts | $0 (platform APIs free) | R0 |
-| Upstash Redis (usage counters) | shared | free tier | R0 (first 10k cmds/day free) |
-| **Total AI/image variable cost per starter tenant** | — | — | **~R7/month** |
-
-**Margin check:** Starter tier R599/mo — variable cost ~R7 = 98.8% gross margin on AI ops. Leaves R592 for Resend, PayFast merchant fees (~3.5%), Supabase, Vercel, N8N VPS. Unit economics hold.
-
-**Pro-tier tenant (heavy Campaign Studio user):** ~R80–150/mo variable — still ~91–95% margin on R1798 base+vertical.
+| Item | Cost change |
+|------|-------------|
+| Supabase | Unchanged. Same project, same tier, more rows in `approval_requests` + `cross_product_links`. |
+| Vercel | Unchanged for DraggonnB (already on a paid tier). Trophy OS may need its own Vercel project — confirm it's already deployed. PWA service worker adds ~30 KB to bundle, negligible bandwidth impact. |
+| PayFast | Unchanged. Damage charges + hunter splits use existing merchant relationship. PayFast charges merchant fees per transaction (~3.5%), already in the model. |
+| Telegram | Free. New approval bot uses same Bot API. No cost. |
+| Anthropic | Approval-summary generations: ~R0.0003 each at Haiku 4.5 with cache. Estimated 50-200 approvals/month per active tenant = ~R0.06/month/tenant. Negligible. |
+| **Total v3.1 ongoing cost increase per tenant** | **~R0.06-0.20/month** (Anthropic for approval summaries). Within v3.0 unit-economics envelope. |
 
 ---
 
 ## Sources
 
-### High Confidence (Context7-equivalent or primary docs)
+### High Confidence (current docs verified 2026-04-30)
 
-- [Claude Vision Docs](https://platform.claude.com/docs/en/docs/build-with-claude/vision) — token formula `width × height / 750`, native resolution 1568 tokens, Haiku 4.5 pricing, Files API support
-- [Claude API Pricing](https://platform.claude.com/docs/en/about-claude/pricing) — Haiku 4.5 at $1/$5 per M tokens
-- [Prompt Caching Docs](https://platform.claude.com/docs/en/build-with-claude/prompt-caching) — 1.25× write (5-min), 2× write (1-hour), 0.1× read
-- [grammY Hosting on Vercel](https://grammy.dev/hosting/vercel) — `webhookCallback` + App Router pattern
-- [@upstash/ratelimit npm](https://www.npmjs.com/package/@upstash/ratelimit) — v2.0.8, sliding window multi-tenant pattern
-- [Supabase pg_cron Docs](https://supabase.com/docs/guides/database/extensions/pg_cron) — scheduling inside Postgres, paired with pg_net for HTTP
-- [unpdf GitHub](https://github.com/unjs/unpdf) — serverless-safe PDF parser
-- [fal.ai Client Docs](https://docs.fal.ai/model-apis/client) — `@fal-ai/client` replaces deprecated `@fal-ai/serverless-client`
-- [FLUX.1 schnell pricing on fal.ai](https://fal.ai/models/fal-ai/flux/schnell) — $0.003/MP
-- [sharp installation](https://sharp.pixelplumbing.com/install/) — v0.34.5, bundled by Next.js for image optimization
+- [@supabase/ssr on npm](https://www.npmjs.com/package/@supabase/ssr) — version 0.10.2, published 2026-04-23 (verified via `npm view @supabase/ssr time --json`)
+- [@supabase/supabase-js on npm](https://www.npmjs.com/package/@supabase/supabase-js) — version 2.105.1
+- [Supabase Auth Discussion #5742](https://github.com/orgs/supabase/discussions/5742) — cross-subdomain cookie domain pattern, multiple Supabase team confirmations
+- [Michele Ong — Share Sessions Across Subdomains with Supabase](https://micheleong.com/blog/share-sessions-subdomains-supabase) — independent confirmation of `cookieOptions.domain` pattern
+- [Supabase SSR Creating a Client docs](https://supabase.com/docs/guides/auth/server-side/creating-a-client) — current API reference
+- [grammY on npm](https://www.npmjs.com/package/grammy) — version 1.42.0, published 2026-04-03
+- [grammY hosting on Vercel](https://grammy.dev/hosting/vercel) — `webhookCallback(bot, "std/http")` App Router pattern
+- [grammY Inline Keyboards plugin](https://grammy.dev/plugins/keyboard) — `InlineKeyboard` + callback queries
+- [Telegram Bot API — setWebhook secret_token](https://core.telegram.org/bots/api#setwebhook) — official secret token verification
+- [@serwist/next on npm](https://www.npmjs.com/package/@serwist/next) — version 9.5.10, published 2026-04-30
+- [@serwist/next docs — Getting Started](https://serwist.pages.dev/docs/next/getting-started) — App Router setup, manifest, sw.ts pattern
+- [LogRocket — Build a Next.js 16 PWA with true offline support](https://blog.logrocket.com/nextjs-16-pwa-offline-support/) — Serwist as the next-pwa successor
+- [PayFast PHP SDK GitHub](https://github.com/PayFast/payfast-php-sdk) — adhoc endpoint signature
+- [DraggonnB existing `lib/payments/payfast-adhoc.ts`](C:\Dev\draggonnb-platform\lib\payments\payfast-adhoc.ts) — already shipping in DraggonnB, validates the pattern
+- [DraggonnB existing `lib/payments/payfast-subscription-api.ts`](C:\Dev\draggonnb-platform\lib\payments\payfast-subscription-api.ts) — already shipping
 
-### Medium Confidence (verified across multiple sources, not direct from vendor)
+### Medium Confidence (community docs, single-source corroboration)
 
-- [Anthropic API Pricing breakdown 2026 — Finout](https://www.finout.io/blog/anthropic-anthropic-api-pricing) — cache cost multipliers confirmed
-- [unpdf vs pdf-parse comparison — PkgPulse](https://www.pkgpulse.com/blog/unpdf-vs-pdf-parse-vs-pdfjs-dist-pdf-parsing-extraction-nodejs-2026) — serverless compatibility
-- [AI image pricing comparison 2026 — TeamDay.ai](https://www.teamday.ai/blog/ai-api-pricing-comparison-2026) — fal.ai vs Replicate vs OpenAI
-- [Stripe Metered Billing pattern 2026](https://www.buildmvpfast.com/blog/stripe-metered-billing-implementation-guide-saas-2026) — Postgres pre-aggregation pattern applicable to PayFast context
-- [SA VAT e-invoicing timeline — KPMG](https://kpmg.com/us/en/taxnewsflash/news/2026/02/south-africa-tax-authority-confirms-multi-year-e-invoicing-digital-reporting-reform.html) — confirms SARS API is 2026–2029 phased, not available for SMEs yet
-- [USD/ZAR April 2026 ~16.6](https://www.exchangerates.org.uk/USD-ZAR-spot-exchange-rates-history-2026.html) — FX rate used throughout
+- [LaunchFA.st — Telegram Bot in Next.js App Router](https://www.launchfa.st/blog/telegram-nextjs-app-router) — App Router + grammY worked example
+- [web.dev — PWA Installation Prompt](https://web.dev/learn/pwa/installation-prompt/) — `beforeinstallprompt` capture pattern
+- [MagicBell — PWA iOS Limitations 2026](https://www.magicbell.com/blog/pwa-ios-limitations-safari-support-complete-guide) — iOS install UX, iOS 26 default home-screen behavior
+- [Next.js v16 upgrade guide](https://nextjs.org/docs/app/guides/upgrading/version-16) — async request APIs, codemods (relevant only when DraggonnB eventually upgrades, NOT in v3.1 scope)
 
-### Low Confidence (flag for validation during Phase 1)
+### Low Confidence — Flag for Phase 13 spike
 
-- **PayFast adhoc API exact endpoint** — documented only in PHP SDK source + third-party discussions. Plan: 1-day sandbox spike in Phase 1 before committing to overage flow. Fallback: capture overage amount, invoice manually end-of-month. Source: [Payfast PHP SDK GitHub](https://github.com/Payfast/payfast-php-sdk).
-- **SA-specific accounting/tax npm libraries** — no mature library found. Defer to CSV/PDF export templates matching SARS VAT201 columns.
-- **fal.ai rate limits** — vendor docs don't publish limits publicly. Plan: test with burst of 100 requests in staging; add `p-queue` if throttling becomes visible.
+- **PayFast hold-and-capture / pre-authorization** — no public documentation found. May not be supported. Damage billing in v3.1 should be documented to guests as "post-stay debit", not "deposit hold". Plan: confirm with PayFast support during Phase 13.
+- **PayFast amount unit (rands vs cents) in adhoc** — Phase 09-04 spike note in DraggonnB flagged this is unconfirmed. Existing code sends rands. **Run sandbox test before Phase 15 ships damage billing.**
+- **PayFast non-subscription token charging** — unclear if a card stored without an active subscription can be charged adhoc. Workaround: every PWA-onboarded guest must have a subscription (even R0/month "stay token" subscription) created at booking deposit time. Test in sandbox.
+- **iOS Safari `beforeinstallprompt` support in iOS 26** — vendor-controlled, may change. Plan: ship platform-detected install instruction modal as primary path; treat `beforeinstallprompt` as a progressive enhancement when available.
 
 ---
 
-*Stack research for: DraggonnB OS v3.0 Commercial Launch — subsequent milestone on live SA SME SaaS platform*
-*Researched: 2026-04-24*
+## Quality Gate Checklist
+
+- [x] **Versions current as of April 2026** — verified via `npm view <pkg> time --json` on 2026-04-30 for `@supabase/ssr` (0.10.2), `@supabase/supabase-js` (2.105.1), `grammy` (1.42.0), `@serwist/next` (9.5.10), `serwist` (9.5.10).
+- [x] **Rationale for every addition** — each library has a "Why Recommended" cell + an ADR linking it to a v3.1 capability.
+- [x] **Integration with existing DraggonnB stack** — every ADR identifies the existing files/tables it extends (`lib/payments/payfast-adhoc.ts`, `lib/agents/base-agent.ts`, `getUserOrg()`, `tenant_modules`, etc).
+- [x] **Trophy OS reuse opportunities flagged** — ADR E specifies the copy-paste convention with sync version tracking, identifying exactly which files copy and which do not.
+- [x] **Anti-patterns flagged** — explicit "Do NOT add" table with NextAuth, Clerk, Auth0, Lucia, custom JWT bridge, monorepo, Stripe, next-pwa, telegraf, hand-rolled SW.
+
+---
+
+*Stack research for: DraggonnB OS v3.1 Operational Spine — federation milestone with Trophy OS*
+*Researched: 2026-04-30*
+*Author: GSD project researcher*

@@ -1,990 +1,838 @@
-# Architecture Research — DraggonnB OS v3.0 Commercial Launch
+# Architecture Research — DraggonnB OS v3.1 Operational Spine (Federation)
 
-**Domain:** Multi-tenant B2B OS (SA SME vertical) — integration architecture for commercial launch into an existing production platform
-**Researched:** 2026-04-24
-**Confidence:** HIGH for existing-codebase grounding (read from source), MEDIUM for net-new integration recommendations (reasoned from patterns, not validated against prod traffic)
+**Domain:** Two-product federation on shared Supabase (multi-tenant DraggonnB OS + vertical Trophy OS)
+**Researched:** 2026-04-30
+**Confidence:**
+- HIGH for existing-codebase grounding (file paths, table shapes, route layouts read from source)
+- MEDIUM for federation pattern recommendations (reasoned from existing patterns + ecosystem norms; not validated against running federation)
+- LOW for PayFast multi-product ad-hoc behaviour (vendor docs ambiguous; spike required, see PITFALLS.md)
 
-> **Read-before-you-believe preamble.** Four claims in the milestone context are technically incorrect and I'm correcting them here before design. These materially change the build order.
+> **Read-before-you-believe preamble.** Three claims in the milestone context require correction before design — these change the build plan materially.
 >
-> 1. **`tenant_modules.limits` does not exist.** `tenant_modules` has `config JSONB` only (migration `10_shared_db_foundation.sql` L67–76). Plan limits live in `billing_plans.limits` (migration 11) and usage is tracked in `usage_events` (migration 12). Don't put limits in `tenant_modules`.
-> 2. **`agent_sessions.cost_usd` does not exist.** `agent_sessions` has `tokens_used INTEGER` only (migration 05, L118). Cost is not stored per session. If cost monitoring is needed, we add `input_tokens`, `output_tokens`, `cost_zar_cents` columns and compute at insert time — don't assume it's there.
-> 3. **`PRICING_TIERS` is not the source of truth.** `lib/payments/payfast.ts` still exports the constant (it's referenced by `app/pricing/page.tsx` L8 and webhook), but migration 11 already created `billing_plans` table and `lib/billing/plans.ts` already reads from it. The constant is legacy and partially dead. The DB catalog exists; the UI hasn't fully migrated.
-> 4. **Usage metering is in dual-state.** Legacy `client_usage_metrics` (migration 00) is still written by `lib/billing/subscriptions.ts::handlePaymentComplete()` and read by `lib/tier/feature-gate.ts::checkUsage()` AND `app/(dashboard)/dashboard/page.tsx`. New `usage_events` + `record_usage_event` RPC (migration 12) is available via `lib/usage/meter.ts::recordUsage()`. Both exist. Routes probably use one or the other inconsistently. This is a latent defect that the modular-pricing work will surface.
+> 1. **`approval_requests` already exists but is social-posts-only.** `lib/supabase/database.types.ts` L4433 shows the table has `post_id UUID REFERENCES social_posts(id)` as a hard FK, with no `product` column, no generic `target_resource_id` / `target_resource_type`, no `target_org_id`, no Trophy schema awareness. Phase 14 is **not** "create approval_requests" — it is **generalize approval_requests** via the multi-step migration discipline (OPS-05): add nullable target_resource_type/target_resource_id/product columns, deploy code that populates them, backfill existing social rows with `product='draggonnb'` + `target_resource_type='social_post'`, drop the post_id NOT NULL or convert it to a generic FK pattern. Bundling generalization with new feature use will fail.
 >
-> **Existing assets we're NOT building from scratch:** `billing_plans`, `billing_invoices`, `billing_plan_changes`, `credit_pack_catalog`, `credit_purchases`, `credit_ledger`, `usage_events`, `usage_summaries`, `record_usage_event()`, `get_usage_summary()`, `aggregate_monthly_usage()`, `consume_credits()`, `client_profiles` (with brand_do / brand_dont / brand_values / tone / tagline / content_pillars / USPs), `emitBookingEvent()`, `agent_sessions`, middleware subdomain resolution + module gating, `getUserOrg()`, BaseAgent, 9-step provisioning saga.
+> 2. **`organizations.payfast_subscription_token` exists** (database.types.ts L12429, L15859) — already populated by ITN handler in `lib/billing/subscriptions.ts`. The ad-hoc charge mechanism in `lib/payments/payfast-adhoc.ts` already calls `POST /subscriptions/{token}/adhoc`. So Phase 15 damage auto-billing does not need a new token capture flow for the **landlord/org** side. The unknown is whether a single PayFast subscription token can charge **two distinct line-of-business amounts** (DraggonnB Accommodation + Trophy OS Safari) on the same merchant — see "Single billing root" section.
 >
-> **What's missing is integration, composition, UX and enforcement wiring — not foundational schema.**
+> 3. **Trophy OS uses Server Actions, not API routes.** `C:\Dev\DraggonnB\products\trophy-os\src\app\` has no `/api` folder; mutations live as Server Actions co-located with pages. This shapes the SSO bridge: cross-product API calls land on Edge Functions or Next.js route handlers Trophy OS would have to add, OR DraggonnB writes directly to Trophy tables via service-role + RLS bypass (which is the simpler path on a shared Supabase). See SSO bridge section.
+>
+> **Existing assets we're NOT building from scratch:** `organization_users` junction (4 roles) + `getUserOrg()` (`lib/auth/get-user-org.ts`), middleware tenant resolution + `x-tenant-*` header injection (`lib/supabase/middleware.ts` L96-149), `tenant_modules.config` JSONB column (already used for per-tenant module config), `payfast_subscription_token` on organizations, `chargeAdhoc()` (`lib/payments/payfast-adhoc.ts`), `emitBookingEvent()` event dispatcher (`lib/accommodation/events/dispatcher.ts`), Telegram ops bot with callback queries (`lib/accommodation/telegram/ops-bot.ts`), 9-step provisioning saga, `record_usage_event` RPC + advisory locks. On Trophy OS side: `orgs` + `org_members` (9 roles) + 779-line schema + 48 species seeded + RLS via `org_members` lookup.
+>
+> **What's missing is the federation layer — auth bridge, org linkage, generalized approval spine, cross-schema FK with RLS strategy, multi-hunter junction, PWA shell, Trophy PayFast plumbing.**
 
 ---
 
-## System Overview (current state + insertion points for v3.0)
+## 1. System Overview — current state + v3.1 federation insertion points
 
 ```
-┌────────────────────────────────────────────────────────────────────────┐
-│  EDGE — Vercel + middleware.ts                                         │
-│  Wildcard DNS *.draggonnb.online -> subdomain resolver                 │
-│  - Resolves tenant via organizations.subdomain (60s in-memory cache)   │
-│  - Injects x-tenant-id / x-tenant-tier / x-tenant-modules headers      │
-│  - Module route gating (MODULE_ROUTE_MAP) — 403/redirect if not active │
-│  ━━━ NEW v3.0: no changes to subdomain logic; add per-route metered   │
-│  ━━━          action enforcement via lib/usage/ (not middleware)      │
-└────────────────────────────────────────────────────────────────────────┘
-                                    │
-┌────────────────────────────────────────────────────────────────────────┐
-│  APP LAYER — Next.js 14 App Router                                     │
-│  - /pricing, /signup, /payment/* (public)                              │
-│  - /(dashboard)/* (auth-gated via middleware + getUserOrg())           │
-│    ├── /dashboard/[module]           <-- NEW Easy mode                 │
-│    └── /dashboard/[module]/advanced  <-- NEW Advanced mode             │
-│  - /admin/* (platform admin pages, NEW /admin/cost-monitoring)         │
-│  - /api/* (162 routes today)                                           │
-│  ━━━ NEW: /api/billing/compose, /api/billing/checkout-cart             │
-│  ━━━ NEW: /api/campaigns/*, /api/finance/*, /api/onboarding/day-*      │
-│  ━━━ NEW: /api/webhooks/telegram-finance (receipt OCR)                 │
-└────────────────────────────────────────────────────────────────────────┘
-                                    │
-┌────────────────────────────────────────────────────────────────────────┐
-│  LIB LAYER — domain modules (21 today + 4 new)                         │
-│                                                                        │
-│  EXISTING              NEW v3.0                                        │
-│  ───────────────────   ───────────────────────────────────             │
-│  lib/billing/*         lib/billing/composition.ts   <-- cart -> order  │
-│  lib/usage/*           lib/billing/addons.ts        <-- overage rules  │
-│  lib/agents/*          lib/brand/                   <-- voice loader   │
-│  lib/content-studio/*  lib/campaigns/               <-- MVP composer   │
-│  lib/accommodation/*   lib/finance/knowledge/       <-- SA VAT/SARS    │
-│  lib/restaurant/*      lib/accommodation/finance/   <-- vertical wrap  │
-│  lib/provisioning/*    lib/restaurant/finance/      <-- vertical wrap  │
-│  lib/autopilot/*       lib/onboarding/              <-- 3-day saga     │
-│  lib/tier/*            lib/telegram/finance/        <-- receipt intake │
-│                                                                        │
-│  Shared UI primitives — components/ui (shadcn)                         │
-│  ━━━ NEW: components/module-home/ (ModuleHome, AIActionCard, ModeToggle)│
-│  ━━━ NEW: components/pricing/ (ModulePicker, AddonPicker, ComposeCart) │
-└────────────────────────────────────────────────────────────────────────┘
-                                    │
-┌────────────────────────────────────────────────────────────────────────┐
-│  DATA — Supabase Postgres (84 tables, RLS-forced)                      │
-│  CORE                              v3.0 ADDITIONS                      │
-│  ─────────────────────────────    ───────────────────────────────────  │
-│  organizations                    +organizations.addon_config JSONB    │
-│  organization_users               subscription_composition (NEW)       │
-│  module_registry                  billing_addons_catalog (NEW)         │
-│  tenant_modules (config JSONB)    brand_voice (NEW, or client_profiles │
-│  billing_plans                        extension — see Section "Brand") │
-│  billing_invoices                 finance_receipts (NEW)               │
-│  usage_events / usage_summaries   campaign_runs (NEW)                  │
-│  credit_purchases / credit_ledger onboarding_progress (NEW)            │
-│  agent_sessions                   +agent_sessions cost columns (NEW)   │
-│  client_profiles (brand voice)    finance_transactions (NEW, shared)   │
-│  accommodation_* (30+)            +financial fields on existing tables │
-│  restaurant_* / elijah_*                                               │
-└────────────────────────────────────────────────────────────────────────┘
-                                    │
-┌────────────────────────────────────────────────────────────────────────┐
-│  EXTERNAL — ORCHESTRATION & AI                                         │
-│  - N8N (VPS): 17 deterministic workflows (cron, webhooks)              │
-│    ━━━ NEW: onboarding-day-1, onboarding-day-2, onboarding-day-3       │
-│    ━━━ NEW: cost-rollup-nightly (aggregates agent_sessions)            │
-│  - Anthropic Claude API (via BaseAgent): per-call, session-tracked     │
-│    ━━━ NEW: prompt cache breakpoint for brand voice system block       │
-│  - PayFast (ITN webhook at /api/webhooks/payfast)                      │
-│    ━━━ NEW: handle one-off charges for addon purchase + overage top-up │
-│  - Telegram Bot API (existing ops bot + NEW finance-receipts bot)      │
-│  - Resend (email delivery)                                             │
-└────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│  DOMAIN — eTLD+1 boundary                                               │
+│  draggonnb.co.za + *.draggonnb.co.za   ✦   trophyos.co.za + app.*       │
+│  Cookies CANNOT cross. JWT bridge required for SSO.                     │
+└─────────────────────────────────────────────────────────────────────────┘
+       │                                              │
+┌──────┴──────────────────────────────────────────────┴───────────────────┐
+│  EDGE — Vercel + middleware.ts (per app)                                │
+│  DraggonnB: wildcard tenant resolver, x-tenant-id headers               │
+│  Trophy:    standalone Next.js, no subdomain split                      │
+│  ━━━ NEW v3.1: /api/sso/issue + /api/sso/consume (JWT bridge endpoints)│
+└─────────────────────────────────────────────────────────────────────────┘
+                                     │
+┌─────────────────────────────────────────────────────────────────────────┐
+│  APP LAYER — two Next.js 14 codebases                                   │
+│                                                                         │
+│  draggonnb-platform               trophy-os                             │
+│  ─────────────────────────────    ──────────────────────────────────    │
+│  app/api/* (162 routes)           app/{auth,dashboard,portal,pricing}   │
+│  middleware.ts (tenant + auth)    Server Actions for mutations          │
+│  ━━━ NEW: app/(stay)/[id]/*       ━━━ NEW: src/app/api/sso/consume     │
+│  ━━━ NEW: app/api/sso/issue       ━━━ NEW: src/app/api/payfast/*       │
+│  ━━━ NEW: app/api/approvals/*     ━━━ NEW: src/app/api/approvals/proxy │
+│  ━━━ NEW: app/api/damage/*                                              │
+└─────────────────────────────────────────────────────────────────────────┘
+                                     │
+┌─────────────────────────────────────────────────────────────────────────┐
+│  LIB LAYER (per app, NOT shared yet — see "Decision needed: monorepo")  │
+│                                                                         │
+│  draggonnb-platform/lib                trophy-os/src/lib                │
+│  ───────────────────────────────       ─────────────────────────────    │
+│  auth/get-user-org.ts                  supabase/{client,server,admin}   │
+│  payments/payfast{,-adhoc,-prefix}.ts  ━━━ NEW: payments/payfast.ts    │
+│  accommodation/events/dispatcher.ts    ━━━     (copy or import?)        │
+│  accommodation/payments/payfast-link   ━━━ NEW: sso/consume.ts         │
+│  accommodation/telegram/ops-bot.ts     ━━━ NEW: approvals/client.ts    │
+│  ━━━ NEW: sso/issue.ts                                                  │
+│  ━━━ NEW: sso/jwt.ts                                                    │
+│  ━━━ NEW: federation/org-link.ts                                        │
+│  ━━━ NEW: approvals/spine.ts                                            │
+│  ━━━ NEW: damage/charge-flow.ts                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+                                     │
+┌─────────────────────────────────────────────────────────────────────────┐
+│  DATA — ONE Supabase project psqfgzbjbgqrmjskdavs (84+ tables, RLS)     │
+│                                                                         │
+│  DraggonnB tables                  Trophy tables (safari_*, tos_*)      │
+│  ──────────────────────────────    ──────────────────────────────────   │
+│  organizations                     orgs                                 │
+│  organization_users (4 roles)      org_members (9 roles)                │
+│  module_registry, tenant_modules   safaris, trophies, clients (Trophy)  │
+│  approval_requests (social only!)  permits, quotas, areas, species      │
+│  accommodation_bookings (+162api)  invoices (Trophy-side)               │
+│  agent_sessions, ai_usage_ledger   tos_audit_log                        │
+│                                                                         │
+│  ━━━ NEW v3.1 (canonical in DraggonnB schema):                         │
+│  ━━━   organizations.linked_trophy_org_id UUID NULL                    │
+│  ━━━   approval_requests + product, target_resource_*, target_org_id   │
+│  ━━━   damage_incidents (NEW, lives in DraggonnB schema)               │
+│  ━━━   sso_bridge_tokens (NEW, short-lived nonces — or stateless JWT)  │
+│  ━━━ NEW v3.1 (Trophy schema):                                         │
+│  ━━━   safari_hunters (junction: safari + hunter + payment status)     │
+│  ━━━   safaris.accommodation_booking_id UUID NULL  ← cross-schema FK   │
+└─────────────────────────────────────────────────────────────────────────┘
+                                     │
+┌─────────────────────────────────────────────────────────────────────────┐
+│  EXTERNAL                                                               │
+│  N8N (DraggonnB only today; Trophy not wired) — keep this asymmetry    │
+│  Anthropic Claude API (via BaseAgent) — DraggonnB only                 │
+│  PayFast (single merchant account, two products draw from it)          │
+│  Telegram (single ops bot? or two? — see Decision needed below)        │
+│  WhatsApp (DraggonnB has Cloud API; Trophy needs same)                 │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
-
-### Component responsibilities (new + modified)
-
-| Component | Kind | Responsibility | Touches |
-|-----------|------|----------------|---------|
-| `components/module-home/ModuleHome.tsx` | NEW (RSC) | Easy-mode page shell for any module: greeting, 3–5 AI action cards, shortcut tiles, brand ribbon, "Go Advanced" link | `lib/brand/loader.ts`, each module's `getModuleActions()` |
-| `components/module-home/AIActionCard.tsx` | NEW (client) | Render one AI-generated action with "Approve / Dismiss / Customize"; calls provided `onApprove`/`onDismiss` | Module API routes |
-| `components/module-home/ModeToggle.tsx` | NEW (client) | Persists Easy/Advanced preference to `user_profiles.ui_mode` | `/api/user/preferences` |
-| `components/pricing/ModulePicker.tsx` | NEW (client) | Module checkbox grid, recomputes total, shows "conflicts/requires" | `lib/billing/composition.ts` |
-| `lib/billing/composition.ts` | NEW | Validate a cart (base plan + modules + addons), compute total, produce `line_items[]` for invoice + PayFast submission | `billing_plans`, `billing_addons_catalog`, `credit_pack_catalog` |
-| `lib/billing/addons.ts` | NEW | Read `billing_addons_catalog`, list available addons by category (module, overage, implementation) | |
-| `lib/brand/loader.ts` | NEW | `getBrandVoice(orgId)` returns a frozen object `{ tone, brandDo[], brandDont[], taglines[], USPs[], cacheKey }` | `client_profiles` (or new `brand_voice`) |
-| `lib/brand/prompt-injector.ts` | NEW | Takes a BaseAgent config + brand voice → returns a `systemBlocks` array with Anthropic prompt-cache breakpoint on the brand block | `@anthropic-ai/sdk` >= 0.27 |
-| `lib/campaigns/planner.ts` | NEW | Plan a multi-channel campaign (topic + audience + dates → structured plan) | existing prompt-builder |
-| `lib/campaigns/generator.ts` | NEW | Fan out plan → content-studio (email + social) generators | `content-studio/prompt-builder.ts` |
-| `lib/campaigns/scheduler.ts` | NEW | Create email campaigns + scheduled social posts; persist `campaign_runs` | `email/*`, `social/*` |
-| `lib/campaigns/analytics.ts` | NEW | Aggregate per-campaign metrics | existing analytics tables |
-| `lib/finance/knowledge/sa-vat.ts` | NEW | Pure rules: VAT rate (15%), VAT registration thresholds, deemed VAT logic, output/input VAT, tourism levy (1%), TOMS equivalent | — |
-| `lib/finance/knowledge/sars-formats.ts` | NEW | Pure formatters: IRP5, VAT201 line definitions, SARS tax invoice requirements (section 20(4) of VAT Act) | — |
-| `lib/finance/ledger.ts` | NEW | Generic transaction write/read against `finance_transactions` | |
-| `lib/accommodation/finance/` | NEW | Vertical adapter: reads `bookings`, `accommodation_payments`, produces finance transactions | calls `lib/finance/ledger.ts` |
-| `lib/restaurant/finance/` | NEW | Vertical adapter: reads `restaurant_orders` (when that module lands), produces finance transactions | calls `lib/finance/ledger.ts` |
-| `lib/telegram/finance/receipt-bot.ts` | NEW | Polls/receives photos on finance-receipts bot, stores to `finance_receipts`, calls vision extractor | existing `lib/telegram/bot.ts` |
-| `lib/telegram/finance/ocr.ts` | NEW | Claude Haiku 4.5 vision call for receipt → `{ vendor, total, vat, date, line_items[] }` | |
-| `lib/onboarding/day-sagas.ts` | NEW | Day-1/2/3 onboarding step orchestrators (not saga-with-rollback — checkpointed linear) | N8N triggers, brand voice, Telegram |
-| `lib/usage/middleware-guard.ts` | NEW | Reusable API-route helper: `await guardUsage(orgId, 'ai_generation')` returns Response-or-null | `lib/usage/meter.ts` |
-| `scripts/cron/nightly-cost-rollup.ts` | NEW | Aggregate `agent_sessions` + `usage_events` cost → `daily_cost_rollup` table | Vercel cron |
-
-**Modified:**
-
-- `lib/payments/payfast.ts` — add `createPayFastOneOff()` for addon + overage charges alongside existing `createPayFastSubscription()`. Do NOT delete `PRICING_TIERS` yet (still referenced).
-- `app/pricing/page.tsx` — full rewrite to composition UI; reads from `lib/billing/plans.ts` + addons.
-- `app/api/webhooks/payfast/route.ts` — branch on `item_code` prefix: `DRG-*` (subscription, existing), `ADDON-*` (new module purchase), `TOPUP-*` (credit pack).
-- `lib/agents/base-agent.ts` — accept optional `systemBlocks: Array<{type:'text', text:string, cache_control?:...}>` to replace scalar `system: string`. Inject brand voice with cache breakpoint.
-- `scripts/provisioning/orchestrator.ts` — add step 10 "schedule-onboarding-followups" after step 08 QA, before step 09 billing.
-- `app/(dashboard)/*/page.tsx` for 6+ modules — wrap in `<ModuleHome>` OR redirect to `/advanced`.
 
 ---
 
-## Recommended Project Structure (delta from current)
+## 2. SSO bridge architecture (Phase 13)
 
+### Recommended: **JWT bridge endpoint (Option B)** with stateless short-lived tokens
+
+The cookie-federation route is structurally blocked: `draggonnb.co.za` and `trophyos.co.za` are different eTLD+1s. Browser cookies cannot be shared. Setting `Domain=.draggonnb.co.za` does nothing for `trophyos.co.za`. Options:
+
+| Option | Mechanism | Pros | Cons | Verdict |
+|--------|-----------|------|------|---------|
+| A. Subdomain federation | Move Trophy under `trophy.draggonnb.co.za`; share cookies on `.draggonnb.co.za` | Simplest auth model | Trophy already has `trophyos.co.za` brand committed; rename late = bad SEO + investor narrative breaks | NO |
+| **B. JWT bridge endpoint** | DraggonnB issues short-lived signed JWT, redirects user to Trophy with `?bridge=<jwt>`, Trophy validates + sets its own session cookie | Works across eTLD+1s, no cookie magic, audit trail per bridge, stateless | Needs shared signing key, replay-attack window | **YES** |
+| C. Custom Supabase Auth provider | Trophy uses DraggonnB as IdP via OIDC | Standards-compliant | Supabase Auth SAML/OIDC config is per-project; both apps already use the same Supabase project, so OIDC layer adds zero value | NO |
+| D. Hybrid (B + same Supabase session) | JWT bridge mints a Supabase session via Admin API, then sets the standard Supabase cookie on Trophy | Single auth state across both apps | Complexity + Admin API rate limits | Phase 17+ if needed |
+
+#### Recommended Phase 13 implementation
+
+**Sequence:**
 ```
-C:\Dev\draggonnb-platform\
-├── app\(dashboard)\
-│   ├── dashboard\                 # /dashboard — Easy landing (ModuleHome aggregate)
-│   ├── crm\
-│   │   ├── page.tsx               # NEW: Easy mode (<ModuleHome module="crm" />)
-│   │   └── advanced\page.tsx      # EXISTING renamed; all current CRM UI lives here
-│   ├── email\...                  # same split
-│   ├── accommodation\...          # same split (advanced is massive; Easy shows 3 cards)
-│   ├── restaurant\...
-│   ├── campaigns\                 # NEW
-│   │   ├── page.tsx               # Easy: "Generate my week"
-│   │   └── advanced\page.tsx      # detailed planner
-│   ├── finance\                   # NEW
-│   │   ├── page.tsx               # Easy: ledger summary + receipt inbox
-│   │   └── advanced\page.tsx      # full VAT register, transactions, exports
-│   ├── onboarding\                # EXISTING (landing-page flow); extend for day-1/2/3
-│   └── admin\
-│       └── cost-monitoring\page.tsx   # NEW (Chris-only, platform_admin guard)
-├── app\api\
-│   ├── billing\
-│   │   ├── compose\route.ts       # NEW POST (validate cart, return computed order)
-│   │   ├── checkout-cart\route.ts # NEW POST (create composed subscription + redirect)
-│   │   └── addons\route.ts        # NEW GET (list catalog)
-│   ├── campaigns\
-│   │   ├── plan\route.ts          # NEW POST
-│   │   ├── generate\route.ts      # NEW POST
-│   │   └── [id]\route.ts
-│   ├── finance\
-│   │   ├── transactions\route.ts
-│   │   ├── vat-register\route.ts
-│   │   └── receipts\[id]\route.ts
-│   ├── brand\
-│   │   └── voice\route.ts         # NEW GET/PUT (onboarding + settings)
-│   ├── onboarding\
-│   │   ├── day-1\route.ts         # NEW (N8N-triggerable)
-│   │   ├── day-2\route.ts
-│   │   └── day-3\route.ts
-│   ├── user\
-│   │   └── preferences\route.ts   # NEW PUT ui_mode
-│   └── webhooks\
-│       ├── payfast\route.ts       # MODIFIED (item_code branching)
-│       └── telegram-finance\route.ts  # NEW
-├── lib\
-│   ├── billing\
-│   │   ├── plans.ts               # EXISTING
-│   │   ├── subscriptions.ts       # EXISTING
-│   │   ├── invoices.ts            # EXISTING
-│   │   ├── credits.ts             # EXISTING
-│   │   ├── composition.ts         # NEW
-│   │   └── addons.ts              # NEW
-│   ├── brand\                     # NEW
-│   │   ├── loader.ts
-│   │   ├── prompt-injector.ts
-│   │   └── types.ts
-│   ├── campaigns\                 # NEW
-│   │   ├── planner.ts
-│   │   ├── generator.ts
-│   │   ├── scheduler.ts
-│   │   ├── analytics.ts
-│   │   └── types.ts
-│   ├── finance\                   # NEW
-│   │   ├── knowledge\
-│   │   │   ├── sa-vat.ts
-│   │   │   ├── sa-tourism-levy.ts
-│   │   │   ├── sars-formats.ts
-│   │   │   └── index.ts
-│   │   ├── ledger.ts
-│   │   └── types.ts
-│   ├── accommodation\finance\     # NEW (vertical adapter)
-│   ├── restaurant\finance\        # NEW (vertical adapter)
-│   ├── onboarding\                # NEW
-│   │   ├── day-sagas.ts
-│   │   ├── steps\
-│   │   │   ├── send-welcome-email.ts
-│   │   │   ├── capture-brand-voice.ts
-│   │   │   ├── seed-first-campaign.ts
-│   │   │   └── generate-starter-content.ts
-│   │   └── types.ts
-│   ├── telegram\finance\          # NEW
-│   │   ├── receipt-bot.ts
-│   │   └── ocr.ts
-│   ├── usage\
-│   │   ├── meter.ts               # EXISTING
-│   │   ├── limits.ts              # EXISTING
-│   │   └── middleware-guard.ts    # NEW
-│   └── agents\
-│       └── base-agent.ts          # MODIFIED (systemBlocks + cache)
-├── components\
-│   ├── module-home\               # NEW
-│   │   ├── ModuleHome.tsx
-│   │   ├── AIActionCard.tsx
-│   │   ├── ModeToggle.tsx
-│   │   └── ShortcutTile.tsx
-│   ├── pricing\                   # NEW
-│   │   ├── ModulePicker.tsx
-│   │   ├── AddonPicker.tsx
-│   │   ├── ComposeCart.tsx
-│   │   └── PriceBreakdown.tsx
-│   └── landing\                   # MODIFIED (site redesign)
-├── scripts\
-│   ├── cron\
-│   │   └── nightly-cost-rollup.ts # NEW (Vercel cron target)
-│   └── provisioning\steps\
-│       └── 10-schedule-onboarding.ts  # NEW
-└── supabase\migrations\
-    ├── 22_billing_composition.sql     # NEW
-    ├── 23_brand_voice.sql             # NEW (if we don't reuse client_profiles)
-    ├── 24_finance_core.sql            # NEW
-    ├── 25_finance_receipts.sql        # NEW
-    ├── 26_campaign_runs.sql           # NEW
-    ├── 27_onboarding_progress.sql     # NEW
-    ├── 28_agent_cost_columns.sql      # NEW (ALTER agent_sessions)
-    └── 29_daily_cost_rollup.sql       # NEW
+1. User authenticated at app.draggonnb.co.za (DraggonnB session cookie set)
+2. User clicks "Open Trophy OS" sidebar item
+3. Browser → GET /api/sso/issue?target=trophy
+   ↓ DraggonnB server validates session via getUserOrg()
+   ↓ Looks up organizations.linked_trophy_org_id for user's org
+   ↓ Looks up trophy_org_member: SELECT id FROM org_members WHERE org_id = linked AND user_id = auth.uid()
+   ↓ If no trophy_org_member: auto-provision (see "Auto-link" below)
+   ↓ Mints JWT { sub: user.id, draggonnb_org: org.id, trophy_org: linked_org_id, trophy_role: ph_role, exp: now+60s, jti: nonce, iss: 'draggonnb' }
+   ↓ Signs with HS256 using SSO_BRIDGE_SECRET (env var, shared with Trophy)
+4. DraggonnB → 302 https://app.trophyos.co.za/api/sso/consume?bridge=<jwt>
+5. Trophy app/api/sso/consume/route.ts:
+   ↓ Verifies signature, checks exp + jti not in used-set (Redis or sso_bridge_tokens table for replay protection)
+   ↓ Calls supabase.auth.admin.createSession({ user_id }) OR signs in via magic link OR sets a custom Trophy-side session cookie
+   ↓ Redirects to /dashboard
 ```
 
-### Structure rationale
+**Files to create (DraggonnB):**
+- `lib/sso/jwt.ts` — sign + verify HS256 JWT, 60s expiry
+- `lib/sso/issue.ts` — orchestration: validate session → resolve trophy_org → mint JWT
+- `app/api/sso/issue/route.ts` — entry point, 302 redirect
+- `lib/federation/org-link.ts` — resolve `organizations.linked_trophy_org_id` + auto-provision missing trophy `org_members` row
+- `components/sidebar/trophy-cross-link.tsx` — sidebar item that links to `/api/sso/issue?target=trophy` (Trophy module gating: only shows if `tenant_modules.module_id='trophy' AND is_enabled=true`)
 
-- **`/dashboard/[module]` vs `/dashboard/[module]/advanced` split (Option A — recommended).** Beats query-string toggle for three reasons: (1) each mode is a different React tree and a different auth/data shape — Easy mode pulls only 3–5 AI cards, Advanced pulls entire CRUD — mixing in one file forces client-component-with-swr, killing RSC speed; (2) URLs are shareable and bookmarkable, which matters for handover to a team member who wants the advanced view without flipping a setting; (3) no conditional-rendering bloat. Con: duplicated nav/layout — mitigated by shared `(dashboard)/layout.tsx`. User's default mode persisted in `user_profiles.ui_mode` drives redirect from `/dashboard/crm` → `/dashboard/crm/advanced` if preference is "advanced". The `ModeToggle` button flips preference AND navigates.
-- **`lib/brand/`** is isolated because four different consumers need it (content-studio, 4 agents, campaigns, onboarding). Making it a sibling of `lib/agents/` (not nested under any) keeps it DI-friendly.
-- **`lib/finance/knowledge/`** is pure functions + constants, zero Supabase imports. This means it's trivially unit-testable and future-importable from Restaurant/Accommodation adapters without circular deps.
-- **`lib/{accommodation,restaurant}/finance/`** are thin (~200 LOC) adapters. They read module-specific tables and emit generic `FinanceTransaction` rows. The generic ledger knows nothing about bookings/orders.
+**Files to create (Trophy OS):**
+- `src/app/api/sso/consume/route.ts` — JWT validation + session minting
+- `src/lib/sso/verify.ts` — verifies JWT, enforces exp/jti
+- `src/lib/sso/session.ts` — creates Supabase session (Admin API) or sets custom cookie
+
+**Replay protection — pick one:**
+- **Stateless** (recommended for v3.1): rely on 60s JWT expiry + jti uniqueness check via Redis SETNX with TTL. No new table. Requires Redis (Upstash on Vercel).
+- **Stateful**: `sso_bridge_tokens (jti, issued_at, consumed_at, user_id)` table. No external dep. Slower (DB write on every bridge).
+
+**Decision needed:** Redis vs DB-backed replay protection. Redis is faster + cleaner; DB is one less moving piece.
+
+### Reverse direction (Trophy → DraggonnB)
+
+Symmetric. Trophy has its own `/api/sso/issue?target=draggonnb`, DraggonnB has `/api/sso/consume`. Same JWT shape, opposite issuer. Sidebar item in Trophy renders only if `org_members.org_id` has a corresponding DraggonnB `organizations.linked_trophy_org_id` reverse-pointing back.
+
+### Auto-provision missing Trophy `org_members` row
+
+When DraggonnB user X clicks bridge for the first time, but they don't yet have an `org_members` row in the Trophy `orgs` row:
+- Default: auto-create `org_members(org_id=trophy_org, user_id=X, role='client', display_name=X.fullName)` — minimum-privilege, owner upgrades manually
+- Alternative: refuse bridge until Trophy admin invites them — safer for compliance, more friction
+- **Decision needed:** auto-provision-as-client vs require-explicit-invite. Chris's call.
 
 ---
 
-## Architectural Patterns
+## 3. Org bridge / linkage table (Phase 13)
 
-### Pattern 1: Composable Billing (subscription + addons + overage)
-
-**What:** Order = (base plan) + (selected modules) + (overage credit packs). Persisted as a per-org composition row + an invoice with line items.
-
-**Schema recommendation (cleanest given existing tables):**
+### Recommended: **Column on `organizations`** + **DB function for symmetric lookup**
 
 ```sql
--- NEW: 22_billing_composition.sql
-CREATE TABLE billing_addons_catalog (
-  id TEXT PRIMARY KEY,                        -- 'addon-accommodation', 'addon-restaurant', 'addon-finance-ai'
-  display_name TEXT NOT NULL,
-  kind TEXT NOT NULL CHECK (kind IN ('module','implementation','overage_pack')),
-  module_id TEXT REFERENCES module_registry(id),  -- NULL for non-module addons
-  price_zar INTEGER NOT NULL,                 -- cents; recurring for 'module', one-off for 'implementation'/'overage_pack'
-  billing_kind TEXT NOT NULL CHECK (billing_kind IN ('recurring','one_off')),
-  min_plan_id TEXT REFERENCES billing_plans(id),  -- e.g. restaurant requires growth
-  payfast_item_code TEXT UNIQUE,
-  config JSONB DEFAULT '{}',
-  is_active BOOLEAN DEFAULT true
-);
+-- Migration NN_v31_org_link.sql (multi-step per OPS-05)
+-- Step A (this migration): nullable column
+ALTER TABLE organizations
+  ADD COLUMN linked_trophy_org_id UUID NULL REFERENCES orgs(id) ON DELETE SET NULL;
 
-CREATE TABLE subscription_composition (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  organization_id UUID UNIQUE NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-  base_plan_id TEXT NOT NULL REFERENCES billing_plans(id),
-  active_addons TEXT[] NOT NULL DEFAULT '{}',  -- array of billing_addons_catalog.id for 'module' kind
-  monthly_total_zar INTEGER NOT NULL,           -- denormalized cache; recomputed on change
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
+CREATE INDEX idx_organizations_linked_trophy ON organizations(linked_trophy_org_id) WHERE linked_trophy_org_id IS NOT NULL;
+
+-- Symmetric reverse lookup (no FK on Trophy side — keeps Trophy schema independent for now)
+-- Resolve via: SELECT id FROM organizations WHERE linked_trophy_org_id = <trophy_org_id>
 ```
 
-**Why NOT a single `subscriptions` table with line items:**
+#### Why this shape, not a `cross_product_links` table
 
-- An entity-with-line-items model conflates three different billing behaviours: base plan recurs, module addons recur (but independently toggleable), and overage packs are one-off. Treating them uniformly forces a `subscription_item_kind` discriminator that every downstream query then has to filter on.
-- Existing `billing_invoices` already uses `line_items JSONB` — that's the right place for compositional detail *at the moment of billing*. The org's *current state* is better modeled as `subscription_composition` (one row per org).
-- `credit_purchases` already handles overage packs — don't duplicate.
+| Option | Pros | Cons |
+|--------|------|------|
+| **Column on `organizations`** | Direct join, no extra table, RLS already inherits | One-to-one only; if a DraggonnB org ever links to multiple Trophy orgs (multi-farm scenario) this breaks |
+| `cross_product_links(draggonnb_org_id, trophy_org_id, status, created_at)` | Many-to-many ready, audit trail | Two joins for every cross-product query, RLS complexity |
 
-**PayFast coexistence (one-off alongside recurring):**
+**Recommended: column for v3.1**, migrate to junction table in v3.2 if multi-farm-per-org demand surfaces. Outfitter tier in Trophy OS already supports "multi-farm" semantics via multiple `orgs` rows that share an outfitter — this is a v3.2 problem.
 
-PayFast has two modes: subscription-type-1 (recurring) for the monthly base+modules, and one-off (subscription-type-6 or plain checkout) for overage top-ups and implementation fees. Recommended:
+### Mapping granularity: per-org
+
+Per-org, not per-user. Rationale:
+- DraggonnB `organizations` and Trophy `orgs` are both tenant boundaries. Both share the *concept* of "this lodge / this outfitter business."
+- User mapping is derived: a DraggonnB `organization_users` row + a Trophy `org_members` row, both pointing to the linked org pair, both pointing to the same `auth.users.id`.
+- Roles do NOT map. A user is `admin` in DraggonnB and `farm_owner` in Trophy independently. The SSO bridge propagates the linked role; it does NOT translate roles.
+
+### Provisioning flow when activating Trophy module
+
+When DraggonnB activates `module_id='trophy'` for an organization:
 
 ```
-Base + Modules (recurring)  → single PayFast subscription, amount = monthly_total_zar
-Implementation fee (one-off) → separate PayFast one-off at signup (m_payment_id prefixed ONEOFF-)
-Overage top-up (one-off)    → separate PayFast one-off ad-hoc (m_payment_id prefixed TOPUP-)
+provisioning saga step (NEW — between deploy-automations and onboarding-sequence):
+  10. provision-trophy-link
+      ↓ Check: does organizations.linked_trophy_org_id already exist?
+      ↓ If yes: idempotent no-op
+      ↓ If no:
+        ↓ Create Trophy orgs row: INSERT INTO orgs(name, slug, type, owner_id, ...) VALUES (...)
+          (slug = draggonnb_subdomain or draggonnb_subdomain + '-trophy' if collision)
+        ↓ Create Trophy org_members row: user_id = DraggonnB org admin, role = 'farm_owner'
+        ↓ UPDATE organizations SET linked_trophy_org_id = <new orgs.id>
+        ↓ INSERT INTO tenant_modules(organization_id, module_id, is_enabled, config) VALUES (..., 'trophy', true, '{"linked_org_id": "<new orgs.id>"}')
+      ↓ Rollback: DELETE FROM orgs WHERE id = linked_trophy_org_id (cascades to org_members)
 ```
 
-The `app/api/webhooks/payfast/route.ts` branches on `m_payment_id` prefix. Each line item type maps to a distinct handler: `handleSubscriptionPayment()`, `handleImplementationPayment()`, `handleTopupPayment()`. All three write to `billing_invoices` (`line_items[]`) and `subscription_history`.
+This becomes step 10 in the existing 9-step saga (extends to 10 steps for orgs that opt into Trophy). Lives in `lib/provisioning/steps/provision-trophy-link.ts`. Idempotent and has rollback per existing saga discipline.
 
-**When to use:** Any v3.0 tenant. Existing tenants keep `plan_id` (exists already) and get a `subscription_composition` row auto-created on first login post-migration with `active_addons = []` — see Migration Strategy below.
+**Decision needed:** Auto-provision Trophy `orgs` row at module-activation time, OR wait for user to manually create one in Trophy and link. Auto-provision = smoother UX, Trophy `orgs` always exists when tenant_modules.module_id='trophy' is true. Manual = explicit user consent for Trophy-side billing trial start. Recommend auto-provision with `subscription_status='trial'` (Trophy has 14-day trial built in).
 
-**Trade-offs:**
+### Where does `tenant_modules.config.trophy.linked_org_id` live? Both places.
 
-- (+) Additive to existing schema. `billing_plans`, `billing_invoices`, `credit_*` all unchanged.
-- (+) Existing PayFast flow untouched for base plan; one-off routing is additive.
-- (−) `monthly_total_zar` denormalization requires trigger or app-level recompute on addon toggle. Recommended: app-level, use DB constraint `CHECK monthly_total_zar >= 0`.
-- (−) Requires PayFast subscription *amendment* when a tenant adds a module mid-cycle. PayFast supports amending via their `/subscriptions/{token}/adhoc` or cancel-and-recreate. Use cancel-and-recreate — it's proven in `lib/billing/subscriptions.ts::cancelPayFastSubscription()`.
+Authoritative: `organizations.linked_trophy_org_id` (FK-enforced, RLS-bounded).
+Convenience cache: `tenant_modules.config` JSONB at `config->'trophy'->>'linked_org_id'`.
 
-### Pattern 2: ModuleHome + AI-action-card (declarative config, not callbacks)
+The middleware reads `tenant_modules` already to populate `x-tenant-modules`. Extending it to also extract `linked_trophy_org_id` is one line. SSO bridge reads from `tenant_modules.config` to avoid an extra JOIN to `organizations`. Backfill: every new write to `organizations.linked_trophy_org_id` also updates the JSONB cache (via trigger or app code).
 
-**What:** A server component that any module's Easy page uses as its entire body. Consumers pass a declarative manifest, not callbacks.
+---
 
-**Why declarative, not callbacks:**
+## 4. Approval spine architecture (Phase 14)
 
-- Callbacks with `getActions: () => Promise<Action[]>` force `ModuleHome` to be a client component (to invoke the callback on interaction) or force awkward RSC-passing-RSC (which Next.js 14 doesn't cleanly support for user-land functions).
-- A manifest pattern keeps `ModuleHome` as RSC, fetches actions server-side in parallel, and streams the card UI. Each card is a client island only for the approve/dismiss button.
-- Manifest is re-usable: the same `module: 'crm'` manifest can drive the module-home aggregator on `/dashboard` (which renders mini-versions of each module's card set).
+### Critical correction: `approval_requests` already exists, social-only. Generalize, don't recreate.
 
-**Recommended API:**
-
-```typescript
-// lib/module-home/manifests/crm.ts
-import type { ModuleHomeManifest } from '@/lib/module-home/types'
-
-export const crmManifest: ModuleHomeManifest = {
-  moduleId: 'crm',
-  title: 'CRM',
-  greeting: (org) => `Hi ${org.name}, here's what needs attention in your pipeline.`,
-  getActions: async (ctx) => {
-    // runs server-side in the RSC render; ctx = { orgId, userId, brand }
-    return [
-      {
-        id: 'follow-up-cold-leads',
-        kind: 'ai_suggestion',
-        title: '7 leads went cold. Send a re-engagement email.',
-        detail: 'Last contact > 14 days ago. Draft email preview available.',
-        approveAction: '/api/crm/actions/re-engage-cold',
-        dismissAction: '/api/crm/actions/dismiss?id=follow-up-cold-leads',
-        previewAction: '/api/crm/actions/preview?id=follow-up-cold-leads',
-      },
-      // ...
-    ]
-  },
-  shortcuts: [
-    { label: 'Add contact', href: '/dashboard/crm/advanced?action=new-contact' },
-    { label: 'View pipeline', href: '/dashboard/crm/advanced' },
-  ],
-}
+Current shape (database.types.ts L4433-4502):
+```
+approval_requests
+  id UUID
+  organization_id UUID FK → organizations
+  approval_rule_id UUID FK → approval_rules (nullable)
+  post_id UUID FK → social_posts (NOT NULL)  ← blocks generalization
+  requested_by UUID
+  assigned_to UUID[]
+  status, urgency, request_notes, requested_at, expires_at
 ```
 
-```typescript
-// app/(dashboard)/crm/page.tsx
-import { ModuleHome } from '@/components/module-home/ModuleHome'
-import { crmManifest } from '@/lib/module-home/manifests/crm'
+#### Multi-step generalization (OPS-05 discipline)
 
-export default function CrmHomePage() {
-  return <ModuleHome manifest={crmManifest} />
-}
+```
+Migration NN1_approval_spine_step1_add_columns.sql:
+  ALTER TABLE approval_requests
+    ADD COLUMN product TEXT NULL CHECK (product IN ('draggonnb', 'trophy')),
+    ADD COLUMN target_resource_type TEXT NULL,
+    ADD COLUMN target_resource_id UUID NULL,
+    ADD COLUMN target_org_id UUID NULL,
+    ADD COLUMN action_type TEXT NULL CHECK (action_type IN (
+      'social_post','damage_charge','rate_change','content_post',
+      'quota_change','safari_status_change','supplier_job_approval'
+    )),
+    ADD COLUMN action_payload JSONB DEFAULT '{}'::jsonb;
+  ALTER TABLE approval_requests
+    ALTER COLUMN post_id DROP NOT NULL;  -- safe: column still exists, just nullable
+
+Migration NN2_approval_spine_step2_backfill.sql:
+  UPDATE approval_requests
+  SET product = 'draggonnb',
+      target_resource_type = 'social_post',
+      target_resource_id = post_id,
+      target_org_id = organization_id,
+      action_type = 'social_post'
+  WHERE product IS NULL;  -- idempotent: WHERE clause makes it safe to re-run
+
+Migration NN3_approval_spine_step3_constraints.sql (only after deploy + verify):
+  ALTER TABLE approval_requests
+    ALTER COLUMN product SET NOT NULL,
+    ALTER COLUMN target_resource_type SET NOT NULL,
+    ALTER COLUMN target_resource_id SET NOT NULL,
+    ALTER COLUMN target_org_id SET NOT NULL;
+  -- DO NOT drop post_id column yet — leave for Phase 17 cleanup migration.
+  -- Existing code paths still read post_id; remove only after grep-verified zero usage.
 ```
 
-**Action source — agent vs cached vs event-driven (decision matrix):**
+This is **3 migrations across 3 deploys** per OPS-05. Phase 14 plan must reflect that.
 
-| Action freshness need | Source | Example |
-|---|---|---|
-| "Right now" reactive | event-driven (query existing tables, compute in `getActions`) | "3 bookings need check-in prep today" |
-| Daily/weekly "suggestion" | cached from nightly N8N run → `module_home_suggestions` table | "Your best-performing post last week was X. Repeat it?" |
-| On-demand AI generation | BaseAgent call, triggered by user click (NOT in `getActions`) | "Draft 3 options for this re-engagement email" |
+### Trophy reads/writes via shared Supabase + service-role bypass
 
-Per-render BaseAgent calls in `getActions` would be per-page-load and too expensive. Suggestions cache nightly or weekly. Server-side queries for reactive items are fine (sub-100ms against indexed tables).
+| Approach | Pros | Cons | Verdict |
+|----------|------|------|---------|
+| Trophy calls DraggonnB API: `POST app.draggonnb.co.za/api/approvals` | Single source of business logic | Network hop, auth complexity, two failure domains | NO |
+| **Trophy writes directly to `approval_requests` via service-role client** | Single SQL write, RLS enforced symmetrically, no network hop | Trophy schema-couples to DraggonnB table; both products' migrations must coordinate | **YES** |
 
-**Trade-offs:**
+Both apps share Supabase. The "two products" framing is brand-level, not data-level. Direct table access is the simpler model.
 
-- (+) RSC-first, zero client-side fetch on initial paint for action list.
-- (+) Every module has the same shape; onboarding can programmatically list "set up your CRM home" by iterating manifests.
-- (−) Action cards can't easily share state across the page (e.g. "I already approved this, dim the next one"). That's fine at MVP — treat each card as independent.
+**RLS strategy for `approval_requests` post-generalization:**
 
-### Pattern 3: Brand voice as cached system block
+```sql
+-- DraggonnB requesters/approvers
+CREATE POLICY "approval_requests_select_draggonnb" ON approval_requests
+  FOR SELECT USING (
+    product = 'draggonnb' AND
+    target_org_id = get_user_org_id()  -- existing STABLE function
+  );
 
-**What:** Brand voice is loaded once per request, injected as a separate system content block with Anthropic cache control, so the first request for each tenant after cache-warm pays ~1/10th the tokens for brand context. Cache persists ~5 min.
+-- Trophy requesters/approvers (uses Trophy's RLS predicate)
+CREATE POLICY "approval_requests_select_trophy" ON approval_requests
+  FOR SELECT USING (
+    product = 'trophy' AND
+    target_org_id IN (SELECT org_id FROM org_members WHERE user_id = auth.uid() AND is_active = TRUE)
+  );
 
-**Storage recommendation: extend `client_profiles` (existing), do NOT create new `brand_voice` table.**
-
-`client_profiles` already has `tone`, `brand_do[]`, `brand_dont[]`, `brand_values[]`, `tagline`, `content_pillars[]`, `unique_selling_points[]`. This is brand voice — already org-scoped, already RLS-protected, already surfaced in autopilot UI. Creating a new table is duplication. Add any missing fields (`example_phrases TEXT[]`, `forbidden_topics TEXT[]`) via `ALTER TABLE` in `23_brand_voice.sql`.
-
-**NOT in `tenant_modules.config`:** JSONB is right for per-module config (e.g. accommodation property types, restaurant table count) — values that are the *module's* config. Brand voice is cross-cutting and should be a first-class row.
-
-**Injection pattern:**
-
-```typescript
-// lib/brand/prompt-injector.ts
-import type Anthropic from '@anthropic-ai/sdk'
-
-export async function buildSystemBlocks(
-  orgId: string,
-  taskSystemPrompt: string,
-): Promise<Anthropic.TextBlockParam[]> {
-  const brand = await getBrandVoice(orgId)
-  return [
-    {
-      type: 'text',
-      text: brand.toSystemText(),        // stable per tenant; long-ish
-      cache_control: { type: 'ephemeral' },  // <-- 5min cache, savings compound across calls
-    },
-    {
-      type: 'text',
-      text: taskSystemPrompt,            // varies per agent / per task
-    },
-  ]
-}
-```
-
-Anthropic caches entries in order up to the last `cache_control` breakpoint. Brand voice first → stable → cached. Task prompt second → varies → not cached. Every subsequent call from the same tenant within 5 min reads the brand context from cache at 10% of the token cost.
-
-**Trade-off — cache eviction:** When tenant edits brand voice, their cache entries become stale. Anthropic doesn't expose cache invalidation, so we rely on natural 5-min TTL. For the first ~5 min after an edit, mixed content generation could use stale voice. Acceptable (brand voice changes rarely). If it matters, we append a `v:${updated_at}` marker to force a cache miss.
-
-### Pattern 4: Usage enforcement via DB RPC (not middleware)
-
-**What:** Metered action enforcement happens at API-route level via the already-built `record_usage_event` RPC, not in `middleware.ts`.
-
-**Why not middleware:**
-
-- Middleware runs on every request (including images, static assets, health probes). Running a DB write per-request is a bad idea at any scale.
-- Middleware can't distinguish "the user viewed the content generator page" from "the user clicked generate". Only the endpoint knows the action is metered.
-- `middleware.ts` is already the tightest bottleneck in our request path; adding usage-check latency there would regress every API call.
-
-**Recommended pattern — route-level guard:**
-
-```typescript
-// lib/usage/middleware-guard.ts
-import { recordUsage } from './meter'
-export async function guardUsage(
-  orgId: string,
-  metric: UsageMetric,
-  quantity = 1,
-): Promise<Response | null> {
-  const { data, error } = await recordUsage(orgId, metric, quantity)
-  if (error) return Response.json({ error: 'Usage check failed' }, { status: 500 })
-  if (!data?.allowed) {
-    return Response.json(
-      { error: 'Usage limit reached', metric, current: data?.current, limit: data?.limit },
-      { status: 429, headers: { 'Retry-After': '86400' } },
+-- Cross-product visibility for users with linked orgs (e.g. owner sees all approvals for both products)
+CREATE POLICY "approval_requests_select_linked" ON approval_requests
+  FOR SELECT USING (
+    target_org_id IN (
+      SELECT linked_trophy_org_id FROM organizations
+      WHERE id = get_user_org_id() AND linked_trophy_org_id IS NOT NULL
     )
-  }
-  return null  // allowed
-}
-
-// in an API route:
-const denied = await guardUsage(orgId, 'ai_generation')
-if (denied) return denied
-// ... do the work
+  );
 ```
 
-The existing `record_usage_event` RPC is atomic (check + insert in a single `plpgsql` block with a SELECT ... FROM usage_events summing current, then branching). No lost writes at low concurrency. At SA SME scale this is comfortably sufficient.
+Three OR-stacked SELECT policies cover: DraggonnB-product approvers see DraggonnB approvals for their org, Trophy-product approvers see Trophy approvals for their Trophy org, and cross-product owners see both.
 
-**Counter storage recommendation:** Keep `usage_events` as the source of truth (append-only event log, already exists). Don't move to Redis. Reasons:
-- Durability matters — a lost "email sent" event means free email sends for that tenant, which is revenue leakage.
-- Per-tenant concurrency is low (10s/min at most). Postgres handles the INSERT load trivially.
-- `get_usage_summary` RPC caches well at the RPC level if we wrap it; right now it does a sum on a properly-indexed table (`idx_usage_events_org_metric`).
-- If per-tenant traffic ever spikes to 1000s/min (unlikely at current scale), partition `usage_events` by month and optionally add a Redis-backed counter cache in front.
+### Telegram bot — single ops bot, product-tagged callbacks
 
-**Validated as recommended in the question — Postgres row UPSERT.** The existing `record_usage_event` RPC is the UPSERT equivalent (atomic check-and-insert). Nothing to add.
+**Recommended: single bot, tagged callback data, per-product handlers.**
 
-### Pattern 5: Cost monitoring (nightly aggregation)
+Existing: `lib/accommodation/telegram/ops-bot.ts` already handles inline action buttons + callback_query. Extend by:
+- Callback data shape: `approve:{request_id}` becomes `approve:{product}:{request_id}` — e.g. `approve:trophy:abc-123`
+- `app/api/webhooks/telegram/route.ts` (existing) parses callback_data, routes to `lib/approvals/spine.ts` which dispatches to per-action-type handler
 
-**What:** Nightly Vercel cron calls an `/api/ops/cost-rollup` route which aggregates `agent_sessions` and `usage_events` into a `daily_cost_rollup` table.
+**Why not two bots:**
+- Lodge/farm operators don't want two Telegram bots cluttering their app — UX worse, brand confusion
+- Single bot per org (already supported via `ops_telegram_channels.bot_token` per-org pattern) means owner sees all approvals in one stream
 
-**Schema:**
+**Why this only works because of single ops bot per org:**
+- Bot tokens are per-org (existing pattern). The bot routes to the org's chat_id. Trophy product approvals for org X go to org X's already-configured Telegram channel.
+- If Swazulu wants Trophy approvals in a separate Telegram channel from Accommodation approvals, that's a department channel split — already supported by `ops_telegram_channels.department`. Just add `department='trophy'` rows.
+
+**Files to create:**
+- `lib/approvals/spine.ts` — generic approval lifecycle (create, approve, reject, expire)
+- `lib/approvals/handlers/damage-charge.ts` — when approved, calls `chargeAdhoc()` against guest token
+- `lib/approvals/handlers/safari-status-change.ts` — when approved, updates `safaris.status`
+- `lib/approvals/handlers/quota-change.ts` — when approved, updates `quotas` row
+- `lib/approvals/handlers/supplier-job-approval.ts` — when approved, updates `supplier_jobs.status='accepted'`
+- `app/api/approvals/route.ts` — POST creates an approval request (called from any product)
+- `app/api/approvals/[id]/respond/route.ts` — POST approve/reject (called from Telegram callback)
+
+**Decision needed:** approval threshold lattice. DraggonnB has 4 roles, Trophy has 9. The lattice question: "if the action is `damage_charge` for DraggonnB, who can approve?" vs "if the action is `quota_change` for Trophy, who can approve?" Recommend: define `approval_rules(action_type, product, required_role[])` table with array column. Pre-seed for both products. Owner can override per-org.
+
+---
+
+## 5. Damage auto-billing data flow (Phase 15)
+
+### Recommended sequence
+
+```
+Step 1. Staff member opens existing DraggonnB Telegram bot
+  ↓ Sends /damage command (NEW custom command handler in lib/accommodation/telegram/ops-bot.ts)
+  ↓ Bot replies: "Photo + booking ref + amount?"
+  ↓ Staff sends photo + caption: "BK-2026-456 R750 broken lamp"
+
+Step 2. Bot webhook → app/api/webhooks/telegram/route.ts
+  ↓ Routes to NEW lib/damage/intake.ts:
+    ↓ Parses booking ref + amount + description
+    ↓ Saves photo to storage bucket damage-photos/{org_id}/{booking_id}/
+    ↓ INSERT damage_incidents (booking_id, photo_url, amount_cents, description, reported_by, status='pending_approval')
+    ↓ Calls lib/approvals/spine.ts createApprovalRequest({
+        product: 'draggonnb',
+        target_resource_type: 'damage_incident',
+        target_resource_id: <new id>,
+        action_type: 'damage_charge',
+        target_org_id: <org_id>,
+        action_payload: { amount_cents, booking_id, photo_url }
+      })
+
+Step 3. Approval spine sends Telegram message to owner channel:
+  "Damage charge: R750 broken lamp (Booking BK-2026-456)
+   [View photo] [Approve & charge guest] [Reject]"
+
+Step 4. Owner taps "Approve & charge guest"
+  ↓ Telegram callback → app/api/webhooks/telegram/route.ts
+  ↓ Routes to lib/approvals/spine.ts respondToApproval(request_id, 'approved')
+  ↓ Spine looks up handler for action_type='damage_charge'
+  ↓ lib/approvals/handlers/damage-charge.ts:
+    ↓ Look up booking → guest → guest's stored PayFast token
+    ↓ Call chargeAdhoc({ subscriptionToken, organizationId, amountCents, prefix: 'ONEOFF' })
+    ↓ On success: INSERT accommodation_payments (booking_id, amount, type='damage_charge', payfast_ref=<mPaymentId>)
+    ↓                UPDATE damage_incidents SET status='charged', charged_at=NOW()
+    ↓ On failure (declined, expired token): UPDATE damage_incidents SET status='charge_failed', failure_reason=<...>
+    ↓ Send WhatsApp to guest: "Damage charge processed. R750 for broken lamp during stay BK-2026-456. Receipt: <url>"
+```
+
+### Critical question: PayFast stored token — landlord-level or guest-level?
+
+| Token | Where stored | Purpose | Limitation |
+|-------|--------------|---------|------------|
+| `organizations.payfast_subscription_token` | Already exists, set by ITN handler | Charges the **lodge** (subscription billing for SaaS tier) | Not the guest's payment method |
+| Guest-level token (NEW) | Need new column on `accommodation_bookings.guest_payfast_token` | Captured when guest paid deposit/balance via PayFast Subscribe checkout | Requires deposit/balance flow to use Subscribe (recurring) checkout, not just one-off — current `payfast-link.ts` uses one-off |
+
+**Status:** `payfast-link.ts` L52-69 generates one-off payment URLs, NOT tokenized recurring subscriptions. The current accommodation payment flow does **not** capture a stored guest token.
+
+**Implication for Phase 15:** Damage auto-billing requires a **prior change to deposit/balance capture flow** so the guest's first payment is via PayFast Subscribe (recurring) checkout, which returns a token in the ITN webhook. That token gets saved to `accommodation_bookings.guest_payfast_token`. Subsequent damage charges then use `chargeAdhoc()` against that token.
+
+**This is a sub-phase or pre-requisite within Phase 15 — flag clearly in roadmap:**
+- 15.X: Convert accommodation deposit/balance to PayFast Subscribe + capture token
+- 15.Y: Damage Telegram intake flow
+- 15.Z: Damage approval handler + auto-charge
+
+**Decision needed:** are we OK requiring guests pay via Subscribe (which is functionally a one-time charge with a stored payment method, fronted by a checkbox like "save card for incidentals")? PayFast UX has a checkbox for this. Legal nuance: terms must disclose "card kept on file for damage charges up to R{cap}." Cap mechanism: `accommodation_bookings.max_incidental_charge_zar` column.
+
+### Failure modes
+
+| Failure | Surface | Handling |
+|---------|---------|----------|
+| Token missing (guest paid by EFT) | Damage intake step | Owner gets Telegram approval but with WARNING: "no card on file, charge will be EFT request via WhatsApp." Falls back to manual settle flow |
+| Token expired | `chargeAdhoc()` returns error | Update damage_incidents.status='charge_failed', send WhatsApp to guest with PayFast link to settle manually |
+| Charge declined | `chargeAdhoc()` returns response.error | Same as above — fall back to WhatsApp request |
+| Guest disputes | Out-of-band, PayFast chargeback flow | Manual reconciliation via existing BILL-08 cron (carry-forward Phase 16) |
+
+---
+
+## 6. Multi-hunter split-billing (Phase 15)
+
+### Recommended schema (Trophy OS migration)
 
 ```sql
--- NEW: 28_agent_cost_columns.sql
-ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS input_tokens INTEGER DEFAULT 0;
-ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS output_tokens INTEGER DEFAULT 0;
-ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS cache_read_tokens INTEGER DEFAULT 0;
-ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS cache_write_tokens INTEGER DEFAULT 0;
-ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS cost_zar_cents INTEGER DEFAULT 0;
-ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS model TEXT;
-
--- NEW: 29_daily_cost_rollup.sql
-CREATE TABLE daily_cost_rollup (
+-- Trophy migration 002_safari_hunters.sql
+CREATE TABLE safari_hunters (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-  day DATE NOT NULL,
-  agent_invocations INTEGER DEFAULT 0,
-  ai_tokens_input BIGINT DEFAULT 0,
-  ai_tokens_output BIGINT DEFAULT 0,
-  ai_tokens_cache_read BIGINT DEFAULT 0,
-  ai_cost_zar_cents BIGINT DEFAULT 0,
-  emails_sent INTEGER DEFAULT 0,
-  social_posts INTEGER DEFAULT 0,
-  plan_monthly_zar_cents INTEGER DEFAULT 0,  -- denormalized for fast margin calc
-  UNIQUE(organization_id, day)
+  org_id UUID REFERENCES orgs(id) ON DELETE CASCADE NOT NULL,
+  safari_id UUID REFERENCES safaris(id) ON DELETE CASCADE NOT NULL,
+  client_id UUID REFERENCES clients(id), -- nullable: not all hunters need full client records
+  hunter_name TEXT NOT NULL,
+  hunter_email TEXT,
+  hunter_phone TEXT,
+  daily_rate_zar DECIMAL(10,2),
+  num_days INT,
+  amount_zar DECIMAL(10,2) NOT NULL,
+  payfast_token TEXT,  -- captured at deposit checkout, used for balance + damage
+  payfast_subscription_id TEXT,
+  deposit_amount_zar DECIMAL(10,2),
+  deposit_paid BOOLEAN DEFAULT FALSE,
+  deposit_paid_at TIMESTAMPTZ,
+  deposit_payfast_ref TEXT,
+  balance_amount_zar DECIMAL(10,2),
+  balance_paid BOOLEAN DEFAULT FALSE,
+  balance_paid_at TIMESTAMPTZ,
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending','deposit_paid','paid','refunded','no_show','cancelled')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(safari_id, hunter_email)
 );
+
+CREATE INDEX idx_safari_hunters_safari ON safari_hunters(safari_id);
+CREATE INDEX idx_safari_hunters_org ON safari_hunters(org_id);
+
+-- RLS via Trophy pattern
+ALTER TABLE safari_hunters ENABLE ROW LEVEL SECURITY;
+ALTER TABLE safari_hunters FORCE ROW LEVEL SECURITY;
+-- ... policies inherited from Trophy OS pattern (org_members lookup) ...
 ```
 
-`base-agent.ts::run()` captures `response.usage` (input_tokens, output_tokens, cache_read_input_tokens, cache_creation_input_tokens), computes cost from Sonnet 4.5 published pricing (ZAR-converted at config-time rate), and writes the columns per session. Nightly job UPSERTs into `daily_cost_rollup`.
+### Per-hunter PayFast subscription model
 
-**Cron choice: Vercel cron, NOT Supabase Edge Functions, NOT N8N.** Reasons:
-- Vercel cron: free up to 2 schedules, deploys with the code, runs in the same environment as the rest of the app (same env vars, same lib imports, same tests). One-line `vercel.json`.
-- Supabase Edge Functions: requires separate TypeScript bundling target (Deno), separate deploy, separate test setup. Cost-monitoring logic needs to import `lib/billing/plans.ts` — painful across that boundary.
-- N8N: possible, but N8N is VPS-hosted and stateful. Cost rollup should be a pure function of the DB and should not depend on external infra being up.
+**Recommended: per-hunter subscription token, NOT one safari subscription with internal split.**
 
-**`/admin/cost-monitoring` page:** Server component, queries `daily_cost_rollup` + `subscription_composition`. Shows per-tenant: last 30 days of cost vs revenue, margin %, trending tenants. Guard: `role: 'platform_admin'` in `organization_users` (pattern already used in `/admin/clients`).
+| Approach | Pros | Cons |
+|----------|------|------|
+| **One subscription per hunter** | Each hunter pays from own card, gets own receipt, dispute boundaries are per-hunter, refund flow is per-hunter | N hunters = N subscription tokens to manage; cross-hunter reconciliation needed |
+| One safari subscription, internal split | Single charge ledger, one PayFast transaction | Whose card paid? PayFast doesn't split. Disputes are joint-and-several. Refund flow nightmare |
 
-### Pattern 6: Vertical finance adapters over shared knowledge
+The "one subscription with internal split" model is structurally wrong for multi-hunter international parties where each hunter pays independently. Use per-hunter.
 
-**What:** Pure SA tax/VAT/levy logic in `lib/finance/knowledge/`, vertical-specific wrappers in `lib/{accommodation,restaurant}/finance/`.
+`safaris.deposit_payfast_ref` becomes the *primary hunter's* deposit only (or NULL when split). Use `safari_hunters.deposit_payfast_ref` for the per-hunter ledger.
 
-**Data contract between shared and vertical:**
+### "Single billing root" for hunt+stay packages — DEFER
 
-```typescript
-// lib/finance/types.ts
-export interface FinanceTransaction {
-  id?: string
-  organization_id: string
-  occurred_at: string
-  kind: 'sale' | 'refund' | 'expense' | 'levy' | 'vat_output' | 'vat_input'
-  source_module: 'accommodation' | 'restaurant' | 'manual' | 'receipt'
-  source_ref: string                 // e.g. bookingId, orderId, receiptId
-  gross_zar_cents: number
-  vat_zar_cents: number              // 0 if not registered
-  net_zar_cents: number
-  vat_rate: number                   // 0.15 default, 0 for exempt
-  tourism_levy_cents: number         // 1% for accommodation only
-  counterparty: string | null
-  memo: string | null
-  ledger_account: string             // e.g. 'sales.accommodation', 'vat.output'
-  is_posted: boolean                 // vs draft
-  metadata: Record<string, unknown>
-}
+This is the trickiest piece. Hunt+stay = one PayFast subscription that pulls from one card and credits both:
+- DraggonnB Accommodation (lodging portion)
+- Trophy OS Safari (hunt portion)
 
-// lib/finance/ledger.ts
-export async function postTransaction(tx: FinanceTransaction): Promise<...>
-export async function listTransactions(orgId, filters): Promise<FinanceTransaction[]>
-export async function generateVatRegister(orgId, periodStart, periodEnd): Promise<VatRegister>
+**Architectural options:**
 
-// lib/finance/knowledge/sa-vat.ts  (pure functions)
-export function applyVat(netCents: number, rate: number): { vat: number, gross: number }
-export function extractVatFromGross(grossCents: number, rate: number): { vat: number, net: number }
-export function vatRegistrationRequired(annualTurnoverCents: number): boolean
-export const SA_VAT_STANDARD = 0.15
-export const SA_TOURISM_LEVY = 0.01
-```
+| Option | Subscription lives where | Cross-product crediting | Reconciliation |
+|--------|-------------------------|-------------------------|----------------|
+| A. DraggonnB-rooted | `accommodation_bookings.payfast_subscription_token` | DraggonnB ITN handler routes a portion to Trophy `safari_hunters.balance_paid=true` via internal API | Internal cross-product invoice splitting logic |
+| B. Trophy-rooted | `safaris.payfast_subscription_token` | Trophy ITN routes portion back to `accommodation_bookings` | Same complexity, opposite direction |
+| C. Two parallel subscriptions on same card | One token at deposit, replicated to both products' tables | No cross-crediting needed; each product owns its slice | Guest sees two charges, two receipts — UX clutter |
+| D. Synthetic invoice product | Net-new `cross_product_invoices` table, single PayFast subscription, single ITN, splits internally based on JSONB line items | Cleanest data model, single guest receipt | Most build cost, biggest blast radius |
 
-Vertical wrappers only call `postTransaction()` with correctly-shaped data derived from their own tables:
+**Recommended for v3.1:** **Option C (parallel subscriptions, same card).** Lowest blast radius. Each product handles its own billing autonomously. Guest sees two PayFast charges (one for stay, one for hunt) but they paid via one checkout flow that captures the same card twice (PayFast supports this via "save card" UX). This is acceptable UX for the Swazulu pilot. Defer Option D synthetic invoice to v3.2 if the pilot reveals real friction.
 
-```typescript
-// lib/accommodation/finance/booking-to-transactions.ts
-import { postTransaction } from '@/lib/finance/ledger'
-import { extractVatFromGross, SA_VAT_STANDARD, SA_TOURISM_LEVY } from '@/lib/finance/knowledge/sa-vat'
-
-export async function postBookingRevenue(booking, org) {
-  const { vat, net } = extractVatFromGross(booking.total_cents, SA_VAT_STANDARD)
-  const levyCents = Math.round(net * SA_TOURISM_LEVY)
-  await postTransaction({
-    organization_id: org.id,
-    occurred_at: booking.check_out_date,
-    kind: 'sale',
-    source_module: 'accommodation',
-    source_ref: booking.id,
-    gross_zar_cents: booking.total_cents,
-    vat_zar_cents: org.is_vat_registered ? vat : 0,
-    net_zar_cents: net,
-    vat_rate: org.is_vat_registered ? SA_VAT_STANDARD : 0,
-    tourism_levy_cents: levyCents,
-    counterparty: booking.guest.full_name,
-    memo: `Stay ${booking.check_in_date} – ${booking.check_out_date}`,
-    ledger_account: 'sales.accommodation',
-    is_posted: true,
-    metadata: { booking_id: booking.id, nights: booking.nights },
-  })
-}
-```
-
-**Where it gets called:** Hook into `emitBookingEvent('booking_confirmed' | 'payment_received')` — adds a new subscriber that writes the finance transaction. Zero changes to accommodation business logic — just a new subscriber on the existing dispatcher.
-
-**Trade-off:** The shared `ledger_account` string is a convention, not a strict enum. That's intentional — verticals can introduce their own account codes (`sales.accommodation`, `sales.restaurant.dinein`, `sales.restaurant.takeaway`) without schema migration. The reporting view (`lib/finance/knowledge/sars-formats.ts::vat201Mapping`) is where the convention becomes a contract.
+**Decision needed:** confirm Option C is acceptable UX. If owner pushback ("guests will be confused by two charges"), upgrade to Option D and budget +1 phase.
 
 ---
 
-## Data Flow — non-obvious flows
+## 7. Cross-product stay link (Phase 15)
 
-### 1. Composed-plan signup (from /pricing to first login)
-
-```
-User on /pricing
-  |  picks base plan (Growth) + modules (Accommodation, Finance-AI) + implementation fee
-  |  client-side: ModulePicker maintains { base, modules[], oneOffs[] }
-  v
-Click "Continue"
-  |
-  |  POST /api/billing/compose { base, modules, oneOffs }
-  |    |-> lib/billing/composition.ts::validateAndPrice()
-  |    |    - validates min_plan_id constraints (Restaurant requires Growth)
-  |    |    - computes monthly_total_zar, one_off_total_zar
-  |    |    - returns { line_items[], monthly_total, one_off_total, signup_url }
-  |    v
-  |  POST /api/billing/checkout-cart
-  |    |-> lib/billing/composition.ts::createPendingOrder()
-  |    |    - creates organization row (subscription_status='pending')
-  |    |    - creates subscription_composition row
-  |    |    - creates billing_invoices row (status='draft')
-  |    |    - returns 2 PayFast submissions: subscription + one_off
-  v
-Browser redirects to PayFast subscription page (monthly base+modules)
-  |
-  |  On success -> /payment/success?step=subscription
-  |  On ITN webhook -> /api/webhooks/payfast (item_code=DRG-GROWTH)
-  |    |-> handleSubscriptionPayment(orgId, itn)
-  |    |    - lib/billing/subscriptions.ts::handlePaymentComplete()
-  |    |    - subscription_status = 'active'
-  |    |    - if one-off needed: redirect to 2nd PayFast for implementation fee
-  v
-If implementation one-off payment present:
-  |  Browser redirects to PayFast one-off page
-  |  ITN webhook -> handleImplementationPayment (item_code=ADDON-IMPLEMENTATION)
-  |    - billing_invoices.status = 'paid'
-  v
-Post-payment webhook completion triggers provisioning:
-  |-> scripts/provisioning/orchestrator.ts (existing 9 steps)
-  |-> NEW step 10: schedule-onboarding-followups
-  |     - INSERT onboarding_progress (org_id, day_1_scheduled_at=now()+1d, ...)
-  |     - N8N webhook to schedule day-1, day-2, day-3 touches
-  v
-User redirected to /onboarding wizard (existing page)
-  - Captures brand voice (writes client_profiles)
-  - 14-day trial starts; subscription is active but first charge deferred
-```
-
-### 2. Brand voice injection into agent calls (with cache hit)
-
-```
-API route /api/content/generate
-  |
-  |-> loads brand voice (lib/brand/loader.ts::getBrandVoice(orgId))
-  |     - SELECT from client_profiles
-  |     - freezes into BrandVoice object with stable .toSystemText() output
-  v
-  |-> BaseAgent.run({ input, context })
-  |     |
-  |     |-> systemBlocks = buildSystemBlocks(orgId, this.config.systemPrompt)
-  |     |     = [
-  |     |       { type:'text', text: brand.toSystemText(), cache_control:{type:'ephemeral'} },
-  |     |       { type:'text', text: this.config.systemPrompt }
-  |     |     ]
-  |     |
-  |     |-> anthropic.messages.create({ system: systemBlocks, messages, model, ... })
-  v
-Response arrives with usage.cache_read_input_tokens (hit) or cache_creation_input_tokens (miss)
-  |
-  |-> base-agent.ts computes cost_zar_cents from token breakdown + ZAR/USD rate
-  |-> writes agent_sessions with cost columns
-```
-
-**First call per tenant per 5min:** cache miss, writes ~500 tokens of brand context to cache. Pays full rate.
-**Subsequent calls within 5min:** cache hit on brand block. Pays 10% rate on those tokens. For a tenant generating 10 posts in a burst, savings are ~4,500 tokens × 90% = ~$0.01 per burst, but compounded across all tenants + all agents, materially reduces monthly AI spend.
-
-### 3. Telegram finance receipt flow
-
-```
-User snaps receipt, sends to @DraggonnBFinanceBot (new bot, not ops bot)
-  |
-  v
-Telegram webhook -> /api/webhooks/telegram-finance
-  |-> verify sender is authorized user (telegram_user_id in user_profiles)
-  |-> download photo from Telegram file API
-  |-> INSERT finance_receipts (org_id, photo_url, status='pending', submitted_by=user_id)
-  |-> return 200 immediately; process async via background
-  v
-Async (Vercel waitUntil) -> lib/telegram/finance/ocr.ts::extractReceipt()
-  |-> anthropic.messages.create({
-  |     model: 'claude-haiku-4-5-20251022',
-  |     messages: [{ role:'user', content:[{type:'image', source:...}, {type:'text', text:EXTRACT_PROMPT}] }]
-  |   })
-  |-> parse JSON { vendor, total_cents, vat_cents, date, line_items[] }
-  |-> UPDATE finance_receipts SET status='extracted', extracted_data=...
-  v
-Bot replies to user: "Got it. R432 at Woolies, 2026-04-24. VAT R56.30. Correct? [Yes] [Edit]"
-  |-> user taps Yes
-  v
-Bot -> /api/finance/receipts/{id}/confirm
-  |-> lib/finance/ledger.ts::postTransaction({
-  |     kind:'expense', source_module:'receipt', source_ref:receiptId,
-  |     gross_zar_cents:total, vat_zar_cents:vat, ...
-  |   })
-  |-> updates finance_receipts.status='posted'
-  |-> returns "Logged. See /finance"
-```
-
-### 4. Usage enforcement + overage top-up
-
-```
-API route /api/email/send
-  |
-  |-> guardUsage(orgId, 'email_send', recipientCount)
-  |   |-> supabase.rpc('record_usage_event', {...})
-  |   |   - SELECT SUM(quantity) FROM usage_events WHERE org+metric+this_month
-  |   |   - if current+quantity <= limit: INSERT event; return { allowed:true }
-  |   |   - if over limit:
-  |   |     |-> tryConsumeCredits(org, metric, quantity)  (existing fallback)
-  |   |     |   - SELECT FROM credit_purchases WHERE credits_remaining > 0 ORDER BY purchased_at
-  |   |     |   - UPDATE credits_remaining, INSERT credit_ledger row
-  |   |     |   - returns { consumed:true } if credits present
-  |   |     |-> returns { allowed:true, source:'credit_pack' }
-  |   |   - else return { allowed:false, reason:'limit_reached', upgradeRequired, packsAvailable }
-  v
-If allowed -> proceed with Resend send
-If denied -> 429 response with { packsAvailable[] } -> frontend shows "Buy top-up" modal
-  |-> POST /api/billing/checkout-cart { oneOffs:['emails-20k'] }
-  |-> PayFast one-off page (TOPUP-EMAILS-20K)
-  |-> ITN: handleTopupPayment -> lib/billing/credits.ts::purchasePack()
-  |   - INSERT credit_purchases (credits_purchased=20000, credits_remaining=20000)
-  |-> user retries send; now credit pack fallback allows
-```
-
----
-
-## Integration Points
-
-### External services
-
-| Service | Integration | Notes / gotchas |
-|---|---|---|
-| PayFast | `lib/payments/payfast.ts` (existing); webhook at `/api/webhooks/payfast` | Branch webhook on `m_payment_id` prefix. Recurring amendment == cancel-and-recreate. Signature MD5 already validated. |
-| Anthropic (via BaseAgent) | `lib/agents/base-agent.ts` (modified for `systemBlocks`) | Prompt caching requires SDK that sends `system: TextBlockParam[]`. Current SDK does. No breaking change to existing agents — pass-through. |
-| Anthropic vision (Haiku 4.5) | `lib/telegram/finance/ocr.ts` (new) | Image size limit 5MB. Telegram may return 10MB photos — compress client-side via `sharp` in webhook handler. |
-| Telegram Bot API | existing `lib/telegram/bot.ts` + new `lib/telegram/finance/receipt-bot.ts` | New bot token required. Separate webhook route so ops-bot and finance-bot don't share state. |
-| N8N | existing orchestrator; 3 new workflows | Use existing `wf-queue.json` template pattern. Webhook endpoints already follow `/api/*` convention. |
-| Resend | existing `lib/email/resend.ts` | No changes needed for campaigns — campaigns call existing email campaign send. |
-| Vercel cron | `vercel.json` cron entry pointing at `/api/ops/cost-rollup` | Limit to 2 crons on hobby tier. If we're already using 2, move to scheduled N8N. |
-
-### Internal boundaries
-
-| Boundary | Communication | Notes |
-|---|---|---|
-| Campaigns ↔ content-studio | direct function call (`campaigns/generator.ts` imports `content-studio/prompt-builder.ts`) | No HTTP hop. Content studio stays as lib; campaigns composes it. |
-| Campaigns ↔ social/email | direct function call | Reuse existing schedulers. Campaign just owns the `campaign_runs` row grouping. |
-| Accommodation ↔ finance | subscriber on `emitBookingEvent` | Decoupled; accommodation doesn't import finance. Finance registers as a listener. |
-| Onboarding ↔ provisioning | `scripts/provisioning/orchestrator.ts` calls new step 10 which enqueues N8N | Onboarding saga is NOT a rollback saga (no compensating actions for "user read email"); it's a linear checkpointed progress tracker. Different pattern from provisioning saga. Acknowledge this in docs to avoid confusion. |
-| BaseAgent ↔ brand | BaseAgent optionally accepts `brandContext` param; if present, builds systemBlocks | Existing agent call sites don't need changes; new callers pass brandContext. |
-| ModuleHome ↔ module API | declarative manifest reads module API routes (existing auth/data) | No new auth — reuses `getUserOrg()` via the API it calls. |
-
----
-
-## Scaling Considerations
-
-| Scale | Architecture adjustments |
-|---|---|
-| 0–50 tenants (now → end of sprint 2) | Current architecture is fine. `usage_events` sums per-query; fine at low row counts. |
-| 50–500 tenants | Partition `usage_events` by month (hinted in migration 12 comment). Add materialized view for `get_usage_summary` keyed on `(org_id, month)`, refresh nightly. |
-| 500+ tenants | Consider read replica for analytics/admin queries. Introduce Redis cache in front of `get_usage_summary` (invalidate on `record_usage_event` write). Partition `agent_sessions` by month. |
-
-**First bottleneck (most likely):** `middleware.ts` `resolveTenant()` with 60s in-memory cache — memory is per-Vercel-function-instance. On cold-start bursts, every instance re-queries. If tenant count > 100 and traffic is bursty, move to shared Redis cache. Low priority at current scale.
-
-**Second bottleneck:** `get_usage_summary` RPC iterates every metric in `billing_plans.limits` JSONB — fine at 4 metrics, breaks if we grow to 40. Mitigation: materialized view.
-
----
-
-## Anti-Patterns (domain-specific)
-
-### Anti-Pattern 1: "Migrate pricing constants into the DB by deleting the constant"
-
-**What people do:** Delete `PRICING_TIERS` from `lib/payments/payfast.ts` and replace every import with `lib/billing/plans.ts::getPlans()`.
-
-**Why it's wrong:** Any code path that runs outside a request context (scripts, CLI, build-time) can't call `createClient()` to read the DB. `app/pricing/page.tsx` is a client component that needs the tier list at static-generation time. Ripping the constant breaks these.
-
-**Do this instead:** Keep `PRICING_TIERS` as a build-time seed that mirrors `billing_plans` content. Add an assertion test (`__tests__/billing/pricing-tiers-sync.test.ts`) that fails CI if the constant drifts from the DB. For all *runtime* use, migrate to `getPlans()`. Delete the constant only when it has zero imports.
-
-### Anti-Pattern 2: Putting brand voice in every prompt verbatim
-
-**What people do:** Append `[brand_do: ..., brand_dont: ...]` to every user message in every agent.
-
-**Why it's wrong:** Doubles the input token cost on every call. Hurts prompt-cache hit rate (the context changes subtly per-call and busts the cache).
-
-**Do this instead:** Brand voice in a separate system block with `cache_control: { type: 'ephemeral' }` (see Pattern 3).
-
-### Anti-Pattern 3: Usage-check race condition via read-then-write
-
-**What people do:**
-```typescript
-const usage = await supabase.from('usage').select('count')
-if (usage.count < limit) {
-  await supabase.from('usage').update({ count: usage.count + 1 })
-  // do work
-}
-```
-
-**Why it's wrong:** Two concurrent requests both read count=999, both write 1000, limit 1000 permits both, tenant gets two free ops. At SA SME scale this is rare, but it's revenue leakage and it's fixable.
-
-**Do this instead:** Use the already-built `record_usage_event` RPC, which does check+insert in a single `plpgsql` block (atomic at the transaction level). Or, if you must write app-level, use a CTE: `WITH c AS (SELECT COUNT(*) FROM usage_events WHERE ...) INSERT INTO usage_events SELECT ... WHERE (SELECT COUNT(*) FROM c) < $limit RETURNING *`. Returns zero rows if denied.
-
-### Anti-Pattern 4: Making Easy mode a cut-down version of Advanced (same route, hidden sections)
-
-**What people do:** One page with `if (mode === 'easy') hide(complicatedSection)`.
-
-**Why it's wrong:** Forces client-component-with-state. Kills RSC speed. Makes every section conditional-render. Designer's Easy mock has different *information architecture* from Advanced — it's not just fewer controls, it's different IA.
-
-**Do this instead:** Two routes, two trees. Shared primitives (Card, Button) via `components/ui`. Shared data fetchers (`lib/crm/queries.ts`) but different selection per mode. Link between them.
-
-### Anti-Pattern 5: Onboarding as a saga-with-rollback
-
-**What people do:** Treat day-1/day-2/day-3 as a saga with compensating rollback actions.
-
-**Why it's wrong:** "Send welcome email" has no reasonable compensating action. "User opened onboarding wizard" has no reasonable compensating action. Saga-rollback is for transactional resource creation (what `scripts/provisioning/` does for Supabase + GitHub + Vercel + N8N), not for temporal user journeys.
-
-**Do this instead:** Linear checkpointed progress tracker. Each step writes to `onboarding_progress` with `{step_key, completed_at, skipped, result_json}`. Steps are idempotent. If a step fails, retry it or skip; don't undo prior steps.
-
----
-
-## Suggested Build Order (4 sprints, paying client by end of Sprint 2)
-
-Ordering is dominated by three constraints:
-1. **Revenue unlock** — paying-client target is end of sprint 2, so modular billing + a working signup flow must land by mid-sprint 2.
-2. **Dependencies** — brand voice blocks Campaigns and ModuleHome quality; usage enforcement blocks safe onboarding of new tenants; finance-AI needs vertical adapters.
-3. **Risk containment** — migrations that touch existing tenants (organizations, pricing) go first so we have maximum sprint runway to catch regressions in the 583 test suite.
-
-### Sprint 1 (Weeks 1–2) — "Foundations that unlock revenue"
-
-**Theme:** Ship the billing composition + signup flow. Land usage enforcement. Don't touch UI yet.
-
-| Order | Item | Rationale | Risk |
-|---|---|---|---|
-| 1.1 | Migration `22_billing_composition.sql` (catalog + composition tables) | Additive, zero impact on existing tenants | Low. Test: existing `/pricing` and `/payment/success` still pass. |
-| 1.2 | Migration `28_agent_cost_columns.sql` (ALTER agent_sessions) | Needed before new agents run; defaults to 0 so existing sessions aren't broken | Low. Backfill `model` column later. |
-| 1.3 | `lib/billing/composition.ts` + `lib/billing/addons.ts` + tests | Pure logic, testable in isolation | Low. 15+ new unit tests. |
-| 1.4 | `/api/billing/compose` + `/api/billing/checkout-cart` + PayFast webhook branching | API surface for new signup | Med. Webhook branching must be backwards-compatible with existing `DRG-*` items. |
-| 1.5 | `components/pricing/*` + rewrite `app/pricing/page.tsx` + `app/signup/page.tsx` updates | User-visible | Med. Visual regression risk — snapshot tests. |
-| 1.6 | `lib/usage/middleware-guard.ts` + wire into top 5 metered routes (ai/generate, email/send, social/publish, agent/run, content/generate) | Caps usage before we take money | Low. RPC already exists. |
-| 1.7 | E2E test: full signup of a new composed tenant | Confirms end-to-end | Critical path. |
-
-**Exit criteria:** a test tenant can sign up at `/pricing`, choose Growth + Accommodation + Finance-AI, pay, be provisioned, land on dashboard. 583 tests still pass.
-
-### Sprint 2 (Weeks 3–4) — "First paying client readiness"
-
-**Theme:** Site redesign + brand voice + onboarding + cost monitoring. Easy/Advanced mode pattern for ONE module as proof-of-concept (not all 6 — scope risk).
-
-| Order | Item | Rationale | Risk |
-|---|---|---|---|
-| 2.1 | Site redesign: `app/page.tsx`, `app/pricing/page.tsx`, `components/landing/*` | Public-facing, must look commercial-ready | Low tech risk, design iteration risk. |
-| 2.2 | Migration `23_brand_voice.sql` (extend `client_profiles`) + `lib/brand/loader.ts` + `lib/brand/prompt-injector.ts` + tests | Enables cache savings on every AI call; onboarding needs it | Low. Extends existing table. |
-| 2.3 | Modify `lib/agents/base-agent.ts` to accept optional `systemBlocks` + wire brand voice | All agents benefit immediately | Med. Must not break the 4 accommodation agents + 2 CRM agents. Pass-through design keeps backwards compat. |
-| 2.4 | Migration `27_onboarding_progress.sql` + `lib/onboarding/day-sagas.ts` + provisioning step 10 + 3 N8N workflows | 3-day onboarding for new tenants | Med. Test mode toggle required for dev. |
-| 2.5 | Onboarding wizard extension: brand voice capture in UI (4-field form in existing `/onboarding` route) | Captures brand at signup | Low. |
-| 2.6 | `components/module-home/*` + one proof-of-concept: CRM Easy mode at `/dashboard/crm` with Advanced at `/dashboard/crm/advanced` | Validates pattern before replicating | Med. This is THE UX pattern — get it right. |
-| 2.7 | Migration `29_daily_cost_rollup.sql` + `scripts/cron/nightly-cost-rollup.ts` + Vercel cron + `/admin/cost-monitoring` page | Chris needs visibility before first real client spends money | Low, non-blocking for launch. |
-| 2.8 | Smoke test with first paying client sandbox | Validation | — |
-
-**Exit criteria:** first paying client can sign up, onboard, see brand voice in their content, use CRM Easy mode, Chris sees their cost vs revenue.
-
-### Sprint 3 (Weeks 5–6) — "Campaign Studio + remaining Easy modes"
-
-**Theme:** Composite product features that justify the "AI-powered OS" positioning.
-
-| Order | Item | Rationale |
-|---|---|---|
-| 3.1 | Migration `26_campaign_runs.sql` + `lib/campaigns/*` (planner, generator, scheduler, analytics) | Central composite feature |
-| 3.2 | `/api/campaigns/*` routes |  |
-| 3.3 | `app/(dashboard)/campaigns/page.tsx` + `/advanced` |  |
-| 3.4 | Replicate ModuleHome pattern for Email, Accommodation, Restaurant, Content Studio, Campaigns (5 more modules) |  |
-| 3.5 | Aggregate `/dashboard` home — meta-view of all module cards (the "overall Easy mode") |  |
-
-### Sprint 4 (Weeks 7–8) — "Embedded finance + receipts"
-
-**Theme:** The remaining commercial-launch differentiator — finance-in-verticals. Scope this last because it depends on everything else.
-
-| Order | Item |
-|---|---|
-| 4.1 | Migration `24_finance_core.sql` + `lib/finance/knowledge/*` (SA VAT, SARS formats) + `lib/finance/ledger.ts` + tests |
-| 4.2 | `lib/accommodation/finance/` adapter + subscriber on `emitBookingEvent` |
-| 4.3 | `/api/finance/transactions`, `/api/finance/vat-register` |
-| 4.4 | `app/(dashboard)/finance/page.tsx` (Easy) + `/advanced` |
-| 4.5 | Migration `25_finance_receipts.sql` + new Telegram bot setup + `/api/webhooks/telegram-finance` + OCR via Claude Haiku 4.5 vision |
-| 4.6 | `lib/restaurant/finance/` adapter (the restaurant module itself is pre-existing per `lib/restaurant/`; just add the finance wrapper) |
-
----
-
-## Migration Strategy (existing tenants — do not break production)
-
-The nightmare scenario: a migration runs against prod, `restaurant-sop-upgrade` branch merges to main, 583 tests passed in isolation but a live tenant hits an edge case we didn't anticipate. Here's the containment plan per area.
-
-### Billing (composition tables)
-
-**Existing tenants** have `organizations.plan_id` ∈ {core, growth, scale} and possibly `subscription_status='active'` with a PayFast token.
-
-**Migration approach:**
+### Recommended: nullable cross-schema FK, both directions queryable
 
 ```sql
--- After 22_billing_composition.sql creates subscription_composition:
-INSERT INTO subscription_composition (organization_id, base_plan_id, active_addons, monthly_total_zar)
-SELECT
-  o.id,
-  COALESCE(o.plan_id, 'core'),
-  '{}'::text[],
-  bp.price_zar
-FROM organizations o
-LEFT JOIN billing_plans bp ON bp.id = COALESCE(o.plan_id, 'core')
-WHERE NOT EXISTS (SELECT 1 FROM subscription_composition sc WHERE sc.organization_id = o.id);
+-- Trophy migration 003_safari_accommodation_link.sql
+ALTER TABLE safaris
+  ADD COLUMN accommodation_booking_id UUID NULL REFERENCES accommodation_bookings(id) ON DELETE SET NULL;
+
+CREATE INDEX idx_safaris_accom_booking ON safaris(accommodation_booking_id) WHERE accommodation_booking_id IS NOT NULL;
 ```
 
-This backfills every existing tenant with `active_addons=[]` and the correct base plan. New signups use composition UI; existing tenants see "Add modules" in settings but have none currently. PayFast subscriptions untouched. **No billing change is applied automatically.**
+### Is cross-schema FK across "products" OK? YES, structurally — same Supabase, same Postgres database, no schema separation actually exists.
 
-### Pricing page replacement
+The product separation is **codebase + branding**, not **schema**. All tables sit in `public.` schema in Postgres. FK across "products" is just FK within the same DB. Postgres doesn't care.
 
-Keep `app/pricing/page.tsx` behaviour semantically identical for the 3 existing tiers (core / growth / scale) with the same PayFast flow. Composition UI becomes the default but the 3 base plans are the first row; addons are a second section. Existing `/signup?tier=core` deep links must continue to work — add a router-level redirect that pre-fills the composition UI if tier query param present.
+**RLS implications:**
 
-### Usage enforcement
+When DraggonnB user views `accommodation_bookings.id=X`, RLS on `safaris.accommodation_booking_id=X` lookup is enforced via Trophy's `org_members` policy. That means:
+- DraggonnB user with no Trophy `org_members` row sees no Trophy data — correct.
+- DraggonnB user with linked Trophy `org_members` row sees the linked safari — correct.
+- The **server component** rendering "Booking detail with linked safari" needs to query Trophy tables — and the RLS check happens at query time using `auth.uid()`, which is shared across both apps because they share Supabase Auth.
 
-New `guardUsage` only lands on top 5 routes in Sprint 1.6. It reads `billing_plans.limits` via existing RPC. Every existing tenant already has a valid `plan_id` and `billing_plans` has limits for all three plans. No risk.
+**This works because both apps share auth.users and the user's session cookie carries the same JWT.** Different cookie domains, but the user ID inside the JWT is identical (same Supabase project = same auth.users table).
 
-**Watch for:** Tenants who have been hammering the legacy `client_usage_metrics` counter to the limit but whose `usage_events` shows zero (because the route wasn't wired). When we add guardUsage, they suddenly have fresh month-to-date = 0 and effectively get a quota refresh on migration day. This is fine (generous) but we should communicate it.
+### Server-component pattern
 
-### Brand voice
+For the DraggonnB accommodation booking detail page that needs to display linked safari:
 
-`client_profiles` is extended additively. Existing rows have fields NULL / empty-array defaults. `brand.loader` returns `{ tone:'professional', brandDo:[], brandDont:[], ...defaults }` if nothing is set. Every existing agent call keeps working; it just doesn't get the cache benefit until brand voice is populated.
+```typescript
+// app/accommodation/bookings/[id]/page.tsx (DraggonnB)
+const { data: booking } = await supabase
+  .from('accommodation_bookings')
+  .select('*')
+  .eq('id', params.id)
+  .single()
 
-### Easy/Advanced mode
+// Cross-product query — same Supabase client, RLS enforces visibility
+const { data: linkedSafari } = await supabase
+  .from('safaris')  // Trophy table; user can see only if they have org_members row in Trophy
+  .select('id, reference, status, num_hunters, daily_rate_zar')
+  .eq('accommodation_booking_id', booking.id)
+  .maybeSingle()  // null if no link OR user has no Trophy access — both fine
 
-**Risk:** Existing users bookmark `/dashboard/crm`. We're making that Easy by default, so they may see a stripped-down page.
+return <BookingDetail booking={booking} linkedSafari={linkedSafari} />
+```
 
-**Mitigation:** `user_profiles.ui_mode` defaults to `'advanced'` for existing users (set via backfill migration) and `'easy'` for new signups. Existing users never experience the change unless they opt in. The `ModeToggle` is available in the sidebar so discovery is easy.
+No service-role bypass needed. RLS does the right thing automatically because both products share `auth.uid()`.
 
-### Onboarding
+**Files to create:**
+- `lib/federation/cross-product-queries.ts` — typed helpers like `getSafariForBooking(supabase, bookingId)`, `getBookingForSafari(supabase, safariId)` — encapsulates the cross-product join
 
-Runs only on new provisioning. Zero impact on existing tenants.
+### Reverse direction (Trophy safari → DraggonnB booking)
 
-### Known risks — flagged explicitly
+Same pattern. Trophy safari detail page reads `accommodation_bookings.id = safaris.accommodation_booking_id`, RLS via DraggonnB's `get_user_org_id()`. Works because the user has both `organization_users` and `org_members` rows.
 
-| Risk | Severity | Mitigation |
-|---|---|---|
-| PayFast item_code prefix dispatch: unknown prefix silently drops webhook | HIGH | Explicit catch-all: log `['PayFast] unhandled item_code prefix: X` and 202-ack so PayFast doesn't retry forever. |
-| Prompt cache breakpoint in BaseAgent breaks existing agents | MED | Cache is additive: if systemBlocks not passed, behaviour is identical to today. Keep scalar `system` path. |
-| Composition migration trigger not updating `monthly_total_zar` when addons added via API | MED | App-level recompute in `lib/billing/composition.ts::addAddon()`. Add `CHECK` constraint `monthly_total_zar >= 0`. Schedule a nightly reconcile script that recomputes from truth. |
-| `client_usage_metrics` ↔ `usage_events` dual-state drift | MED | Sprint 1 audit: find every read/write of `client_usage_metrics`, either migrate to `usage_events` or delete the write. Probable dead code in `handlePaymentComplete`'s `reset usage metrics` block — those counters aren't month-boundaried anyway. |
-| Existing 6 agents break when BaseAgent signature changes | MED | Make `systemBlocks` param optional; existing config's scalar `systemPrompt` stays. Only new consumers use blocks. Tests cover both paths. |
-| Brand voice loader fires DB query per agent call → adds latency | LOW | In-memory LRU cache keyed on `orgId` with 60s TTL in `lib/brand/loader.ts`. Brand voice edits invalidate cache via in-process event. At 1 Vercel function instance per region, 60s cache is fine. |
-| N8N workflows referencing non-existent tables on day-1 email send | MED | Onboarding step 10 seeds default templates. N8N workflows import templates by name, not ID. Template seed is idempotent. |
-| Restaurant module finance work (Sprint 4.6) blocked by non-existent `restaurant_orders` | HIGH if restaurant orders aren't built | `lib/restaurant` has `api-helpers`, `constants`, `payfast`, `telegram` — but "orders" may not exist. Audit in Sprint 3 before committing Sprint 4.6. If not built, move to v3.1. |
-| Vercel cron hobby-tier limit (2 crons) already used | LOW | Audit `vercel.json` before 2.7. If no room, move cost-rollup to N8N. |
+---
+
+## 8. PWA guest surface (Phase 16)
+
+### Recommended: route group within DraggonnB app, NOT a separate Next.js project
+
+| Option | Pros | Cons | Verdict |
+|--------|------|------|---------|
+| Separate Next.js app | Clean isolation, smaller bundle | New deploy target, duplicate auth + supabase clients, monorepo coordination | NO |
+| **Route group in existing DraggonnB app** | Reuses lib/, components/, supabase client, single deploy | Shares bundle with main app (mitigated via dynamic imports + service worker route scoping) | **YES** |
+| Subdomain proxied to same Next.js app | Best of both: clean URL, single codebase | Vercel wildcard + middleware needs careful exclusion to NOT apply tenant-resolver to stay.* | Hybrid — use this |
+
+**Recommended: route group `app/(stay)/[bookingId]/page.tsx` + middleware exclusion for `stay.draggonnb.co.za`.**
+
+### Auth model — stateless, signed booking URL
+
+This is unauthenticated-by-Supabase but authenticated-by-token:
+
+```
+URL: https://stay.draggonnb.co.za/{bookingId}?token={hmac-sig}
+```
+
+`token` = HMAC-SHA256 of `{bookingId}:{expiry}:{purpose}` signed with `STAY_TOKEN_SECRET` env var. URL is generated when booking is confirmed and sent to guest via WhatsApp. Token expires N days after checkout date.
+
+**No `getUserOrg()` flow.** Page-level access control:
+
+```typescript
+// app/(stay)/[bookingId]/page.tsx
+import { verifyStayToken } from '@/lib/stay/token'
+import { createAdminClient } from '@/lib/supabase/admin'
+
+export default async function StayPortal({ params, searchParams }) {
+  const valid = verifyStayToken(params.bookingId, searchParams.token)
+  if (!valid) return <UnauthorizedPage />
+
+  // Service-role read — guest is "authenticated" via token, not auth.uid()
+  const admin = createAdminClient()
+  const { data: booking } = await admin
+    .from('accommodation_bookings')
+    .select('*, property:properties(*), unit:units(*)')
+    .eq('id', params.bookingId)
+    .single()
+
+  return <StayExperience booking={booking} />
+}
+```
+
+### Middleware exclusion
+
+Add `stay` to PLATFORM_HOSTS in `lib/supabase/middleware.ts` L44 — prevents tenant resolver from trying to resolve `stay` as a subdomain. Add `(stay)` route group to public bypass list.
+
+### Service worker scope
+
+**Recommended: scope to `/(stay)/` only, NOT entire `*.draggonnb.co.za`.** Reason: tenant-app routes change frequently, breaking the cache hurts more than it helps. Stay-portal routes are stable, mostly static after first load.
+
+```javascript
+// public/stay-sw.js, registered only by app/(stay)/layout.tsx
+self.addEventListener('install', ...)
+self.addEventListener('fetch', e => {
+  if (!e.request.url.includes('/(stay)/')) return  // out of scope
+  // cache-first for assets, network-first for booking JSON
+})
+```
+
+### Concierge chat reuse
+
+Existing `ConciergeAgent` is WhatsApp-tied. For PWA:
+- Add `lib/accommodation/agents/concierge/web-adapter.ts` — same agent, web transport
+- New endpoint `app/api/stay/[bookingId]/chat/route.ts` — token-validated, calls ConciergeAgent.respond()
+- Component `components/stay/ConciergeChat.tsx` — chat UI, polls or WebSockets for response
+
+This is **lightweight** because ConciergeAgent business logic is transport-agnostic; only the input/output adapter changes.
+
+---
+
+## 9. Trophy OS PayFast wiring (Phase 16)
+
+### Critical decision: shared lib via npm workspace, OR copy
+
+| Option | Pros | Cons | Verdict |
+|--------|------|------|---------|
+| npm workspace (monorepo) | Single source of truth, type sharing, atomic refactors | Both apps must move into same git repo OR git submodule, big refactor cost | Phase 17+ if needed |
+| Symlink across local dirs | Works in dev, fails in Vercel deploy | Vercel doesn't follow symlinks across project roots | NO |
+| **Copy + version-pin** | Deploy-simple, low-blast-radius for v3.1 | Drift risk: bug fixes need to be applied twice | **YES for v3.1** |
+| Publish private npm package `@draggonnb/payfast` | Clean dep boundary | Publish/version overhead for first iteration | v3.2 graduation path |
+
+**Recommended for v3.1: copy `lib/payments/payfast.ts` + `payfast-adhoc.ts` + `payfast-prefix.ts` into Trophy OS as `src/lib/payments/`.** Track drift in a checklist; in v3.2 promote to a versioned package once API surface stabilizes.
+
+**Decision needed:** acceptable to have the same code in two repos for 1-2 months? Risk: a PayFast API change requires PR to both. Mitigation: add a section in CLAUDE.md noting the duplicate location.
+
+### Trophy subscription tiers
+
+`billing_plans` (DraggonnB) currently scopes pricing tiers for DraggonnB modules only. Two options:
+
+| Option | Where Trophy tiers live | Pros | Cons |
+|--------|------------------------|------|------|
+| A. Add Trophy rows to `billing_plans` | `billing_plans` row with `product='trophy'` discriminator (new column) | Single billing dashboard, single ledger | Couples DraggonnB billing schema to Trophy |
+| B. Trophy-specific `billing_plans` table | `tos_billing_plans` in Trophy schema | Independence | Two billing systems, dashboard duplication |
+
+**Recommended: Option A — add `product TEXT NOT NULL DEFAULT 'draggonnb'` column to `billing_plans`.** Pre-existing rows backfill to `'draggonnb'` (multi-step migration: nullable add → backfill → NOT NULL). Add Trophy rows: `('TOS-S', 599, 'trophy'), ('TOS-P', 1499, 'trophy'), ('TOS-O', 3499, 'trophy')`. Tier-gating queries always filter on `product` to scope correctly.
+
+Cost dashboard `/admin/cost-monitoring` rolls up both products: `SELECT product, SUM(...) FROM billing_invoices GROUP BY product`. Single dashboard, two product columns. Lives in DraggonnB app (Trophy doesn't have an admin surface yet).
+
+### Trophy ITN webhook
+
+Trophy needs `src/app/api/payfast/webhook/route.ts`. Same merchant credentials (single PayFast account = single shared `MERCHANT_ID`/`MERCHANT_KEY`). ITN handler distinguishes by `m_payment_id` prefix:
+- `SUB-` (DraggonnB subscription) → DraggonnB handler
+- `TOS-` (Trophy subscription) — NEW prefix in `lib/payments/payfast-prefix.ts`
+- `ACC-` (Accommodation booking) → DraggonnB accommodation handler
+- `SAFARI-` (Trophy hunter charge) — NEW prefix
+
+PayFast notify_url is per-charge, so each product's charge endpoint specifies its own notify_url. Cross-product confusion only happens if URLs are misconfigured.
+
+---
+
+## 10. v3.0 carry-forward (Phase 16)
+
+| Item | Effort | Notes |
+|------|--------|-------|
+| Push 12-07 (committed at `bedaff0e`) | 5 min | Already done locally, just needs `git push` |
+| BILL-08 reconciliation cron | M (already designed in v3.0 plans, lives in `app/api/cron/reconcile-payments/route.ts` per existing pattern) | Carry the v3.0 plan as-is |
+| OPS-02..04 audit crons | M | Each is a self-contained cron route |
+| 360px mobile sweep | L | **Critical scoping decision: across all 82 DraggonnB pages + 24 Trophy pages?** |
+
+**Decision needed:** Mobile sweep scope. Recommended split:
+- **DraggonnB**: full 82-page sweep (in scope — already planned in v3.0)
+- **Trophy OS**: defer to v3.2 — Trophy already follows mobile-first principle (CLAUDE.md L29) but no audit done. Adding it doubles the sweep cost. Unless Swazulu pilot reveals specific Trophy mobile breakage, defer.
+
+---
+
+## 11. Component responsibilities — new and modified
+
+| Component | Kind | Responsibility | Phase |
+|-----------|------|----------------|-------|
+| `lib/sso/jwt.ts` | NEW | Sign + verify HS256 JWTs, 60s expiry, jti replay protection | 13 |
+| `lib/sso/issue.ts` | NEW | Mint bridge JWT for outbound user, resolve linked Trophy org | 13 |
+| `app/api/sso/issue/route.ts` | NEW | DraggonnB endpoint: redirect user to Trophy with bridge token | 13 |
+| `app/api/sso/consume/route.ts` (Trophy) | NEW | Validate bridge JWT, mint Trophy session, redirect to dashboard | 13 |
+| `lib/federation/org-link.ts` | NEW | Resolve `linked_trophy_org_id`, auto-provision if missing | 13 |
+| `lib/provisioning/steps/provision-trophy-link.ts` | NEW | Saga step 10: create Trophy `orgs` row when Trophy module activated | 13 |
+| Migration: `organizations.linked_trophy_org_id` | NEW | Nullable column, indexed, FK with ON DELETE SET NULL | 13 |
+| `lib/supabase/middleware.ts` | MODIFIED | Add `stay` to PLATFORM_HOSTS; extract `linked_trophy_org_id` for header injection | 13/16 |
+| Migration: generalize `approval_requests` (3-step) | MODIFIED | OPS-05 multi-step: add nullable cols → backfill → constraints | 14 |
+| `lib/approvals/spine.ts` | NEW | Generic approval lifecycle: create / approve / reject / expire | 14 |
+| `lib/approvals/handlers/{damage-charge,safari-status-change,quota-change,supplier-job-approval,rate-change,content-post,social-post}.ts` | NEW | Per-action-type approval handlers | 14, 15 |
+| `app/api/approvals/route.ts` | NEW | POST creates approval request | 14 |
+| `app/api/approvals/[id]/respond/route.ts` | NEW | POST approve/reject (called by Telegram + UI) | 14 |
+| `lib/accommodation/telegram/ops-bot.ts` | MODIFIED | Extend callback_data to `approve:{product}:{id}`; route to spine | 14 |
+| `app/api/webhooks/telegram/route.ts` | MODIFIED | Parse new callback shape, route to approval spine | 14 |
+| Migration: `damage_incidents` table | NEW | DraggonnB schema; status, photo_url, amount, booking_id | 15 |
+| `lib/damage/intake.ts` | NEW | Telegram /damage command handler | 15 |
+| `lib/damage/charge-flow.ts` | NEW | Look up token, call chargeAdhoc, update accommodation_payments | 15 |
+| Migration: `accommodation_bookings.guest_payfast_token` | NEW | Multi-step add (nullable → backfill not applicable, new bookings only → never NOT NULL) | 15 |
+| `lib/accommodation/payments/payfast-link.ts` | MODIFIED | Switch from one-off to Subscribe checkout to capture token | 15 |
+| Migration: `safari_hunters` (Trophy) | NEW | Junction table per safari per hunter, with per-hunter PayFast token | 15 |
+| Migration: `safaris.accommodation_booking_id` (Trophy) | NEW | Cross-schema FK, nullable, ON DELETE SET NULL | 15 |
+| `lib/federation/cross-product-queries.ts` | NEW | Typed helpers: `getSafariForBooking()`, `getBookingForSafari()` | 15 |
+| Trophy `src/app/api/payfast/{webhook,subscribe,checkout}/route.ts` | NEW | PayFast wiring on Trophy side | 16 |
+| Trophy `src/lib/payments/{payfast,payfast-adhoc,payfast-prefix}.ts` | NEW (copy from DraggonnB) | Same code, two homes for v3.1 | 16 |
+| Migration: `billing_plans.product` column | MODIFIED | Add NOT NULL DEFAULT 'draggonnb', then add Trophy rows | 16 |
+| `app/(stay)/layout.tsx` + `[bookingId]/page.tsx` | NEW | PWA route group, token-authenticated | 16 |
+| `lib/stay/token.ts` | NEW | HMAC-SHA256 sign/verify for booking URLs | 16 |
+| `public/stay-sw.js` | NEW | Service worker, scoped to /(stay)/ | 16 |
+| `app/api/stay/[bookingId]/chat/route.ts` | NEW | Token-gated ConciergeAgent web adapter | 16 |
+| `lib/accommodation/agents/concierge/web-adapter.ts` | NEW | Web transport for existing ConciergeAgent | 16 |
+| 12-07 push, BILL-08 cron, OPS-02..04 crons, 360px sweep (DraggonnB) | CARRY-FORWARD | v3.0 designs unchanged | 16 |
+
+---
+
+## 12. Build order — phase dependencies
+
+```
+Phase 13: Cross-product foundation (SSO + org link)
+  ├─ MUST come first: nothing else works without auth bridge
+  ├─ Adds: linked_trophy_org_id column, /api/sso/issue, /api/sso/consume
+  └─ Blocks: Phases 14, 15, 16 cross-product features
+
+Phase 14: Approval spine (generalization)
+  ├─ Depends on: Phase 13 SSO (so Trophy users can authenticate to approve DraggonnB requests)
+  ├─ 3-step migration spread across deploys (OPS-05) — SCHEDULE AS 3 SUB-PLANS
+  │  14.1: add nullable columns + deploy code that writes them
+  │  14.2: backfill existing social_posts rows + verify
+  │  14.3: add NOT NULL constraints
+  └─ Blocks: Phase 15 damage flow (uses approval spine)
+
+Phase 15: Damage auto-billing + Hunt bookings + Cross-product link
+  ├─ Depends on: Phase 13 (cross-org linking), Phase 14 (approval spine)
+  ├─ Internal sub-ordering:
+  │  15.1: PayFast Subscribe migration for accommodation deposits (token capture pre-req)
+  │  15.2: damage_incidents table + Telegram /damage intake
+  │  15.3: damage approval handler + auto-charge flow
+  │  15.4: safari_hunters table (Trophy migration)
+  │  15.5: safaris.accommodation_booking_id (Trophy migration) + cross-product queries
+  │  15.6: per-hunter PayFast checkout in Trophy (depends on Phase 16 payment wiring) ← circular!
+  └─ Blocks: Phase 16 PayFast Trophy wiring (mutual dependency on 15.6)
+
+Phase 16: PWA + Trophy PayFast + v3.0 carry-forward
+  ├─ Depends on: Phase 15 (token capture flow established)
+  ├─ Cross-dependency with Phase 15.6: Trophy PayFast wiring needs to happen in Phase 16
+  │  but per-hunter charges need it. SOLUTION: split 15.6 into a stub in Phase 15
+  │  ("create per-hunter records, defer charge to Phase 16") + actual charge in Phase 16
+  ├─ Internal:
+  │  16.1: Trophy PayFast wiring (subscriptions + ad-hoc)
+  │  16.2: per-hunter charge flow (completes 15.6)
+  │  16.3: PWA route group + token auth
+  │  16.4: Concierge web adapter
+  │  16.5: v3.0 carry-forward (push 12-07, BILL-08, OPS-02..04, mobile sweep)
+  └─ Blocks: nothing (final phase)
+```
+
+### Critical sequencing risks
+
+1. **Phase 14 must NOT bundle migrations.** Generalizing `approval_requests` is 3 separate deploys per OPS-05. Plan structure must reflect this.
+2. **Phase 15.1 (PayFast Subscribe migration) is a hidden pre-requisite.** Without it, no guest token = no auto-charge = damage flow fundamentally blocked. Surface this in the plan.
+3. **Phase 15.6 is mutually circular with Phase 16.1.** Resolution: stub per-hunter creation in Phase 15, defer charge call to Phase 16 (which adds Trophy PayFast wiring). Plan this explicitly so Phase 15 doesn't fail at integration test.
+
+---
+
+## 13. RLS implications for cross-schema FK and shared tables
+
+### `safaris.accommodation_booking_id` (Trophy → DraggonnB FK)
+
+- FK enforced by Postgres (cross-schema, same DB)
+- ON DELETE SET NULL — deleting a booking doesn't cascade-delete the safari (correct: safari is independent business object)
+- RLS: Trophy `safaris` SELECT policy uses `org_members` lookup. DraggonnB user querying `safaris` via supabase client gets RLS-filtered to safaris in orgs they're members of via `org_members`. They see linked accommodation_booking_id for those safaris.
+- DraggonnB user querying `accommodation_bookings` and joining to `safaris` works because Postgres applies RLS on each table. User must have BOTH `organization_users` row AND `org_members` row to see both halves of the join. Linked org pair makes this seamless.
+
+### `approval_requests` post-generalization
+
+- Now has rows for both products. RLS policies (defined in Section 4) handle the OR logic via three policies.
+- DraggonnB-only users see only `product='draggonnb'` rows. Trophy-only users see only `product='trophy'`. Cross-product users (e.g. Swazulu owner with both rows) see both via the third "linked" policy.
+- **Risk:** if a user has `organization_users` for org A and `org_members` for org B, but org A.linked_trophy_org_id != B.id (mismatched link), they shouldn't see B's approvals. The "linked" policy enforces this via the JOIN. Test exhaustively in Phase 14.
+
+### `organizations.linked_trophy_org_id`
+
+- FK to `orgs(id)` ON DELETE SET NULL — if Trophy org is deleted (rare), DraggonnB doesn't break
+- RLS: existing SELECT policy on `organizations` uses `get_user_org_id()`. User can see their own org's `linked_trophy_org_id` value. Fine.
+- Update permission: only platform admin should set this (provisioning saga). Add UPDATE policy restricting non-platform-admins.
+
+---
+
+## 14. Architectural decisions that need user input — flagged
+
+These decisions have downstream blast radius and should be answered before plan creation:
+
+| # | Decision | Default if not answered | Blast radius |
+|---|----------|------------------------|--------------|
+| **D-A** | **Single billing root: Option C (parallel subscriptions same card) vs Option D (synthetic invoice)** | Option C | Option D adds 1 phase + new `cross_product_invoices` table + custom ITN routing |
+| **D-B** | **PayFast deposit flow conversion: switch to Subscribe (token capture) for ALL accommodation bookings, or only for bookings flagged as "incidentals-eligible"?** | All bookings | If selective, need new column `accommodation_bookings.requires_token_capture` + UI gate; if all, blanket migration |
+| **D-C** | **Auto-provision Trophy `org_members` row at first SSO bridge attempt, OR require explicit Trophy admin invite?** | Auto-provision as `client` role | Auto = smoother UX, riskier if Trophy roles are sensitive; invite = friction at pilot, safer compliance |
+| **D-D** | **Replay protection for SSO JWT: Redis (Upstash) vs DB-backed `sso_bridge_tokens` table?** | Redis (Upstash) | Redis = new infra dep, +cost, faster; DB = no new infra, slower, audit-friendly |
+| **D-E** | **Mobile sweep scope: DraggonnB only (82 pages), or DraggonnB + Trophy (106 pages)?** | DraggonnB only | Full sweep doubles effort; partial leaves Trophy untested |
+| **D-F** | **PayFast lib sharing strategy: copy into Trophy for v3.1, OR set up npm workspace immediately?** | Copy for v3.1 | Workspace = more work now, less drift later; copy = ship-fast, drift to manage |
+| **D-G** | **Single Telegram bot per org for both products' approvals, OR dedicated Trophy bot?** | Single bot, product-tagged callbacks | Single bot = cleaner UX, callback parsing more complex; dual bot = doubles the bot config + token management |
+| **D-H** | **`tenant_modules.config.trophy.linked_org_id` JSONB cache: maintain via app code on every write, OR Postgres trigger?** | Trigger (atomic) | Trigger = silent magic; app code = explicit but skip-able |
+
+The four with widest blast radius (recommended to lock before plan creation): **D-A, D-B, D-C, D-F.**
+
+---
+
+## 15. Quality gate review
+
+- [x] Integration points identified with file paths or table names — every component/migration in Section 11 names a path
+- [x] New vs modified components explicit — Section 11 has Kind column (NEW / MODIFIED / CARRY-FORWARD)
+- [x] Build order considers existing dependencies — Section 12 explicit phase ordering with circular dependency call-out (15.6 ↔ 16.1)
+- [x] Cross-product table references called out with RLS implications — Section 13 covers `safaris.accommodation_booking_id`, generalized `approval_requests`, `organizations.linked_trophy_org_id`
+- [x] At least 3 "needs user decision" architectural questions flagged — Section 14 has 8 decisions, 4 marked highest priority
 
 ---
 
 ## Sources
 
-Grounded in the following code read during this research:
+- DraggonnB middleware: `C:\Dev\draggonnb-platform\lib\supabase\middleware.ts` (read 2026-04-30, HIGH confidence)
+- `getUserOrg` auth function: `C:\Dev\draggonnb-platform\lib\auth\get-user-org.ts` (read, HIGH)
+- PayFast ad-hoc charge: `C:\Dev\draggonnb-platform\lib\payments\payfast-adhoc.ts` (read, HIGH)
+- Accommodation PayFast link: `C:\Dev\draggonnb-platform\lib\accommodation\payments\payfast-link.ts` (read, HIGH)
+- Event dispatcher: `C:\Dev\draggonnb-platform\lib\accommodation\events\dispatcher.ts` (read, HIGH)
+- Telegram ops bot: `C:\Dev\draggonnb-platform\lib\accommodation\telegram\ops-bot.ts` (read, HIGH)
+- approval_requests current schema: `C:\Dev\draggonnb-platform\lib\supabase\database.types.ts` L4433-4502 (read, HIGH)
+- Trophy OS architecture spec: `C:\Dev\DraggonnB\products\trophy-os\CLAUDE.md` (read, HIGH)
+- Trophy OS source layout: `C:\Dev\DraggonnB\products\trophy-os\src\app\` directory listing (HIGH)
+- v3.0 carry-forward design: `C:\Dev\draggonnb-platform\.planning\research\v3.0-archive\ARCHITECTURE.md` (read, HIGH)
+- OPS-05 multi-step migration discipline: `C:\Dev\draggonnb-platform\CLAUDE.md` (referenced, HIGH)
+- PROJECT.md v3.1 milestone scope: `C:\Dev\draggonnb-platform\.planning\PROJECT.md` L148-178 (read, HIGH)
 
-- `C:\Dev\draggonnb-platform\CLAUDE.md` — platform overview
-- `C:\Dev\draggonnb-platform\.planning\PROJECT.md` — module inventory + scale
-- `C:\Dev\draggonnb-platform\lib\payments\payfast.ts` — PRICING_TIERS constant (legacy)
-- `C:\Dev\draggonnb-platform\lib\tier\feature-gate.ts` — hierarchy + legacy checkUsage
-- `C:\Dev\draggonnb-platform\lib\auth\get-user-org.ts` — central auth
-- `C:\Dev\draggonnb-platform\lib\supabase\middleware.ts` — subdomain resolution + module gating
-- `C:\Dev\draggonnb-platform\lib\agents\base-agent.ts` — Anthropic + session storage
-- `C:\Dev\draggonnb-platform\lib\agents\CLAUDE.md` — agent build spec
-- `C:\Dev\draggonnb-platform\lib\provisioning\CLAUDE.md` — saga pattern
-- `C:\Dev\draggonnb-platform\app\api\CLAUDE.md` — API conventions
-- `C:\Dev\draggonnb-platform\lib\accommodation\events\dispatcher.ts` — emitBookingEvent pattern
-- `C:\Dev\draggonnb-platform\lib\content-studio\prompt-builder.ts` — existing prompt pattern
-- `C:\Dev\draggonnb-platform\lib\billing\{plans,subscriptions,types}.ts` — existing billing
-- `C:\Dev\draggonnb-platform\lib\usage\meter.ts` — existing usage metering
-- `C:\Dev\draggonnb-platform\lib\autopilot\client-profile.ts` — brand voice home
-- `C:\Dev\draggonnb-platform\supabase\migrations\10_shared_db_foundation.sql` — module_registry, tenant_modules
-- `C:\Dev\draggonnb-platform\supabase\migrations\11_billing_plans.sql` — billing_plans catalog
-- `C:\Dev\draggonnb-platform\supabase\migrations\12_usage_metering.sql` — usage_events + RPCs
-- `C:\Dev\draggonnb-platform\supabase\migrations\13_credit_packs.sql` — credit_pack_catalog
-- `C:\Dev\draggonnb-platform\supabase\migrations\05_leads_and_agents.sql` — agent_sessions schema
-- `C:\Dev\draggonnb-platform\app\pricing\page.tsx` — current pricing UI
-
-External references (confidence MEDIUM — typical patterns, not verified against current Anthropic docs in this session):
-
-- Anthropic prompt caching — `cache_control: { type: 'ephemeral' }`, 5min TTL, cached tokens at 10% rate. This is a documented SDK feature as of the Sonnet 4/Haiku 4.5 era; verify exact rate & cache TTL against current docs before committing Sprint 2.3.
-- PayFast subscription amendment — "cancel-and-recreate" is the proven path in this codebase (`cancelPayFastSubscription` already exists). PayFast v1 API supports `/subscriptions/{token}/adhoc` for top-up charges; confirm at implementation time.
-- SA VAT rate 15% standard — stable since 2018. Tourism levy 1% on accommodation. Verify current rate via SARS/NDT docs at implementation time (no known changes 2026).
-
----
-
-*Architecture research for: DraggonnB OS v3.0 Commercial Launch — integration architecture*
-*Researched: 2026-04-24*
+PayFast Subscribe checkout vs one-off behavior: NOT verified in this research pass (vendor docs not fetched). Flagged as MEDIUM confidence in Section 5; Phase 15.1 should include a vendor-doc spike before implementation.
