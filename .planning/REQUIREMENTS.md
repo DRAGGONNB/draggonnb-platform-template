@@ -229,17 +229,55 @@ Confirmed 2026-05-01. v3.1 anti-features — not building, even on request, with
 
 ## Traceability — Requirements to Phases
 
-To be populated by gsd-roadmapper. Pre-allocation:
+Populated by gsd-roadmapper 2026-05-01. Pre-allocation preserved unchanged — no reassignments needed. Every v3.1 REQ-ID maps to exactly one phase. Coverage = 100%.
 
-| Phase | Title | REQ-IDs |
-|-------|-------|---------|
-| 13 | Cross-product foundation | SSO-01..14, NAV-01..04, STACK-01..04, STACK-07, GATE-01, GATE-02 |
-| 14 | Approval spine | APPROVAL-01..18, STACK-05 |
-| 15 | Damage auto-billing + Hunt bookings + Cross-product stay link | DAMAGE-01..17, HUNT-01..09, CROSSLINK-01..06 |
-| 16 | PWA + Trophy PayFast + v3.0 carry-forward | PWA-01..15, TROPHY-01..12, CARRY-01..08, STACK-06 |
+### Phase summary
 
-Total v3.1 unconditional REQ-IDs: **103** across 9 categories.
+| Phase | Title | REQ Count | Categories |
+|-------|-------|-----------|------------|
+| 13 | Cross-Product Foundation | 25 | SSO-01..14, NAV-01..04, STACK-01..04, STACK-07, GATE-01, GATE-02 |
+| 14 | Approval Spine (3-deploy split: 14.1, 14.2, 14.3) | 19 | APPROVAL-01..18, STACK-05 |
+| 15 | Damage Auto-Billing + Hunt Bookings + Cross-Product Stay Link (6 sub-plans 15.1..15.6) | 32 | DAMAGE-01..17, HUNT-01..09, CROSSLINK-01..06 |
+| 16 | PWA + Trophy PayFast + v3.0 Carry-Forward (5 sub-plans 16.1..16.5) | 36 | PWA-01..15, TROPHY-01..12, CARRY-01..08, STACK-06 |
+| **Total** | | **112** | 103 feature reqs + 9 meta reqs (STACK + GATE) |
+
+### Per-REQ assignment
+
+| REQ-ID | Phase | Status | Notes |
+|--------|-------|--------|-------|
+| SSO-01..14 | 13 | Pending | Federation core; GATE-01 blocks architecture lock |
+| NAV-01..04 | 13 | Pending | Cross-product nav (conditional on linked_org) |
+| APPROVAL-01..03 | 14 | Pending | OPS-05 3-deploy split: 01→14.1, 02→14.2, 03→14.3 |
+| APPROVAL-04..18 | 14 | Pending | Spine implementation lands in 14.3 alongside NOT NULL constraints |
+| DAMAGE-01..04 | 15 | Pending | 15.1 PayFast Subscribe-token capture — hidden pre-req for 15.2+ |
+| DAMAGE-05 | 15 | Pending | Sandbox spike happens in Phase 13 GATE-02 (cross-phase) |
+| DAMAGE-06..09 | 15 | Pending | 15.2 Telegram intake + photo evidence |
+| DAMAGE-10..17 | 15 | Pending | 15.3 approval handler + auto-charge + dispute + chargeback |
+| HUNT-01..06, HUNT-09 | 15 | Pending | 15.4 multi-hunter split-billing + per-hunter Subscribe |
+| HUNT-07..08 | 15 | Pending | 15.6 charge stub (records queued, idempotency keys); actual charge in 16.2 |
+| CROSSLINK-01..06 | 15 | Pending | 15.5 cross-product stay link |
+| PWA-01..05 | 16 | Pending | 16.3 route group + token auth |
+| PWA-06..15 | 16 | Pending | 16.4 features + concierge web adapter |
+| TROPHY-01..11 | 16 | Pending | 16.1 Trophy PayFast wiring (unblocks 16.2) |
+| TROPHY-12 | 16 | Pending | 16.2 multi-hunter sandbox spike before per-hunter charge ships |
+| CARRY-01..08 | 16 | Pending | 16.5 v3.0 carry-forward + DraggonnB-only mobile sweep |
+| STACK-01..04 | 13 | Pending | Supabase SSR upgrade, jose adoption — shared infra for all subsequent phases |
+| STACK-05 | 14 | Pending | grammY adoption (Telegram framework); ops-bot refactor in same PR |
+| STACK-06 | 16 | Pending | @serwist/next + serwist (PWA service worker) |
+| STACK-07 | 13 | Pending | @draggonnb/federation-shared private package |
+| GATE-01 | 13 | Pending | Swazulu discovery call — BLOCKS Phase 13 architecture lock |
+| GATE-02 | 13 | Pending | PayFast sandbox spike — FIRST plan inside Phase 13; unblocks Phase 15 |
+
+### Sequence-critical dependencies (cross-phase)
+
+1. **GATE-01 (pre-Phase-13)** — Swazulu discovery call blocks Phase 13 architecture lock. Validates D3, D4, D6, D9.
+2. **Phase 14 OPS-05 split** — APPROVAL-01/02/03 enforce a 3-deploy migration sequence (add nullable → backfill → NOT NULL). Bundling fails per CLAUDE.md OPS-05.
+3. **Phase 15.1 hidden pre-requisite** — DAMAGE-01 (PayFast Subscribe-token capture in `lib/accommodation/payments/payfast-link.ts`) must land BEFORE damage intake (15.2) or any damage charge code can run.
+4. **Phase 15.6 ↔ 16.1 circular dependency** — HUNT-07 stubs charges in 15.6; actual `chargeAdhoc()` call waits for TROPHY-01..11 in 16.1; HUNT-08 + per-hunter charge flow lands in 16.2.
+5. **DAMAGE-05 cross-phase** — sandbox spike happens inside Phase 13 GATE-02, even though the requirement is categorized under DAMAGE.
+
+Total v3.1 unconditional REQ-IDs: **103 feature + 9 meta = 112**.
 
 ---
 
-*Last updated: 2026-05-01 — milestone v3.1 Operational Spine requirements defined; 10 cross-cutting decisions D1-D10 locked; Trophy OS Option C federation aligned; pending pre-Phase-13 Swazulu discovery call to validate operational assumptions.*
+*Last updated: 2026-05-01 — milestone v3.1 Operational Spine requirements defined; 10 cross-cutting decisions D1-D10 locked; Trophy OS Option C federation aligned; ROADMAP.md created with phases 13-16, all 112 REQ-IDs mapped to exactly one phase, pre-Phase-13 Swazulu discovery call (GATE-01) blocks architecture lock.*

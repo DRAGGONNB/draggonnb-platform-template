@@ -11,14 +11,19 @@ See: .planning/PROJECT.md (updated 2026-04-24)
 ## Current Position
 
 Milestone: **v3.1 Operational Spine** (started 2026-05-01)
-Phase: Defining requirements
+Phase: 13 — Cross-Product Foundation (BLOCKED on GATE-01 Swazulu discovery call)
 Plan: —
-Status: Milestone initialized. Trophy OS Option C aligned (SSO bridge, NOT absorption). Awaiting research → REQUIREMENTS.md → ROADMAP.md generation.
-Last activity: 2026-05-01 — milestone v3.1 initialized after architecture map + Trophy OS audit.
+Status: Roadmap created. 4 phases defined (13-16); 112 REQ-IDs mapped (103 feature + 9 meta); 10 cross-cutting decisions D1-D10 locked. Pre-Phase-13 Swazulu discovery call (GATE-01) blocks Phase 13 architecture lock. After GATE-01, run /gsd:plan-phase 13.
+Last activity: 2026-05-01 — ROADMAP.md created for v3.1; Phase 14 split confirmed into 14.1/14.2/14.3 per OPS-05; Phase 15.1 PayFast Subscribe-token capture confirmed as hidden pre-requisite; Phase 15.6 ↔ 16.1 circular dependency resolved via stub-then-charge.
 
 ## Resume Next Session
 
-**Milestone v3.1 just started.** Defining requirements via the new-milestone workflow.
+**v3.1 ROADMAP READY.** All planning artifacts in place: PROJECT.md (milestone section), REQUIREMENTS.md (112 REQ-IDs, 10 locked decisions), research/SUMMARY.md (5 bottom-line findings, decision matrix), ROADMAP.md (4 phases, sequence-critical constraints flagged).
+
+**Before Phase 13 planning:**
+- **GATE-01 — Swazulu discovery call** (non-negotiable). Validates split-billing model (D4), damage workflow, approval thresholds, role mapping reality (D2), cross-product nav expectation. Output: confirmed/revised D3, D4, D6, D9. BLOCKS Phase 13 architecture lock.
+
+**Once GATE-01 returns:** Run /gsd:plan-phase 13. First plan inside Phase 13 is GATE-02 PayFast sandbox spike (also unblocks Phase 15 damage code).
 
 **Carry-forward from v3.0 (lands in v3.1 Phase 16):**
 - 12-07 (smart-landing dashboard) — committed at `bedaff0e`, push pending
