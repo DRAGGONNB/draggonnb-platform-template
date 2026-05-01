@@ -1,253 +1,245 @@
 # Requirements — DraggonnB OS
 
-## Active Milestone: v3.0 — Commercial Launch
+## Active Milestone: v3.1 — Operational Spine
 
-**Goal:** Transform feature-complete platform into revenue-ready product with modular pricing, Easy/Advanced UX, 3-day automated onboarding, and brand-voice-driven AI across all agents. First paying client by end of phase 10.
+**Goal:** Federate DraggonnB OS and Trophy OS into a single ecosystem experience without rewriting Trophy OS. SSO bridge + cross-product approval spine + multi-hunter split-billing + accommodation↔hunt booking linkage + PayFast wiring for Trophy OS. Anchored on **Swazulu Game Lodge as first dual-product pilot.**
 
-**Scope decisions locked (2026-04-24):**
-- **PayFast billing:** Hybrid — recurring subscription (variable amount) for base + modules; one-off ad-hoc for setup fees + overage top-ups
-- **Existing orgs:** None currently paying — free to migrate/delete without grandfather constraints
-- **Anthropic cache isolation:** Tenant-scoped via `org_id` as first distinct cache block; golden two-tenant CI test
-- **Campaign Studio:** Decision-gated at end of Phase 10 — include in v3.0 only if phases 09–10 under budget
-- **Embedded Finance:** Deferred to v3.1 with accountant review gate on first 3 pilot tenants
+**Locked decisions (D1–D10, approved 2026-05-01):**
+- **D1: SSO bridge at `auth.draggonnb.com`** — JWT bridge endpoint with 60s HS256 tokens, fragment delivery, jti replay protection via DB table, per-host cookies. NOT shared cookie domain.
+- **D2: Per-product memberships, no role auto-translate.** Trophy 9 roles + DraggonnB 4 roles never auto-map. Cross-product approval action types are product-scoped.
+- **D3: Default ALL bookings to PayFast Subscribe** to capture stored token, surface "no token" gracefully when EFT chosen. Damage flow checks token first, routes to manual collection if absent.
+- **D4: Single billing root = parallel subscriptions, same card.** Two PayFast charges (one stay, one hunt), one checkout flow. Synthetic invoice = v3.2.
+- **D5: PayFast lib = copy-paste with sync-version header (4 small files); federation logic = private package `@draggonnb/federation-shared`** with exact version pinning.
+- **D6: Auto-create Trophy `orgs` row at module-activation time** (provisioning saga step 10). Explicit invite for additional `org_members`.
+- **D7: SSO replay protection = DB-backed `sso_bridge_tokens` table** for v3.1 (Redis only if >1000 bridge crossings/day).
+- **D8: Mobile sweep = DraggonnB only (82 pages)** for Phase 16. Trophy already mobile-first per its CLAUDE.md.
+- **D9: Single Telegram bot per org**, product-tagged callback data (`approve:{product}:{request_id}`). Refactor existing ops bot onto grammY in same PR.
+- **D10: Currency display = "ZAR 10,500.00 (≈ USD 575)" with ISO code prominent everywhere.**
 
----
-
-### Billing Composition (BILL)
-
-- [x] **BILL-01**: User sees modular pricing page with interactive module picker — pick Core (R599) + optional vertical (R1,199) + add-ons; live total updates as selections change
-- [x] **BILL-02**: User signs up with a composed subscription (base + modules + add-ons) and is charged via PayFast variable-amount recurring subscription
-- [x] **BILL-03**: User pays a one-off R1,499 setup fee at checkout via PayFast ad-hoc charge, separate from recurring subscription
-- [x] **BILL-04**: User can add or remove a module/add-on mid-cycle; billing recalculates and PayFast subscription amount updates via cancel-and-recreate flow
-- [x] **BILL-05**: `organizations.billing_plan_snapshot` JSONB column stores the plan composition at subscribe time; ITN validates against snapshot (not current PRICING_TIERS)
-- [x] **BILL-06**: PayFast webhook branches by `m_payment_id` prefix — `DRG-*` (subscription), `ADDON-*` (module change), `TOPUP-*` (overage pack), `ONEOFF-*` (setup fee)
-- [x] **BILL-07**: `pricing_changelog` table records every PRICING_TIERS change with timestamp, old/new values, and operator — history is append-only
-- [ ] **BILL-08**: Billing-reconciliation nightly cron compares PayFast subscription amount vs local composition total; alerts on drift
-- [x] **BILL-09**: User's pricing page total displays VAT-inclusive ZAR amount with a clear "incl. 15% VAT" line
-
-### Brand Voice (VOICE)
-
-- [x] **VOICE-01**: User completes a 3-step brand voice capture wizard during onboarding — URL ingest + 5 guided questions + avoid-list
-- [x] **VOICE-02**: Brand voice stored in `client_profiles` table (extend existing columns with `example_phrases TEXT[]` and `forbidden_topics TEXT[]`) — no new table
-- [x] **VOICE-03**: Brand voice injected as Anthropic `systemBlocks` with `cache_control: ephemeral` into all 6 existing agents (Quoter, Concierge, Reviewer, Pricer, LeadQualifier, ProposalGenerator)
-- [x] **VOICE-04**: `org_id` injected as distinct first system block to force tenant-scoped prompt-cache keys — prevents cross-tenant cache leak
-- [x] **VOICE-05**: Golden CI test provisions 2 orgs with different voices, runs identical prompts, asserts different outputs AND non-zero cache reads on second-same-tenant call
-- [x] **VOICE-06**: Brand voice system prompt padded to ≥4,096 tokens to hit Haiku 4.5 cache eligibility threshold
-- [x] **VOICE-07**: PII scrubber sanitises brand voice input before storage (strips email, phone, ID numbers, payment info)
-- [x] **VOICE-08**: User can re-run the brand voice wizard from settings — updated voice invalidates cached blocks on next agent call
-
-### Usage Caps & Cost Monitoring (USAGE)
-
-- [x] **USAGE-01**: Every metered action (AI generation, social post, email send, receipt OCR) calls `guardUsage(orgId, metric)` helper BEFORE the work; blocked at 100% of plan limit
-- [x] **USAGE-02**: `guardUsage` uses existing `record_usage_event` RPC (atomic check+insert) — no Redis, no read-then-write race
-- [x] **USAGE-03**: User gets in-app warning banners at 50%, 75%, 90% of each metric cap; banner includes upgrade + pay-overage options
-- [x] **USAGE-04**: User hitting 100% cap sees inline modal with 3 actions: upgrade plan / buy overage top-up / wait until reset (with exact reset date/time in tenant timezone)
-- [x] **USAGE-05**: 50-concurrent-request unit test verifies no over-cap leakage through `guardUsage`
-- [x] **USAGE-06**: Per-tier hard ZAR ceiling on Anthropic cost: Core R150/mo, Growth R400/mo, Scale R1,500/mo — agents auto-pause at 100% with alert
-- [x] **USAGE-07**: Anthropic cost circuit breaker: check projected cost BEFORE API call; abort with graceful error if over ceiling
-- [x] **USAGE-08**: `ai_usage_ledger` table records every BaseAgent call (including retries) with model, tokens, cache hits, computed cost in ZAR cents
-- [x] **USAGE-09**: `agent_sessions` migration adds `input_tokens`, `output_tokens`, `cache_read_tokens`, `cache_write_tokens`, `cost_zar_cents`, `model` columns
-- [x] **USAGE-10**: Nightly cron (`/api/ops/cost-rollup`) aggregates `agent_sessions` + `usage_events` into `daily_cost_rollup` table per org
-- [x] **USAGE-11**: `/admin/cost-monitoring` page (platform_admin-guarded) shows cost-vs-revenue per tenant, 30-day trend, margin %, and flags any tenant with cost > 40% of MRR
-- [x] **USAGE-12**: Haiku 4.5 enforced as default model across all BaseAgent subclasses — no silent Sonnet fallback; model selection logged per call
-- [x] **USAGE-13**: Legacy `client_usage_metrics` reads/writes audited — every route either migrates to `usage_events` RPC or the legacy write is deleted
-
-### Onboarding (ONBOARD)
-
-- [x] **ONBOARD-01**: Day 0 (signup): user completes payment, receives welcome email, sees onboarding dashboard with 4-step progress checklist
-- [x] **ONBOARD-02**: Day 1: automated email prompts user to complete brand voice wizard; kickoff call link (Cal.com or equivalent) included
-- [x] **ONBOARD-03**: Day 2: automated email guides user through first campaign / first action in their active module
-- [x] **ONBOARD-04**: Day 3: automated email confirms "you're live" + lists unlocked features + invites feedback
-- [x] **ONBOARD-05**: `onboarding_progress` table tracks per-org state: current day, completed steps, kickoff-call scheduled timestamp, drift flags
-- [x] **ONBOARD-06**: Provisioning saga gains step 10 (`schedule-onboarding-followups`) that enqueues the 3 N8N workflows
-- [x] **ONBOARD-07**: Provisioning saga steps 5–9 are idempotent and retryable; saga failures PAUSE (not cascade-delete) with operator Telegram alert
-- [x] **ONBOARD-08**: Org is usable after saga steps 1–4 complete — later steps run async; user never sees "setting up..." stuck state
-- [x] **ONBOARD-09**: "3 business days" phrased explicitly on pricing page + welcome email; weekend signups start day-0 timer Monday
-
-### Easy/Advanced UX (UX)
-
-- [ ] **UX-01**: `<ModuleHome>` shared component renders AI action cards from a declarative manifest per module — RSC-first, client islands per card
-- [ ] **UX-02**: CRM has two routes — `/dashboard/crm` (Easy view with ModuleHome) and `/dashboard/crm/advanced` (existing full kanban + filters)
-- [ ] **UX-03**: Every non-Easy module page includes "Easy view →" link in top-right; every Easy view includes "Advanced view →" link
-- [ ] **UX-04**: `user_profiles.ui_mode` stores user preference (`easy` | `advanced`); existing users default to `advanced`, new signups to `easy`
-- [ ] **UX-05**: Action card sources use event-driven queries (real-time), nightly cached suggestions (N8N), or user-triggered BaseAgent calls — NEVER per-render agent calls
-- [ ] **UX-06**: View-desync integration test: edit entity in Easy, switch to Advanced, verify edits visible; switch back without losing unsaved state
-- [ ] **UX-07**: `entity_drafts` table stores unsaved form state across view switches
-
-### Site Redesign (SITE)
-
-- [x] **SITE-01**: Landing page hero is outcome-led ("Run your lodge on autopilot") with interactive module picker below
-- [x] **SITE-02**: Pricing page has module-picker UI: toggle Core + vertical + add-ons, live monthly total, "what it replaces" comparison (~R4,500 in manual work)
-- [x] **SITE-03**: 301 redirects in place for any changed URLs; Search Console baseline exported pre-launch for regression detection
-- [x] **SITE-04**: Mobile-first verified at 360px breakpoint on every landing + pricing + signup page; Lighthouse mobile performance ≥85 *(code shipped; Lighthouse measurement deferred to launch-day on production per Chris's directive 2026-04-27)*
-- [x] **SITE-05**: Landing page keeps brand direction (charcoal #363940 + crimson #6B1420 + light sections) — full layout refresh, not cosmetic
-
-### Operations (OPS)
-
-- [x] **OPS-01**: Startup Zod schema assertion in `lib/config/env.ts` fails boot if `PAYFAST_MODE=production` without `PAYFAST_PASSPHRASE`, or other required env vars are missing
-- [ ] **OPS-02**: Feature-gate audit daily cron verifies every gated capability is blocked at three layers (middleware, API route, DB RLS); alerts on misconfiguration
-- [ ] **OPS-03**: Token expiry monitor cron checks Facebook + LinkedIn OAuth tokens 7 days before expiry; alerts operator with refresh link
-- [ ] **OPS-04**: `/api/ops/env-health` endpoint returns current environment validation status (masked — no secrets leaked)
-- [x] **OPS-05**: Multi-step migration discipline documented in `CLAUDE.md`: add column NULLABLE → deploy write code → backfill → add NOT NULL in later migration; never combine add + constraint
-
-### Campaign Studio (CAMPAIGN) — decision-gated
-
-*These requirements activate only if phases 09–10 come in under budget. Otherwise deferred to v3.1.*
-
-- [ ] **CAMP-01**: User enters a campaign intent ("promote our Sunday brunch special"); Campaign Studio drafts 5 social posts + 1 email + 1 SMS using brand voice
-- [ ] **CAMP-02**: User reviews drafts in a single approval screen; can edit inline, regenerate individual items, or approve all
-- [ ] **CAMP-03**: Approved campaign auto-schedules across selected channels via Supabase `pg_cron` + `pg_net`
-- [ ] **CAMP-04**: Publish confirmation UI shows target channel icon + account name + preview before execute; no silent posting
-- [ ] **CAMP-05**: Post-publish verify fetches the posted item and stores URL; failures surface in campaign run detail
-- [ ] **CAMP-06**: Per-tenant kill switch on campaigns (emergency stop all scheduled runs)
-- [ ] **CAMP-07**: Brand-safety Haiku check on every draft — flags off-brand, insensitive, or time-inappropriate content (e.g. festive post during public mourning)
-- [ ] **CAMP-08**: First 30 days of a new tenant: all campaigns default to draft-then-review (never auto-publish)
+**Scope guardrails:**
+- Trophy OS UI rework — out of scope; stays as-is
+- DraggonnB role enum expansion to 9 roles — out of scope; mapping via per-product membership
+- Embedded Finance — still v3.2+
+- Easy View rollout to remaining DraggonnB modules — still v3.2+
+- Cross-domain SSO for `swazulu.com` — v3.2 (P2; activated when Swazulu custom domain goes live)
+- Per-carcass routing pipeline · farmer photo classification · genetic tree — Wave B (v3.2)
+- GoHunting.com · location marketplaces · Go-X template — Wave C (v3.3+)
 
 ---
 
-## Previously Shipped Requirements (v1.x / v2.x)
+### SSO Bridge & Federation (SSO)
 
-Full history lives in `.planning/ROADMAP.md` under "Completed Work". Summary:
+- [ ] **SSO-01**: User clicks "Trophy OS" in DraggonnB sidebar; lands on Trophy OS authenticated within ~2 seconds. Reverse direction works the same.
+- [ ] **SSO-02**: SSO bridge endpoint lives at `auth.draggonnb.com/api/sso/issue` (issuer) and `<consumer>/api/sso/consume` (each app's consumer). HS256 JWTs signed with `SSO_BRIDGE_SECRET` env var.
+- [ ] **SSO-03**: Bridge tokens are 60s TTL maximum, single-use, with `jti` UUID tracked in `sso_bridge_tokens` table — replays return 401 + audit row written.
+- [ ] **SSO-04**: Token delivery via URL fragment (`#token=...`), Referrer-Policy `no-referrer` set on consumer route, never query string. CSP headers prevent token leak via mixed-content embeds.
+- [ ] **SSO-05**: Bridge token carries explicit `intended_tenant_id`, `origin_tenant_id`, `user_id`, and `intended_product` (`draggonnb`/`trophy`). Both tenant fields validated against `cross_product_org_links` at consume time.
+- [ ] **SSO-06**: New middleware `tenant_membership_proof` runs BEFORE `getUserOrg()` on every protected route in both apps. Asserts `(user_id, tenant_id)` membership exists with `is_active=true`. No row = 403, never silent auto-create.
+- [ ] **SSO-07**: Per-host session cookies — `app.draggonnb.co.za`, `*.draggonnb.co.za` tenant subdomains, `trophyos.co.za`, `auth.draggonnb.com` each get their own cookie. NEVER `Domain=.draggonnb.co.za`.
+- [ ] **SSO-08**: CI lint blocks `revalidate=N` on any auth-touching route (Pitfall 1 guard) and blocks Supabase client imports without `getUserOrg()` chain.
+- [ ] **SSO-09**: `cross_product_org_links` table maps `(draggonnb_org_id, trophy_org_id, status, created_at)`. Per-org one-to-one for v3.1; junction-shaped for future multi-farm-per-org.
+- [ ] **SSO-10**: `organizations.linked_trophy_org_id UUID NULL REFERENCES orgs(id) ON DELETE SET NULL` column added (DraggonnB schema, multi-step OPS-05 migration).
+- [ ] **SSO-11**: Provisioning saga gains step 10 (`activate-trophy-module`) — when DraggonnB activates `module_id='trophy'` for an org, idempotently creates a Trophy `orgs` row and writes `cross_product_org_links` mapping. Step is retryable + paused-on-failure (existing saga semantics).
+- [ ] **SSO-12**: Brand types `DraggonnbOrgId` and `TrophyOrgId` exported from `@draggonnb/federation-shared` package; compiler refuses to mix.
+- [ ] **SSO-13**: Federation logout — DraggonnB sign-out invalidates the user's Trophy session via cross-product ping (best-effort, async). Trophy logout same in reverse.
+- [ ] **SSO-14**: Phase 13 SSO sandbox spike completed before bridge implementation — validates HS256 vs ES256, fragment-vs-query delivery, exact CSP headers, edge IP allow-listing.
 
-- **v1 (7 phases, Feb 2026):** Security & Auth, Core Modules, Landing, N8N Automation, Social Integration, Provisioning, Testing
-- **v2 BOS (Phases A–E):** CLAUDE.md hierarchy, Error catalogue, Build reviewer, AI ops architecture
-- **v2.1 Architecture Restructure:** Shared DB + RLS multi-tenancy, wildcard subdomain routing, DB-backed module gating
-- **v2.2 Accommodation Module:** 84 tables, 102 API routes, 12 UI pages, 4 AI agents, channel manager, guest portal
-- **v2.3 Elijah Module:** Community safety — 33 tables, 23 API routes, 4 N8N workflows
-- **v2.4 Restaurant Module:** Block-based SOPs, POS, QR menus, floor plan (Konva), 6 management pages
+### Cross-Product Navigation (NAV)
 
-All previously shipped requirements remain satisfied. v3.0 does not break any existing capability.
+- [ ] **NAV-01**: DraggonnB sidebar conditionally shows "Trophy OS" item only when `tenant_modules.config.trophy.linked_org_id` is set; click triggers SSO bridge.
+- [ ] **NAV-02**: Trophy OS conditionally shows "DraggonnB OS" item in its sidebar/header for users whose origin tenant has DraggonnB modules activated; click triggers reverse SSO bridge.
+- [ ] **NAV-03**: Cross-product nav shows loading state during bridge round-trip (max 2 seconds, fallback message on timeout).
+- [ ] **NAV-04**: User in DraggonnB clicks "Trophy OS" but their tenant has no Trophy membership → routed to "Activate Trophy OS" UI (not silent auto-create, per D2/D6).
+
+### Approval Spine (APPROVAL)
+
+- [ ] **APPROVAL-01**: Existing `approval_requests` table generalised via 3-step OPS-05 migration — Step 1 adds nullable columns (`product`, `target_resource_type`, `target_resource_id`, `target_org_id`, `action_type`, `action_payload JSONB`); drops `post_id` NOT NULL.
+- [ ] **APPROVAL-02**: Step 2 backfills existing social-post rows with `product='draggonnb'`, `target_resource_type='social_post'`, `target_resource_id=post_id`, `target_org_id=organization_id`, `action_type='social_post'`. Idempotent. Verifies zero NULLs before Step 3.
+- [ ] **APPROVAL-03**: Step 3 adds NOT NULL constraints on the 4 target columns. `post_id` retained as nullable for Phase 17 cleanup.
+- [ ] **APPROVAL-04**: `lib/approvals/spine.ts` exports `proposeApproval()`, `approveRequest()`, `rejectRequest()`, `listPendingForUser()` — generic interface used by every action type.
+- [ ] **APPROVAL-05**: Action type registry at `lib/approvals/handlers/` — one handler per action type: `damage_charge`, `rate_change`, `content_post`, `quota_change`, `safari_status_change`, `supplier_job_approval`. Each handler implements `propose(payload)`, `execute(approval)`, and `revert(approval)`.
+- [ ] **APPROVAL-06**: Action types are product-scoped: `draggonnb.damage_charge`, `trophy.quota_change`, etc. No generic cross-product approval type (D2 guard).
+- [ ] **APPROVAL-07**: Telegram tap-to-approve via grammY `^1.42.0` — DraggonnB ops bot refactored onto grammY in same PR. Inline keyboard buttons fire `approve:{product}:{request_id}` and `reject:{product}:{request_id}` callbacks.
+- [ ] **APPROVAL-08**: Telegram bot uses Bot API `secret_token` for webhook signature verification; webhook handler checks token before processing.
+- [ ] **APPROVAL-09**: Telegram callback queries deduped via `telegram_update_log` table with `update_id` PRIMARY KEY — replays return cached response, never re-execute.
+- [ ] **APPROVAL-10**: Atomic stored procedure `approve_request_atomic(approval_id, approver_user_id, decision)` enforces expiry (30s grace), idempotency, and status reconciliation. Returns `{ status, error }`. Cron sweep never modifies in-flight rows.
+- [ ] **APPROVAL-11**: Approver user verified via mapped `(telegram_user_id, organization_users.user_id)` lookup, NOT "user who tapped the button." Forwarded messages can't impersonate.
+- [ ] **APPROVAL-12**: Inline keyboard self-disables on first valid click via `editMessageReplyMarkup` to prevent double-tap.
+- [ ] **APPROVAL-13**: Telegram approval messages contain ONLY internal IDs (`damage_id`, `request_id`); never PII (guest name, phone, card last4) — Pitfall 21 guard.
+- [ ] **APPROVAL-14**: Approval delivery via DM to assigned approver only — never approval channel posts (Pitfall 6 guard).
+- [ ] **APPROVAL-15**: Web fallback at `/approvals` — paginated table of pending approvals for the current user, with one-click approve/reject. Mobile-first.
+- [ ] **APPROVAL-16**: 3 OR-stacked SELECT RLS policies on `approval_requests` — DraggonnB approvers, Trophy approvers, cross-product linked owners. Each has explicit role gate.
+- [ ] **APPROVAL-17**: Approval audit log appended on every state change — proposer, approver, action_type, timestamps, before/after payload — written to existing `audit_log` table with `resource_type='approval_request'`.
+- [ ] **APPROVAL-18**: Single-level approve/reject only. Multi-level chains, delegation, conditional auto-approve are explicit anti-features for v3.1.
+
+### Damage Auto-Billing (DAMAGE)
+
+- [ ] **DAMAGE-01**: Phase 15.1 PayFast Subscribe-token capture conversion is the FIRST work in Phase 15 — `lib/accommodation/payments/payfast-link.ts` switches one-off → Subscribe checkout for deposits and balance.
+- [ ] **DAMAGE-02**: PayFast ITN webhook captures `token` field on subscription confirmation and stores it on `accommodation_bookings.guest_payfast_token UUID NULL` (NEW nullable column, multi-step OPS-05).
+- [ ] **DAMAGE-03**: `accommodation_bookings.max_incidental_charge_zar INTEGER` column added — default `total_zar * 1.5` or 5000 ZAR cents whichever higher. Communicated to guest in T&Cs.
+- [ ] **DAMAGE-04**: `accommodation_bookings.damage_consent_at TIMESTAMPTZ NULL` records guest acceptance of damage T&Cs at booking time.
+- [ ] **DAMAGE-05**: Phase 13 PayFast sandbox spike confirms `chargeAdhoc()` amount unit (rands vs cents), Subscribe-token charge mechanism, and absence/presence of hold-and-capture before any Phase 15 code lands.
+- [ ] **DAMAGE-06**: New table `damage_incidents` — `id, booking_id, organization_id, flagged_by_user_id, item_description, item_category, evidence_photo_urls TEXT[], proposed_amount_zar INTEGER, status, created_at`. Status enum: `pending_approval`, `approved`, `charged`, `disputed`, `refunded`, `cancelled`.
+- [ ] **DAMAGE-07**: Telegram `/damage` command on DraggonnB ops bot opens guided flow — booking selection (open bookings only), photo upload (≥2 required), description, category from itemized price list, proposed amount.
+- [ ] **DAMAGE-08**: Itemized damage price list (default + tenant-overridable) stored in `tenant_modules.config.accommodation.damage_price_list JSONB`. Categories: glassware, linen, electronics, furniture, structural, other.
+- [ ] **DAMAGE-09**: Photo evidence stored in dedicated `damage-evidence` Supabase Storage bucket with versioning enabled, `service_role` DELETE-only, CRC32 hash verification, EXIF timestamp validation (must fall within booking dates ± damage window).
+- [ ] **DAMAGE-10**: `/damage` command creates a `damage_incidents` row + an `approval_request` with `action_type='draggonnb.damage_charge'` — owner gets Telegram DM with photos + amount + Approve/Reject inline keyboard.
+- [ ] **DAMAGE-11**: Owner approves → `chargeAdhoc()` invoked with prefix `DAMAGE-{booking_id}-{incident_id}` and stored token. Charge fails open-loop on missing token, routes to manual collection UI.
+- [ ] **DAMAGE-12**: Hard 7-day window enforced from `accommodation_bookings.checkout_date` — charges attempted past day 7 are rejected at app layer with audit row.
+- [ ] **DAMAGE-13**: WhatsApp pre-charge notification sent to guest with photo, item description, amount, and 48-hour dispute window (link to dispute form). Charge gated on WhatsApp `delivered` status; if not delivered within 30 minutes, charge paused with operator alert.
+- [ ] **DAMAGE-14**: Guest dispute submitted within 48h → charge cancelled, owner notified, manual reconciliation queue.
+- [ ] **DAMAGE-15**: Damage refund flow available from owner's incident detail page — issues PayFast refund, updates incident status to `refunded`, notifies guest via WhatsApp.
+- [ ] **DAMAGE-16**: Chargeback monitoring cron tracks per-tenant chargeback rate over rolling 90 days; per-tenant kill switch auto-activates at >2% chargeback rate (operator alert + damage_charge action_type disabled for tenant).
+- [ ] **DAMAGE-17**: All damage UI displays currency per D10 ("ZAR 10,500.00 (≈ USD 575)"). T&Cs PDF includes full damage policy with cap, window, dispute process.
+
+### Hunt Bookings & Multi-Hunter Split-Billing (HUNT)
+
+- [ ] **HUNT-01**: New table `safari_hunters` (Trophy OS schema) as the financial truth for per-hunter billing — junction between `safaris` and individual hunter records.
+- [ ] **HUNT-02**: `safari_hunters` columns include the 6 fields surfaced by features research: `hunter_role`, `passport_country`, `payment_method_token`, `deposit_paid_at`, `species_quota_per_hunter JSONB`, `consent_to_individual_billing_at`. Plus baseline: `id, safari_id, full_name, email, phone, locked_daily_rate_zar, status, payfast_token, deposit_amount_zar, balance_due_zar, created_at`.
+- [ ] **HUNT-03**: When a `safaris` row has 2+ hunters, each hunter completes their own PayFast Subscribe checkout to capture an individual `payment_method_token`. Booker is `safari_hunters.hunter_role='lead_booker'`, others are `'guest_hunter'`.
+- [ ] **HUNT-04**: `safari_hunters.locked_daily_rate_zar` is set at deposit time and immutable for the rest of the trip (cancellation of one hunter does NOT raise the others' rates — D7 industry-norm guard).
+- [ ] **HUNT-05**: Pre-arrival paid gate — Trophy OS blocks safari status transition to `confirmed` unless every `safari_hunters.deposit_paid_at` is non-null. Owner can override with explicit confirmation + audit row.
+- [ ] **HUNT-06**: Trophy fee allocation requires explicit hunter selection at trophy log time — `trophies.shooter_safari_hunter_id UUID NOT NULL REFERENCES safari_hunters(id)`. Updates the correct hunter's `balance_due_zar`.
+- [ ] **HUNT-07**: Per-hunter PayFast charge stub created in Phase 15.6 (records queued, idempotency keys generated) but actual `chargeAdhoc()` call deferred to Phase 16.2 (after Trophy PayFast wiring lands).
+- [ ] **HUNT-08**: Per-hunter refund UI on Trophy `safaris/[id]` page — issues refund against the specific `payment_method_token`, updates `safari_hunters.status='refunded'`, audit row.
+- [ ] **HUNT-09**: Currency display per D10 across hunter checkout, invoice, and Trophy admin views.
+
+### Cross-Product Stay Link (CROSSLINK)
+
+- [ ] **CROSSLINK-01**: `safaris.accommodation_booking_id UUID NULL REFERENCES accommodation_bookings(id) ON DELETE SET NULL` column added (Trophy OS schema, multi-step OPS-05). NEVER CASCADE.
+- [ ] **CROSSLINK-02**: When a DraggonnB Accommodation booking is created with a Trophy-active org, UI offers "Link to existing safari" or "Create new safari" — both routes write the FK.
+- [ ] **CROSSLINK-03**: Cross-product RLS join policy: viewing a linked record requires the user has membership in BOTH `safaris.org_id` (Trophy `org_members`) AND `accommodation_bookings.organization_id` (DraggonnB `organization_users`).
+- [ ] **CROSSLINK-04**: DraggonnB Accommodation booking detail page shows "Linked hunt: SAF-2026-001" badge with click-through to Trophy via SSO bridge. Trophy safari detail shows "Linked stay: 5 nights at Swazulu Lodge" with reverse click-through.
+- [ ] **CROSSLINK-05**: Bidirectional date-sync handlers — accommodation `check_in/check_out` change triggers safari `arrival_date/departure_date` review (operator must explicitly confirm sync, never auto-update). Vice-versa for hunt date changes.
+- [ ] **CROSSLINK-06**: Weekly reconciliation cron scans for orphan FKs (linked booking deleted, safari now references nothing), date drift (>2 day mismatch unconfirmed >7 days), and membership-overlap mismatches (linked but user has lost membership in one product). Surfaces in `/admin/cross-product-health`.
+
+### PWA Guest Surface (PWA)
+
+- [ ] **PWA-01**: PWA route group at `app/(stay)/[bookingId]/page.tsx` in DraggonnB platform — token-authenticated, public-facing.
+- [ ] **PWA-02**: Domain choice for PWA finalised at Phase 16 planning between `stay.draggonnb.co.za/{booking-id}` and `stay.draggonnb.com/{booking-id}` — `.com` recommended for international guest trust.
+- [ ] **PWA-03**: `accommodation_bookings.guest_access_token` column added — random 32-byte base64url token, NOT booking_id. Validated via HMAC-SHA256 in `lib/stay/token.ts`.
+- [ ] **PWA-04**: Token TTL = `bookings.checkout_date + 30 days`. Past-TTL access returns 410 Gone with audit row.
+- [ ] **PWA-05**: Edge rate limit 60 req/5min/IP on PWA routes (Pitfall 12 guard against URL guessing).
+- [ ] **PWA-06**: PWA renders pre-arrival info, check-in details, payment links (deposit/balance), concierge chat, post-stay review request, photo gallery — all per-booking scoped.
+- [ ] **PWA-07**: Service worker (`@serwist/next ^9.5.10`) scoped to `/(stay)/` route group only — never caches financial data, network-first for booking details, stale-while-revalidate for static assets, "update available" banner on new SW install.
+- [ ] **PWA-08**: Service worker cache key includes app version — bumps on every deploy, prevents stale-data bugs (Pitfall 7 guard).
+- [ ] **PWA-09**: Offline UI for forms — captures input locally, syncs on reconnect with conflict-resolution UI (server-wins by default, user-prompt on data loss).
+- [ ] **PWA-10**: Install prompt strategy — never on first visit. Trigger on (deposit-paid event) OR (3+ engagements with PWA OR check-in within 7 days). Web Push request follows install, never simultaneous.
+- [ ] **PWA-11**: iOS install instruction modal — Apple does not expose `beforeinstallprompt`; modal explains "Add to Home Screen" via Safari share menu with screenshots. Triggers on iOS Safari only after install criteria met.
+- [ ] **PWA-12**: ConciergeAgent gets web adapter at `lib/accommodation/agents/concierge/web-adapter.ts` — re-uses existing brand-voice + cost-ceiling + advisory lock infrastructure. Web variant doesn't replace WhatsApp; both paths active.
+- [ ] **PWA-13**: PWA chat endpoint `/api/stay/[bookingId]/chat/route.ts` token-validated, rate-limited, audited.
+- [ ] **PWA-14**: Currency display per D10 throughout PWA.
+- [ ] **PWA-15**: POPI footer link visible on every PWA page; consent capture on first visit logged in `notification_log`.
+
+### Trophy OS PayFast Wiring (TROPHY)
+
+- [ ] **TROPHY-01**: PayFast helper files (`payfast.ts`, `payfast-adhoc.ts`, `payfast-prefix.ts`, `payfast-subscription-api.ts`) physically copied from DraggonnB to Trophy `src/lib/payments/` with sync-version header in each file documenting source path and version.
+- [ ] **TROPHY-02**: Sync-version tracking line added to `.planning/STATE.md` — every change to source files in DraggonnB triggers a sync task in Trophy with version increment.
+- [ ] **TROPHY-03**: Trophy ITN webhook lives at separate route from DraggonnB — both handle the SAME merchant credentials, distinct prefix routing: `SUB-` (DraggonnB sub), `TOS-` (Trophy sub), `ACC-` (DraggonnB accommodation), `SAFARI-` (Trophy hunter), `DAMAGE-` (DraggonnB damage), `HUNT-` (Trophy hunt overage). Single registered webhook URL with prefix-router OR two webhook URLs with merchant-side routing — decided in Phase 16 planning.
+- [ ] **TROPHY-04**: `billing_plans.product TEXT NOT NULL DEFAULT 'draggonnb'` column added (3-step OPS-05). Trophy tier rows seeded: `tos_starter` R599, `tos_pro` R1,499, `tos_outfitter` R3,499.
+- [ ] **TROPHY-05**: Trophy subscription state machine — `trial` (14d) → `active` (paid) → `past_due` (failed payment, 7d grace) → `cancelled` (read-only mode, 30d retention before purge).
+- [ ] **TROPHY-06**: Trial expiry math uses tenant timezone (`Africa/Johannesburg` default) + 4-hour grace. UTC bugs guarded by integration test.
+- [ ] **TROPHY-07**: Failed payment retry capped at 3 attempts with backoff (1h, 6h, 24h). Past 3 attempts → `cancelled` with operator alert.
+- [ ] **TROPHY-08**: Trophy RLS policies enforce read-only mode on `cancelled` and `past_due` orgs — INSERT/UPDATE/DELETE blocked at DB layer, not just UI.
+- [ ] **TROPHY-09**: Tier downgrade applies at end-of-cycle, never mid-cycle (avoids data-loss UX of features cut off mid-action).
+- [ ] **TROPHY-10**: Cross-product unified billing UI at DraggonnB `/billing` shows DraggonnB + Trophy subscriptions with per-product status distinct (one passing while the other fails clearly visible).
+- [ ] **TROPHY-11**: All Trophy guest-facing financial UI conforms to D10 currency display.
+- [ ] **TROPHY-12**: Phase 15.4 multi-hunter PayFast sandbox spike completed before per-hunter charge ships — confirms 4 parallel subscriptions same merchant, refund-when-token-expired flow, idempotency keys per charge.
+
+### v3.0 Carry-Forward (CARRY)
+
+- [ ] **CARRY-01**: 12-07 (smart-landing dashboard, committed at `bedaff0e`) rebased onto current main, smoke-tested via preview deploy, then pushed to origin/main as the final v3.0 plan to ship.
+- [ ] **CARRY-02**: BILL-08 reconciliation cron runs in DRY-RUN mode for 7 days before active — logs detected drifts without alerting, surfaces unknown v3.0 drift before active alarming starts.
+- [ ] **CARRY-03**: BILL-08 active mode — nightly cron compares PayFast subscription amount vs local composition total, alerts Chris via Telegram with affected org_id and amounts on drift.
+- [ ] **CARRY-04**: OPS-02 daily feature-gate audit cron — verifies every gated capability is blocked at three layers (middleware + API route + DB RLS); alerts on misconfiguration.
+- [ ] **CARRY-05**: OPS-03 token expiry monitor cron — 7-day lookahead on Facebook + LinkedIn OAuth tokens; alerts operator with refresh link.
+- [ ] **CARRY-06**: OPS-04 `/api/ops/env-health` endpoint returns current environment validation status without leaking secrets.
+- [ ] **CARRY-07**: 360px mobile sweep across all DraggonnB revenue-critical pages (landing, pricing, signup, payment, dashboard home, module Easy views) — validated on real SA-representative device. Trophy mobile sweep deferred per D8.
+- [ ] **CARRY-08**: Pre-Phase 16 lightweight mobile sweep on top 5 pages catches obvious breakage before milestone budget is consumed.
+
+### Stack Upgrades & Library Adoption (STACK)
+
+- [ ] **STACK-01**: `@supabase/ssr` upgraded from `0.1.0` → `0.10.2` in DraggonnB platform — `cookies.get/set/remove` refactored to `getAll/setAll`. Regression test suite passes (middleware + auth pages + protected routes).
+- [ ] **STACK-02**: `@supabase/supabase-js` bumped to `^2.105.1` in DraggonnB platform.
+- [ ] **STACK-03**: `@supabase/ssr` upgraded `0.9.0` → `0.10.2` in Trophy OS — same refactor pattern, lower regression risk.
+- [ ] **STACK-04**: `jose ^5.x` added to DraggonnB platform, Trophy OS, and `@draggonnb/federation-shared` for HS256 JWT operations.
+- [ ] **STACK-05**: `grammy ^1.42.0` added to DraggonnB platform; existing `lib/accommodation/telegram/ops-bot.ts` (raw Bot API) refactored onto grammY in same PR (single bot framework in codebase).
+- [ ] **STACK-06**: `@serwist/next ^9.5.10` and `serwist ^9.5.10` (devDep) added to DraggonnB platform for PWA service worker.
+- [ ] **STACK-07**: Private package `@draggonnb/federation-shared` published to GitHub Packages registry — initial contents: HS256 JWT sign/verify, `ApprovalRequest` types, brand types `DraggonnbOrgId`/`TrophyOrgId`. Hard cap 200 LOC. Both products lock to exact version (no `^` ranges).
+
+### Pre-Phase Gates (GATE)
+
+- [ ] **GATE-01**: Pre-Phase-13 Swazulu discovery call completed — validates split-billing model (D4), damage workflow (DAMAGE-*), approval thresholds (APPROVAL-*), role mapping reality (D2), cross-product nav expectation. Output: confirmed/revised D3, D4, D6, D9. Block Phase 13 architecture lock until done.
+- [ ] **GATE-02**: PayFast sandbox spike (Phase 13 first plan) — confirms `chargeAdhoc()` amount unit, Subscribe-token charge mechanism, hold-and-capture availability before Phase 15 ships damage billing.
 
 ---
 
-## v3.1+ Future Requirements (Deferred from v3.0)
+## Previously Shipped Requirements (v1.x / v2.x / v3.0)
+
+Full history in `.planning/ROADMAP.md` under "Completed Work". v3.0 closed with 60/60 in-scope reqs done across phases 09–11, plus 3/10 phase-12 plans (12-01, 12-06, 12-08). Remaining v3.0 phase-12 work (BILL-08, OPS-02..04, mobile sweep, 12-07 push) carries forward as v3.1 CARRY-* requirements.
+
+---
+
+## v3.2+ Future Requirements (Deferred from v3.1)
 
 Triggered by real client signal or explicit roadmap decision:
 
-- **Easy View rollout** to remaining 5 modules (Email Sequences, Accommodation, Restaurant, Agents, Analytics) — trigger: ModuleHome pattern stable + 5+ clients onboarded
-- **Embedded Finance** (VAT201 exports, TOMSA levy tracking, SARS day-end, owner-payout statements, tips treatment) — **must ship with accountant review gate on first 3 pilot tenants before claiming "SARS-ready"**
-- **Finance-AI add-on** (Telegram receipt OCR via Claude Haiku 4.5 vision, SARS expense categorisation) — trigger: 5+ clients requesting
-- **Campaign Studio** — if slipped from v3.0 decision gate
-- **Landing page builder** inside Campaign Studio
-- **Events add-on** (layers onto F&B or Accom)
-- **White-label add-on** (logo + color + sender email) — custom domain per tenant remains v4 scope
-- **Annual billing** with 10–15% discount (lowers PayFast fees, reduces churn)
-- **WhatsApp Cloud API activation** (Elijah Incident Intake + tenant messaging) — trigger: Meta credentials from Chris
+- **Cross-domain SSO for `swazulu.com`** — when Swazulu's custom domain goes live; token handoff already specified architecturally
+- **Single billing root synthetic invoice** (Option D from D4) — if pilot reveals two-charge UX friction
+- **Trophy Pro/Premium tier features** — feature flags + gating beyond CLAUDE.md's tier matrix
+- **PWA push notifications** — full Web Push pipeline (Apple removed beforeinstallprompt; needs vendor-detect + iOS-specific UX)
+- **PWA photo gallery + post-stay review** — features beyond v3.1 launch scope
+- **Bulk approve, per-action-type expiry config, annual billing toggle** — once approval spine has real-world signal
+- **Game-lodge deep-onboarding intake** (rules/regs/waivers → AI-tailored config) — Wave B
+- **Per-carcass routing pipeline** — Wave B (vendor SOPs, deposits, notifications)
+- **Farmer photo classification + genetic tree** — Wave B (Trophy OS)
+- **Manager/owner dedicated AI agent** for DraggonnB Accommodation — Wave B
+- **GoHunting.com + location marketplaces + Go-X template** — Wave C
+- **Embedded Finance** (VAT201 + TOMSA + tips + SARS day-end + owner-payout) — must ship with accountant review gate on first 3 pilot tenants
+- **Easy View rollout** to remaining 5 DraggonnB modules — trigger: ModuleHome pattern stable + 5+ clients onboarded
+- **Trophy mobile sweep** — Trophy already mobile-first per its CLAUDE.md; full sweep deferred until v3.2
 
 ---
 
 ## Out of Scope (Deliberate Exclusions)
 
-Confirmed 2026-04-24. These are anti-features — we actively do NOT build them, even on request, without explicit milestone re-scoping:
+Confirmed 2026-05-01. v3.1 anti-features — not building, even on request, without milestone re-scoping:
 
 ### Never (compete by not competing)
 
-- **Full double-entry accounting.** We are a pre-accounting layer exporting to Xero/Sage/FreshBooks — not a Xero replacement
-- **Generic AI long-form content writer** (blog posts, articles). Brand voice + campaign short-form only
-- **Custom AI agent builder.** We ship 6–8 vertical agents; revisit at 20+ clients per `CLAUDE.md` mandate
-- **Multi-tier approval workflows** (3-layer like Hootsuite Enterprise). Single-level approve/reject only — owner-operator target
-- **Full channel manager** competing with SiteMinder or NightsBridge (20+ year head start). Keep existing iCal feeds + partner integrations only
-- **"Unlimited" AI generation marketing claim.** Published caps + transparent overage pricing — Holo's "unlimited" is a liability
-- **"Kitchen sink" free tier** (HubSpot-style). 14-day trial with payment-method-on-file only
-- **Self-serve SQL / data warehouse access.** CSV export + scheduled reports cover 95% of need
-- **In-app chat widget** (Intercom-style). WhatsApp + Telegram + knowledge base + AI tier-1 bot instead
-- **Stripe / international payment gateways.** PayFast (ZAR) is the SA-market constraint
+- **Multi-level approval chains.** Single-level approve/reject only — owner-operator target. (APPROVAL-18)
+- **Auto-create cross-product memberships.** Federation token to a tenant the user has no membership in → "Invite required" UX. (D2 + SSO-06)
+- **Role auto-mapping between Trophy 9 roles and DraggonnB 4 roles.** Trust models are different by design. (D2)
+- **Auto-charge below threshold.** Every damage_charge requires explicit owner approval. (DAMAGE-10)
+- **No-photo damage entry.** ≥2 photos mandatory with EXIF + CRC32. (DAMAGE-09)
+- **Mandatory single billing root.** Two parallel subscriptions on same card is the v3.1 model; mandatory single charge = v3.2+ if pilot demands. (D4)
+- **PWA login required.** PWA is token-authenticated public surface; no Supabase auth roundtrip. (PWA-01)
+- **Trophy freemium tier.** 14-day trial only, then payment-method-on-file. (existing Trophy CLAUDE.md)
 
-### Deferred (re-evaluate in later milestone)
+### Deferred (re-evaluate later milestone)
 
-- **Native mobile apps (iOS/Android).** PWA + Telegram bot cover the field-ops use case at ~5% of native cost. Re-evaluate at 200+ clients or when a feature literally can't run in a browser
-- **AI video generation** (Runway, Sora, Synthesia). Cost is 10–50× image gen, quality inconsistent for marketing in 2026. Partner-route to Descript / Synthesia on demand. Re-evaluate in 2027
-- **Mailchimp-level drag-drop email template builder.** Voice-driven templates + 6–8 vertical layouts cover the need. Re-evaluate if clients actually ask
-- **Multi-language UI** (Afrikaans, isiZulu, etc.). English-only for v3; SA SMEs predominantly operate in English. Re-evaluate at 50+ clients
-- **Multi-currency support.** ZAR-only until cross-border client demand is real
-- **Custom domain per tenant** (beyond *.draggonnb.online). Re-evaluate with Scale-tier paying clients
-- **Self-hosted Supabase.** Supabase Cloud is the stack constraint
+- **Cross-domain SSO for swazulu.com / arbitrary tenant domains.** v3.2 trigger: first tenant with custom domain goes live.
+- **9-dot grid product launcher.** Conditional sidebar items first; revisit if 3+ products. v3.3+.
+- **Real-time room service chat with kitchen.** PWA concierge → kitchen routing is out of v3.1.
+- **AI damage pricing from photo.** Operator picks from pre-loaded itemised list in v3.1; AI vision for auto-pricing = v3.2+.
+- **Per-hunter accommodation assignment.** Hunters share linked stay; per-hunter unit assignment = v3.3+.
+- **Real-time bidirectional date sync.** Manual confirmation in v3.1; automated bi-sync = v3.2+.
 
 ---
 
 ## Traceability — Requirements to Phases
 
-Populated by gsd-roadmapper 2026-04-24. 53 REQ-IDs across 8 categories, 100% coverage (45 unconditional mapped + 8 CAMP conditional).
+To be populated by gsd-roadmapper. Pre-allocation:
 
-| REQ-ID | Phase | Status |
-|--------|-------|--------|
-| BILL-01 | Phase 10 | Complete |
-| BILL-02 | Phase 09 | Complete |
-| BILL-03 | Phase 09 | Complete |
-| BILL-04 | Phase 09 | Complete |
-| BILL-05 | Phase 09 | Complete |
-| BILL-06 | Phase 09 | Complete |
-| BILL-07 | Phase 09 | Complete |
-| BILL-08 | Phase 12 | Planned |
-| BILL-09 | Phase 10 | Complete |
-| VOICE-01 | Phase 10 | Complete |
-| VOICE-02 | Phase 10 | Complete |
-| VOICE-03 | Phase 10 | Complete |
-| VOICE-04 | Phase 10 | Complete |
-| VOICE-05 | Phase 10 | Complete |
-| VOICE-06 | Phase 10 | Complete |
-| VOICE-07 | Phase 10 | Complete |
-| VOICE-08 | Phase 10 | Complete |
-| USAGE-01 | Phase 09 | Complete |
-| USAGE-02 | Phase 09 | Complete |
-| USAGE-03 | Phase 10 | Complete |
-| USAGE-04 | Phase 10 | Complete |
-| USAGE-05 | Phase 09 | Complete |
-| USAGE-06 | Phase 09 | Complete |
-| USAGE-07 | Phase 09 | Complete |
-| USAGE-08 | Phase 09 | Complete |
-| USAGE-09 | Phase 09 | Complete |
-| USAGE-10 | Phase 09 | Complete |
-| USAGE-11 | Phase 10 | Complete |
-| USAGE-12 | Phase 09 | Complete |
-| USAGE-13 | Phase 10 | Complete |
-| ONBOARD-01 | Phase 10 | Complete |
-| ONBOARD-02 | Phase 10 | Complete |
-| ONBOARD-03 | Phase 10 | Complete |
-| ONBOARD-04 | Phase 10 | Complete |
-| ONBOARD-05 | Phase 10 | Complete |
-| ONBOARD-06 | Phase 10 | Complete |
-| ONBOARD-07 | Phase 10 | Complete |
-| ONBOARD-08 | Phase 10 | Complete |
-| ONBOARD-09 | Phase 10 | Complete |
-| UX-01 | Phase 11 | Complete |
-| UX-02 | Phase 11 | Complete |
-| UX-03 | Phase 11 | Complete |
-| UX-04 | Phase 11 | Complete |
-| UX-05 | Phase 11 | Complete |
-| UX-06 | Phase 11 | Complete |
-| UX-07 | Phase 11 | Complete |
-| SITE-01 | Phase 10 | Complete |
-| SITE-02 | Phase 10 | Complete |
-| SITE-03 | Phase 10 | Complete |
-| SITE-04 | Phase 10 | Complete (Lighthouse measurement deferred to launch-day) |
-| SITE-05 | Phase 10 | Complete |
-| OPS-01 | Phase 09 | Complete |
-| OPS-02 | Phase 12 | Planned |
-| OPS-03 | Phase 12 | Planned |
-| OPS-04 | Phase 12 | Planned |
-| OPS-05 | Phase 09 | Complete |
-| CAMP-01 | Phase 11 | Complete |
-| CAMP-02 | Phase 11 | Complete |
-| CAMP-03 | Phase 11 | Complete (HMAC execute endpoint runtime test pending Chris) |
-| CAMP-04 | Phase 11 | Complete |
-| CAMP-05 | Phase 11 | Complete |
-| CAMP-06 | Phase 11 | Complete |
-| CAMP-07 | Phase 11 | Complete |
-| CAMP-08 | Phase 11 | Complete |
+| Phase | Title | REQ-IDs |
+|-------|-------|---------|
+| 13 | Cross-product foundation | SSO-01..14, NAV-01..04, STACK-01..04, STACK-07, GATE-01, GATE-02 |
+| 14 | Approval spine | APPROVAL-01..18, STACK-05 |
+| 15 | Damage auto-billing + Hunt bookings + Cross-product stay link | DAMAGE-01..17, HUNT-01..09, CROSSLINK-01..06 |
+| 16 | PWA + Trophy PayFast + v3.0 carry-forward | PWA-01..15, TROPHY-01..12, CARRY-01..08, STACK-06 |
 
-### Coverage Summary by Phase
-
-| Phase | REQ-IDs | Count |
-|-------|---------|-------|
-| Phase 09 (Foundations & Guard Rails) | BILL-02..07, USAGE-01, USAGE-02, USAGE-05, USAGE-06, USAGE-07, USAGE-08, USAGE-09, USAGE-10, USAGE-12, OPS-01, OPS-05 | 17 |
-| Phase 10 (Brand Voice + Site Redesign + 3-Day Onboarding) | BILL-01, BILL-09, VOICE-01..08, USAGE-03, USAGE-04, USAGE-11, USAGE-13, ONBOARD-01..09, SITE-01..05 | 28 |
-| Phase 11 (Easy/Advanced CRM PoC + Campaign Studio Decision Gate) | UX-01..07 (unconditional) + CAMP-01..08 (conditional) | 7 + 8 conditional |
-| Phase 12 (Launch Polish + v3.1 Handoff) | BILL-08, OPS-02, OPS-03, OPS-04 | 4 |
-| **Total (unconditional)** | | **56** |
-| **Total (including CAMP conditional)** | | **64 mappings across 53 unique REQ-IDs** |
-
-*Note: BILL-01 through BILL-09 = 9 REQs, VOICE-01..08 = 8, USAGE-01..13 = 13, ONBOARD-01..09 = 9, UX-01..07 = 7, SITE-01..05 = 5, OPS-01..05 = 5, CAMP-01..08 = 8. Total unique = 64. Discrepancy with "53 REQ-IDs" in milestone intro: the intro counted category groupings differently; precise count of unique REQ-IDs is 64 including 8 conditional CAMP, or 56 unconditional.*
+Total v3.1 unconditional REQ-IDs: **103** across 9 categories.
 
 ---
-*Last updated: 2026-04-27 — Phase 11 closed (15 reqs Complete: UX-01..07 + CAMP-01..08; decision gate resolved OPTION B → all CAMP unconditional). 60/60 in-scope reqs for v3.0 Phases 09-11 done. Phase 12 (BILL-08, OPS-02..04) remains.*
+
+*Last updated: 2026-05-01 — milestone v3.1 Operational Spine requirements defined; 10 cross-cutting decisions D1-D10 locked; Trophy OS Option C federation aligned; pending pre-Phase-13 Swazulu discovery call to validate operational assumptions.*
