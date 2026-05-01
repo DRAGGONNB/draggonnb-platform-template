@@ -129,7 +129,7 @@ DraggonnB OS is a production-deployed multi-tenant B2B operating system for Sout
 
 **Strategic context:** Trophy OS already exists at `C:\Dev\DraggonnB\products\trophy-os` with 24 routes, 779-line schema, 48 species seeded, full RLS. Phases 0–11/20 complete. Same Supabase project (`psqfgzbjbgqrmjskdavs`); tables prefixed `safari_*` / `tos_*`. Decision: Trophy OS = federated peer product via SSO bridge (Option C), NOT absorbed as a module.
 
-**Locked decisions (D1-D10, approved 2026-05-01):** Full text in REQUIREMENTS.md.
+**Locked decisions (D1-D11, approved 2026-05-01; D3/D4/D9 revised + D11 added rev 2):** Full text in REQUIREMENTS.md.
 - **D1**: SSO bridge at `auth.draggonnb.com` — JWT bridge endpoint with 60s HS256 tokens, fragment delivery, jti replay protection via DB table, per-host cookies. NOT shared cookie domain.
 - **D2**: Per-product memberships, no role auto-translate. Trophy 9 roles + DraggonnB 4 roles never auto-map. Cross-product approval action types are product-scoped.
 - **D3**: Default ALL bookings to PayFast Subscribe to capture stored token, surface "no token" gracefully when EFT chosen. Damage flow checks token first, routes to manual collection if absent.
@@ -141,15 +141,17 @@ DraggonnB OS is a production-deployed multi-tenant B2B operating system for Sout
 - **D9**: Single Telegram bot per org, product-tagged callback data (`approve:{product}:{request_id}`). Refactor existing ops bot onto grammY in same PR.
 - **D10**: Currency display = "ZAR 10,500.00 (≈ USD 575)" with ISO code prominent everywhere.
 
-**Pre-Phase-13 GATE (non-negotiable):**
-- **GATE-01 — Swazulu discovery call** must complete BEFORE Phase 13 architecture lock. Validates split-billing model (D4), damage workflow, approval thresholds, role mapping reality (D2), cross-product nav expectation. Output: confirmed/revised D3, D4, D6, D9.
+**Pre-Phase-13 GATE status:**
+- **GATE-01 — RESOLVED 2026-05-01** via DB audit + owner-side knowledge transfer (Chris built Swazulu's lodges personally). Outputs in `.planning/research/SWAZULU-DISCOVERY.md`. D3/D4/D9 revised; D11 added; INVOICE-*, PAYROUTE-*, MANIFEST-* categories triggered (21 new reqs; v3.1 total 112 → 133).
 - **GATE-02 — PayFast sandbox spike** is the FIRST plan inside Phase 13. Confirms `chargeAdhoc()` amount unit (rands vs cents), Subscribe-token charge mechanism, hold-and-capture availability before Phase 15 ships damage billing.
 
 **Critical sequencing constraints (re-stated for downstream consumers):**
-1. **Phase 14 MUST split into 14.1, 14.2, 14.3** — 3 separate OPS-05 deploys for `approval_requests` generalization. Bundling will fail mid-deploy (per OPS-05 in CLAUDE.md). Add nullable cols → backfill social rows → add NOT NULL.
-2. **Phase 15.1 PayFast Subscribe-token capture is a hidden pre-requisite** for damage flow. Without it, no guest token exists and damage charge is blocked. 15.1 must land before 15.2 damage intake.
-3. **Phase 15.6 ↔ 16.1 circular dependency** — per-hunter PayFast charge needs Trophy PayFast wiring (16.1). Resolution: stub per-hunter records in 15.6 (records queued, idempotency keys generated, NO `chargeAdhoc()` call), defer actual charge to 16.2 (after Trophy PayFast lands in 16.1).
-4. **Pre-Phase-13 Swazulu discovery call (GATE-01)** blocks architecture lock — milestone-level dependency, not phase-internal.
+1. **Phase 13 MANIFEST foundation** — MANIFEST-01..06 must land before Phase 14 approval-spine action-type registry (APPROVAL-05) can be manifest-driven. Without manifests, the spine falls back to hardcoded action types (regression).
+2. **Phase 15.0 INVOICE + PAYROUTE foundation** — must land BEFORE 15.1 (PayFast Subscribe-token capture) or any 15.* damage/hunt code. Polymorphic billing layer is the substrate every later sub-plan emits into. New first sub-plan in Phase 15 (was 15.1).
+3. **Phase 14 MUST split into 14.1, 14.2, 14.3** — 3 separate OPS-05 deploys for `approval_requests` generalization. Bundling will fail mid-deploy (per OPS-05 in CLAUDE.md). Add nullable cols → backfill social rows → add NOT NULL.
+4. **Phase 15.1 PayFast Subscribe-token capture is a hidden pre-requisite** for damage flow. Without it, no guest token exists and damage charge is blocked. 15.1 must land after 15.0 INVOICE foundation but before 15.2 damage intake.
+5. **Phase 15.6 ↔ 16.1 circular dependency** — per-hunter PayFast charge needs Trophy PayFast wiring (16.1). Resolution: stub per-hunter records in 15.6 (records queued, idempotency keys generated, NO `chargeAdhoc()` call), defer actual charge to 16.2 (after Trophy PayFast lands in 16.1).
+6. ~~**Pre-Phase-13 Swazulu discovery call (GATE-01)**~~ — RESOLVED 2026-05-01.
 
 ### Phase 13: Cross-Product Foundation
 
@@ -157,11 +159,12 @@ DraggonnB OS is a production-deployed multi-tenant B2B operating system for Sout
 
 **Depends on**: Pre-Phase-13 Swazulu discovery call (GATE-01) + v3.0 Commercial Launch (Phase 11 shipped). Architecture lock blocked until GATE-01 returns confirmed/revised D3, D4, D6, D9.
 
-**Requirements (25 total)**:
+**Requirements (31 total)**:
 - **SSO** (federation core): SSO-01, SSO-02, SSO-03, SSO-04, SSO-05, SSO-06, SSO-07, SSO-08, SSO-09, SSO-10, SSO-11, SSO-12, SSO-13, SSO-14
 - **NAV** (cross-product surfacing): NAV-01, NAV-02, NAV-03, NAV-04
 - **STACK** (deps + upgrades shared with all subsequent phases): STACK-01, STACK-02, STACK-03, STACK-04, STACK-07
-- **GATE**: GATE-01, GATE-02
+- **MANIFEST** (foundational layer added 2026-05-01 post-Swazulu discovery): MANIFEST-01, MANIFEST-02, MANIFEST-03, MANIFEST-04, MANIFEST-05, MANIFEST-06
+- **GATE**: GATE-01 (RESOLVED), GATE-02
 
 **Decisions shaping this phase**: D1 (SSO architecture), D2 (no role auto-translate), D5 (federation-shared private package), D6 (auto-create Trophy orgs row at module activation, NOT at first SSO bridge), D7 (DB-backed replay protection)
 
@@ -177,12 +180,20 @@ DraggonnB OS is a production-deployed multi-tenant B2B operating system for Sout
   4. The PayFast sandbox spike (GATE-02) has produced a written record of `chargeAdhoc()` amount unit, Subscribe-token charge mechanism, and hold-and-capture availability — green-lighting Phase 15 damage code before any of it lands.
   5. `@draggonnb/federation-shared` published to GitHub Packages, both DraggonnB and Trophy lock to its exact version (no `^` ranges), and brand types `DraggonnbOrgId` / `TrophyOrgId` cause a TypeScript compile error if mixed.
 
-**Plans**: TBD (~5 plans). Suggested decomposition per research:
-- 13-01: GATE-02 PayFast sandbox spike (also unblocks Phase 15)
-- 13-02: SSO architecture spike (HS256 vs ES256, jti TTL, fragment-vs-query, CSP headers, edge IP allow-listing)
-- 13-03: SSO bridge implementation (`lib/sso/jwt.ts`, `/api/sso/{issue,consume}`, `sso_bridge_tokens` table, `tenant_membership_proof` middleware, `cross_product_org_links` table, `organizations.linked_trophy_org_id` multi-step migration)
-- 13-04: Federation-shared package + STACK upgrades (`@draggonnb/federation-shared` published, `@supabase/ssr` 0.10.2 refactor on both apps, `jose` adopted, brand types exported)
-- 13-05: Cross-product sidebar federation + provisioning saga step 10 (`activate-trophy-module`)
+**Plans**: 7 plans across 3 waves.
+
+Wave 1 (parallel — fully independent):
+- [ ] 13-01-PLAN.md — GATE-02 PayFast sandbox spike (unblocks Phase 15 damage code)
+- [ ] 13-02-PLAN.md — STACK upgrades (@supabase/ssr 0.10.2 + jose ^5.x + .npmrc)
+- [ ] 13-03-PLAN.md — Module manifest contract + 6 retrofitted module manifests
+
+Wave 2 (depends on Wave 1):
+- [ ] 13-04-PLAN.md — Manifest-driven registries (approval, Telegram, billing line-type, onboarding form)
+- [ ] 13-05-PLAN.md — SSO architecture spike + 3 OPS-05 Step-1 migrations + @draggonnb/federation-shared 1.0.0 publish
+
+Wave 3 (depends on Wave 2):
+- [ ] 13-06-PLAN.md — SSO bridge implementation (issuer + validate + consume page + invalidate + tenant_membership_proof middleware + LATENT-03 fix)
+- [ ] 13-07-PLAN.md — Cross-product sidebar + Activate Trophy OS empty state + provisioning saga step 10 + OPS-05 Step 4 FK migration
 
 ### Phase 14: Approval Spine
 
@@ -314,24 +325,24 @@ Phases execute in numeric order: 13 → 14 (14.1 → 14.2 → 14.3) → 15 (15.1
 | 10. Brand Voice + Site Redesign + 3-Day Onboarding | v3.0 | 7/7 | Complete | 2026-04-27 |
 | 11. Easy/Advanced CRM PoC + Campaign Studio Decision Gate | v3.0 | 12/12 | Complete | 2026-04-27 |
 | 12. Launch Polish + v3.1 Handoff | v3.0 | 3/10 | Partial — 7 plans carried forward to v3.1 Phase 16 | 2026-04-30 (3 plans) |
-| 13. Cross-Product Foundation | v3.1 | 0/TBD | Not started — blocked on GATE-01 Swazulu discovery call | - |
+| 13. Cross-Product Foundation | v3.1 | 0/7 | Planned 2026-05-01 — 7 plans / 3 waves; ready for /gsd:execute-phase 13 | - |
 | 14. Approval Spine | v3.1 | 0/3 | Not started | - |
 | 15. Damage Auto-Billing + Hunt Bookings + Cross-Product Stay Link | v3.1 | 0/TBD | Not started | - |
 | 16. PWA + Trophy PayFast + v3.0 Carry-Forward | v3.1 | 0/TBD | Not started | - |
 
 ## Coverage Summary (v3.1)
 
-**Total v3.1 requirements: 112** (103 feature reqs + 9 meta reqs across STACK + GATE)
+**Total v3.1 requirements: 133** (124 feature reqs + 9 meta reqs across STACK + GATE) — revised 2026-05-01 post-Swazulu discovery (was 112).
 
 | Phase | REQ Count | Categories |
 |-------|-----------|------------|
-| 13 | 25 | SSO×14, NAV×4, STACK×5, GATE×2 |
+| 13 | 31 | SSO×14, NAV×4, STACK×5, MANIFEST×6, GATE×2 |
 | 14 | 19 | APPROVAL×18, STACK×1 |
-| 15 | 32 | DAMAGE×17, HUNT×9, CROSSLINK×6 |
+| 15 | 47 | INVOICE×10, PAYROUTE×5, DAMAGE×17, HUNT×9, CROSSLINK×6 |
 | 16 | 36 | PWA×15, TROPHY×12, CARRY×8, STACK×1 |
-| **Total** | **112** | All v3.1 reqs mapped, no orphans, no duplicates |
+| **Total** | **133** | All v3.1 reqs mapped, no orphans, no duplicates |
 
-Pre-allocation in REQUIREMENTS.md preserved unchanged. No reassignments needed.
+Pre-allocation in REQUIREMENTS.md preserved for original 112; 21 new reqs (INVOICE-*, PAYROUTE-*, MANIFEST-*) added under their respective phases.
 
 ## Next Milestones
 
@@ -365,4 +376,4 @@ Triggered by real client signal or explicit roadmap decision (full list in REQUI
 
 ---
 
-*Last updated: 2026-05-01 — v3.1 Operational Spine roadmap created (Phases 13-16); 112 REQ-IDs mapped (103 feature + 9 meta); 10 cross-cutting decisions D1-D10 locked; pre-Phase-13 Swazulu discovery call (GATE-01) blocks architecture lock; Phase 14 split into 14.1/14.2/14.3 per OPS-05; Phase 15.1 PayFast Subscribe-token capture confirmed as hidden pre-requisite; Phase 15.6 ↔ 16.1 circular dependency resolved via stub-then-charge.*
+*Last updated: 2026-05-01 (rev 2) — v3.1 Operational Spine roadmap revised after Swazulu discovery resolved via DB audit + owner-side knowledge transfer. **133 REQ-IDs** (was 112): added INVOICE-* (10), PAYROUTE-* (5), MANIFEST-* (6). 11 cross-cutting decisions D1-D11 locked (D3/D4/D9 revised; D11 added — polymorphic platform billing layer). GATE-01 RESOLVED. Phase 13 picks up MANIFEST as foundational layer. Phase 15 grows from 6 to 8 sub-plans (15.0 INVOICE+PAYROUTE foundation lands first). Phase 14 split into 14.1/14.2/14.3 per OPS-05; Phase 15.1 PayFast Subscribe-token capture remains hidden pre-requisite for damage flow; Phase 15.6 ↔ 16.1 circular dependency resolved via stub-then-charge. See `.planning/research/SWAZULU-DISCOVERY.md`.*
