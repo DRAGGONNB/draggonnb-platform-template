@@ -12,9 +12,9 @@ See: .planning/PROJECT.md (updated 2026-04-24)
 
 Milestone: v3.0 Commercial Launch (started 2026-04-24)
 Phase: 12 of 12 (Launch Polish) — **IN PROGRESS**
-Plan: 12-06 COMPLETE (dynamic sidebar shell, 2026-04-30). 6-item tenant_modules-driven sidebar replaces 54-item hardcoded array; ModeToggle primitive shipped; 4 new top-level overview pages added.
-Status: Wave 3 unblocked. 12-01 + 12-06 done. 25 sidebar/mode-toggle tests passing. tsc clean (no new errors). 4 commits ahead of origin/main awaiting final docs commit + push to deploy to production.
-Last activity: 2026-04-30 — Phase 12 Plan 12-06 COMPLETE. Commits: d5d1e7fe (wip), 44f26f4a (wip), 98c86f71, bf560137.
+Plan: 12-08 COMPLETE (module-focused public landing, 2026-05-01). 5+1 module grid (Accommodation, Restaurant, Trophy OS, Elijah, CRM+Campaign, Other) + 5 in-page anchor stubs sourced from docs/modules/*.md.
+Status: Wave 3 = 2/3 plans done (12-06, 12-08). Only 12-07 (smart-landing dashboard) remains. 31 total tests added across 12-06+12-08 passing. tsc clean (no new errors).
+Last activity: 2026-05-01 — Phase 12 Plan 12-08 COMPLETE. Commit: b10f14fb.
 
 ## Resume Next Session
 
@@ -34,6 +34,7 @@ Last activity: 2026-04-30 — Phase 12 Plan 12-06 COMPLETE. Commits: d5d1e7fe (w
 **Phase 12 completed plans:**
 - 12-01 DONE: hotfix sweep (CRM SSR, routes, sidebar, BaseAgent errors)
 - 12-06 DONE: dynamic sidebar shell + ModeToggle primitive + 4 overview pages (`/content-studio`, `/customers`, `/insights`, `/settings`)
+- 12-08 DONE: module-focused public landing — 5+1 module grid + detail anchors
 
 **Phase 11 COMPLETE. Open fresh session to start Phase 12 OR address runtime deferrals.**
 
@@ -74,7 +75,7 @@ Progress: [██████████] 100% (12/12 Phase 11 plans done) · v
 | **09 (v3.0)** | **5/5** | **Complete 2026-04-26** |
 | **10 (v3.0)** | **7/7** | **Complete 2026-04-27** |
 | **11 (v3.0)** | **12/12** | **Complete 2026-04-27** |
-| 12 (v3.0) | 2/10 | In progress (12-01 + 12-06 done) |
+| 12 (v3.0) | 3/10 | In progress (12-01 + 12-06 + 12-08 done) |
 
 *Updated after each plan completion*
 
@@ -121,8 +122,24 @@ Progress: [██████████] 100% (12/12 Phase 11 plans done) · v
 
 ## Session Continuity
 
-Last session: 2026-04-30 — Resumed mid-12-06 from `.continue-here.md` checkpoint. Found Wave 3 sidebar work had progressed past checkpoint (commits 98c86f71 + bf560137 added overview pages + rewired routes). Closed plan: ran tsc (3 pre-existing errors, none new) + vitest (25/25 pass) + wrote 12-06-SUMMARY.md + STATE update. 4 commits ahead of origin/main; final docs commit pending. Wave 2 + Wave 4 still parked per user.
-Resume file: none (12-06 closed; remove `.continue-here.md` on next push).
+Last session: 2026-05-01 — Closed 12-06 (pushed to origin/main: 157b297b..59ee9d2e), then executed 12-08 in main session. Built 7 new files (lib/landing/module-content.ts + 3 components + tests + docs) + 2 modified (sections.tsx, app/page.tsx). 6/6 vitest tests pass. Manual smoke-test localhost:3000 confirmed 6 cards rendered with correct data attributes + 5 anchor sections present. 12-07 next.
+Resume file: none.
+
+### Session (2026-05-01) — Phase 12 Plan 12-08: Module-Focused Landing COMPLETE
+
+**What was done:**
+1. Read all 6 source `docs/modules/*.md` files (accommodation, restaurant, trophy-os, elijah-security, crm, campaign-studio).
+2. Built typed `lib/landing/module-content.ts` — MODULE_CARDS array with 6 entries; tone palette (crimson/charcoal/amber/blue/pink/emerald); Trophy OS marked external.
+3. Built `components/landing/module-grid.tsx` (RSC-safe) + `module-card.tsx` (client, full-card Link wrapper) + `module-details.tsx` (5 anchor stubs, ~100 words each, scroll-mt-24 offset).
+4. Stripped legacy 6-item modules array from `sections.tsx`; ModuleShowcaseSection now delegates to ModuleGrid.
+5. Wired `<ModuleDetailSections />` into `app/page.tsx` after ModuleShowcaseSection.
+6. Wrote 6 vitest tests covering count/order/href/external/headings — all pass.
+7. Manual smoke verified 6 cards render with correct data-module-card ids; 5 anchor targets all present with matching headings; Trophy OS card opens externally with rel=noopener.
+8. Committed b10f14fb. Wrote 12-08-SUMMARY.md documenting deviations (12-02 audit dependency bypassed via docs/modules content audit; per-module pages stay v3.1; Trophy OS = external peer product link, not integration claim).
+
+**Next: Execute Plan 12-07** (smart-landing dashboard rebuild — DB migration 54 + N8N workflow + 3 new components + suggestion compute lib).
+
+
 
 ### Session (2026-04-30) — Phase 12 Plan 12-06: Dynamic Sidebar Shell COMPLETE
 
