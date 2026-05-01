@@ -10,19 +10,21 @@ See: .planning/PROJECT.md (updated 2026-04-24)
 
 ## Current Position
 
-Milestone: v3.0 Commercial Launch (started 2026-04-24)
-Phase: 12 of 12 (Launch Polish) — **IN PROGRESS**
-Plan: 12-08 COMPLETE (module-focused public landing, 2026-05-01). 5+1 module grid (Accommodation, Restaurant, Trophy OS, Elijah, CRM+Campaign, Other) + 5 in-page anchor stubs sourced from docs/modules/*.md.
-Status: Wave 3 = 2/3 plans done (12-06, 12-08). Only 12-07 (smart-landing dashboard) remains. 31 total tests added across 12-06+12-08 passing. tsc clean (no new errors).
-Last activity: 2026-05-01 — Phase 12 Plan 12-08 COMPLETE. Commit: b10f14fb.
+Milestone: **v3.1 Operational Spine** (started 2026-05-01)
+Phase: Defining requirements
+Plan: —
+Status: Milestone initialized. Trophy OS Option C aligned (SSO bridge, NOT absorption). Awaiting research → REQUIREMENTS.md → ROADMAP.md generation.
+Last activity: 2026-05-01 — milestone v3.1 initialized after architecture map + Trophy OS audit.
 
 ## Resume Next Session
 
-**Phase 12 Plans 12-01 + 12-06 COMPLETE. Wave 3 next: 12-07 (smart-landing dashboard) + 12-08 (module landing redesign) — independent, can run in parallel.**
+**Milestone v3.1 just started.** Defining requirements via the new-milestone workflow.
 
-**Before 12-07/12-08:**
-1. Browser smoke-test sidebar on production (or local) as `tester-admin@draggonnb.test` (DragoonB org, all 11 modules) — verify 9 items shown, flyout works, no 404s, active-state on sub-routes.
-2. Phase 11 Easy/Advanced toggle refactor to consume `<ModeToggle>` (single-file deferred — batch with 12-07 dashboard rebuild).
+**Carry-forward from v3.0 (lands in v3.1 Phase 16):**
+- 12-07 (smart-landing dashboard) — committed at `bedaff0e`, push pending
+- BILL-08 reconciliation cron
+- OPS-02..04 audit crons (feature-gate audit, token expiry monitor, env-health endpoint)
+- 360px mobile sweep across revenue-critical pages
 
 **Hard runtime checks still pending (from Phase 11 — must do before first paying client):**
 1. Set `CAMPAIGN_EXECUTE_HMAC_SECRET` in Vercel (without it, execute endpoint rejects all calls).
