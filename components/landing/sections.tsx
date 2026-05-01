@@ -3,12 +3,8 @@
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import {
-  Users,
   Mail,
   Share2,
-  Sparkles,
-  Building2,
-  Bot,
   BarChart3,
   Check,
   ArrowRight,
@@ -23,6 +19,7 @@ import {
   Ban,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { ModuleGrid } from './module-grid'
 
 /* ------------------------------------------------------------------ */
 /*  Hero — re-export from dedicated file (SITE-01)                     */
@@ -93,93 +90,11 @@ export function TrustIndicators() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Module Showcase (Services/Features)                                */
+/*  Module Showcase — module-focused 5+1 grid (12-08)                  */
 /* ------------------------------------------------------------------ */
 
-const modules = [
-  {
-    icon: Users,
-    title: 'CRM & Pipeline',
-    description:
-      'Manage contacts, companies, and deals in one place. Track every interaction and move leads through your sales pipeline with full visibility.',
-  },
-  {
-    icon: Mail,
-    title: 'Email Marketing',
-    description:
-      'Build campaigns, automate sequences, and track results. Templates, A/B testing, smart segmentation, and deliverability built in.',
-  },
-  {
-    icon: Share2,
-    title: 'Social Media',
-    description:
-      'Schedule posts, monitor engagement, and manage your social presence across platforms from a single dashboard.',
-  },
-  {
-    icon: Sparkles,
-    title: 'Content Studio',
-    description:
-      'Generate professional content with AI for social, email, and web. Autopilot mode creates and schedules weekly content for you.',
-  },
-  {
-    icon: Building2,
-    title: 'Accommodation',
-    description:
-      'Purpose-built for lodges, guest houses, and hospitality. Property inventory, guest management, inquiry pipeline, and booking operations.',
-  },
-  {
-    icon: Bot,
-    title: 'AI Agents',
-    description:
-      'Intelligent agents that qualify leads, generate proposals, onboard clients, and run daily operations autonomously -- 24/7.',
-  },
-]
-
 export function ModuleShowcaseSection() {
-  return (
-    <section id="modules" className="bg-white px-4 py-24 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-16 text-center">
-          <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-[#6B1420]">
-            The Platform
-          </p>
-          <h2 className="mb-4 font-display text-3xl font-bold text-[#363940] lg:text-4xl">
-            Everything You Need to{' '}
-            <span className="gradient-text-brand">Run and Grow</span>
-          </h2>
-          <p className="mx-auto max-w-2xl text-lg text-[#A8A9AD]">
-            Modular by design. Pick the tools your business needs and add more as you scale.
-            Every module is AI-enhanced and built for South African operations.
-          </p>
-          <Link
-            href="/pricing"
-            className="mt-6 inline-flex items-center text-sm font-semibold text-[#6B1420] underline-offset-4 hover:underline"
-          >
-            Build your subscription with the module picker
-            <ArrowRight className="ml-1 h-4 w-4" />
-          </Link>
-        </div>
-
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {modules.map((mod) => {
-            const Icon = mod.icon
-            return (
-              <div
-                key={mod.title}
-                className="group relative rounded-2xl border border-[#C0C1C4]/50 bg-white p-6 shadow-md transition-all hover:shadow-lg hover:border-[#6B1420]/30"
-              >
-                <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[#6B1420]/10">
-                  <Icon className="h-6 w-6 text-[#6B1420]" />
-                </div>
-                <h3 className="mb-2 text-lg font-semibold text-[#363940]">{mod.title}</h3>
-                <p className="text-sm leading-relaxed text-[#A8A9AD]">{mod.description}</p>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-    </section>
-  )
+  return <ModuleGrid />
 }
 
 /* ------------------------------------------------------------------ */

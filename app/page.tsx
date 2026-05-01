@@ -8,6 +8,7 @@ import {
   PricingPreviewSection,
   CTASection,
 } from '@/components/landing/sections'
+import { ModuleDetailSections } from '@/components/landing/module-details'
 import { IndustrySolutionsSection } from '@/components/landing/industry-solutions'
 import { RegisterInterestSection } from '@/components/landing/register-interest'
 import { LandingFooter } from '@/components/landing/footer'
@@ -30,6 +31,7 @@ export default function Home({
         <HeroSection />
         <TrustIndicators />
         <ModuleShowcaseSection />
+        <ModuleDetailSections />
         <HowItWorksSection />
         <IndustrySolutionsSection />
         <PricingPreviewSection />
