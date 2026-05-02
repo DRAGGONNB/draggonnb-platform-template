@@ -12,9 +12,9 @@ See: .planning/PROJECT.md (updated 2026-04-24)
 
 Milestone: **v3.1 Operational Spine** (started 2026-05-01)
 Phase: 13 — Cross-Product Foundation (in progress)
-Plan: 13-03 COMPLETE (Wave 1 — parallel with 13-01 PayFast spike + 13-02 STACK upgrades)
-Status: **13-03 DONE 2026-05-02.** Module manifest contract shipped (MANIFEST-01 + MANIFEST-02 closed). 8 files: types.ts + registry.ts + 6 manifests. Zero existing behavior changed. tsc clean on new files. Plan 13-04 (manifest-driven registries) unblocked.
-Last activity: 2026-05-02 — Executed 13-03 (module manifest contract). Created lib/modules/types.ts (ModuleManifest + 5 sub-schemas) + lib/modules/registry.ts (MODULE_REGISTRY + 5 helpers) + 6 manifests (accommodation, crm, events, ai_agents, analytics, security_ops). 450 LOC total. 2 commits: 9829c0fd (types+registry) + 4da6714e (manifests).
+Plan: 13-02 COMPLETE + 13-03 COMPLETE (Wave 1 complete — 13-01 PayFast spike running in parallel)
+Status: **13-02 DONE 2026-05-02.** @supabase/ssr 0.10.2 + jose ^5.10.0 + getAll/setAll refactor + .npmrc @draggonnb scope. STACK-01, STACK-02, STACK-04, STACK-03 (DraggonnB-side) closed. **13-03 DONE 2026-05-02.** Module manifest contract shipped (MANIFEST-01 + MANIFEST-02 closed).
+Last activity: 2026-05-02 — Executed 13-02 (STACK upgrades: @supabase/ssr 0.1.0->0.10.2, @supabase/supabase-js ^2.105.1, jose ^5.10.0, getAll/setAll refactor in server.ts + middleware.ts, CATASTROPHIC #1 guard, .npmrc GitHub Packages). 2 commits: a534199c (feat) + 6fc8f7b1 (chore). Also executed 13-03 (module manifest contract). Created lib/modules/types.ts + lib/modules/registry.ts + 6 manifests. 450 LOC. 2 commits: 9829c0fd + 4da6714e.
 
 ## Resume Next Session
 
@@ -104,6 +104,8 @@ Progress: [██████████] 100% (12/12 Phase 11 plans done) · v
 ## Accumulated Context
 
 ### Decisions (v3.0-specific, most recent first)
+
+- **2026-05-02 (13-02 execution):** @supabase/ssr upgrade: refactor + bump must happen in same commit (LATENT-01 — TypeScript won't catch silent API mismatch between 0.1.0 get/set/remove shape and 0.10.2 getAll/setAll shape). Middleware setAll pattern: iterate request.cookies.set first, then response = NextResponse.next({ request }), then iterate response.cookies.set — two-pass required. CATASTROPHIC #1: setAll in middleware MUST NEVER include domain option (per-host cookies only; Domain=.draggonnb.co.za would leak sessions across tenant subdomains). Pre-existing test failures (53/649): dashboard-page mock missing maybeSingle (added in 12-07, mock never updated), component timeout failures, env mock failures — all pre-13-02. .npmrc had existing legacy-peer-deps=true, preserved. GITHUB_PACKAGES_TOKEN needed in Vercel for @draggonnb/federation-shared install (needed at 13-05, not now).
 
 - **2026-05-02 (13-03 execution):** Module manifest contract pattern established. `MODULE_REGISTRY` uses explicit static imports (NOT filesystem glob — Vercel edge runtime incompatible with `fs.glob()`). `MODULE_REGISTRY` is `readonly` to prevent runtime mutation. Events module manifest is a placeholder (referenced in module_registry but not feature-active in v3.1). `security_ops` telegram_callbacks empty — Elijah uses WhatsApp not Telegram. `ai_agents` approval_actions empty — AI agents propose actions but ownership of the resulting approval belongs to the module handling the action (e.g., accommodation owns damage_charge). `analytics` all-empty — read-only consumer. handler_path values in approval_actions point to `lib/approvals/handlers/{action-type}` — Phase 14 creates those files. No `assertAllHandlersResolvable()` in Phase 13 (would fail before handlers exist). vitest invocation on Windows produces spurious `STATUS_STACK_BUFFER_OVERRUN` exits and worker timeout unhandled errors — pre-existing environment instability, not code failures.
 
