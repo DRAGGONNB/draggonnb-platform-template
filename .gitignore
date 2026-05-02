@@ -60,3 +60,5 @@ scripts/provisioning/clients/_results.json
 
 # spike output (raw sandbox responses — may include sensitive headers)
 scripts/spikes/payfast-spike-output.json
+scripts/spikes/payfast-redirect.html
+scripts/spikes/payfast-raw-response.html

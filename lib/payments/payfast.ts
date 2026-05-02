@@ -236,22 +236,71 @@ export function getPayFastConfig() {
 }
 
 /**
- * Generate MD5 signature for PayFast
- * PayFast uses MD5 hash of parameter string + passphrase
+ * Generate MD5 form signature for PayFast (FORM submissions only).
+ *
+ * Algorithm (confirmed via Phase 13 Plan 01 spike 2026-05-02):
+ *   - INSERTION ORDER — do NOT sort keys. PayFast's PHP SDK iterates $_POST in
+ *     the order fields were submitted. Alphabetical sort returns 400 "signature mismatch".
+ *   - passphrase appended as trailing "&passphrase=<url-encoded>" (NOT a sortable field).
+ *   - Space encoding: use "+" (PHP urlencode), not "%20".
+ *     PHP urlencode encodes spaces as "+"; encodeURIComponent uses "%20".
+ *     Mismatch causes signature failure when passphrase contains spaces.
+ *
+ * IMPORTANT: Call this function with formData keys in the canonical PayFast field order
+ * (merchant_id, merchant_key, return_url, cancel_url, notify_url, name_first, name_last,
+ *  email_address, m_payment_id, amount, item_name, ...).  URLSearchParams and plain object
+ * literals preserve insertion order in V8 so this is automatic when building formData
+ * in the documented order.
+ *
+ * See also: generatePayFastApiSignature (different algorithm for API header calls).
+ * See: .planning/phases/13-cross-product-foundation/13-PAYFAST-SANDBOX-SPIKE.md
  */
 export function generatePayFastSignature(data: Record<string, string>, passphrase?: string): string {
-  // Create parameter string
+  // INSERTION ORDER — do NOT add .sort() here (Bug fix: 13-01 spike 2026-05-02)
   const paramString = Object.keys(data)
-    .sort()
     .filter(key => key !== 'signature') // Exclude signature field
     .map(key => `${key}=${encodeURIComponent(data[key].trim()).replace(/%20/g, '+')}`)
     .join('&')
 
-  // Add passphrase if provided
-  const stringToHash = passphrase ? `${paramString}&passphrase=${encodeURIComponent(passphrase.trim())}` : paramString
+  // Passphrase appended as trailing field. Encode spaces as "+" (PHP urlencode semantics).
+  // Bug fix (13-01 spike 2026-05-02): was encodeURIComponent(passphrase) which leaves %20
+  // for spaces. PHP urlencode uses "+". Added .replace(/%20/g, '+').
+  const stringToHash = passphrase
+    ? `${paramString}&passphrase=${encodeURIComponent(passphrase.trim()).replace(/%20/g, '+')}`
+    : paramString
 
   // Generate MD5 hash
   return crypto.createHash('md5').update(stringToHash).digest('hex')
+}
+
+/**
+ * Generate MD5 API signature for PayFast (ad-hoc API header calls only).
+ *
+ * Algorithm (confirmed via Phase 13 Plan 01 spike 2026-05-02, PayFast SDK lib/Auth.php):
+ *   - Passphrase is MERGED into the data object as a regular key ('passphrase').
+ *   - ALL keys (including 'passphrase') are sorted ALPHABETICALLY (ksort equivalent).
+ *   - URL-encode each value; encode spaces as "+" (PHP urlencode semantics).
+ *
+ * This is DIFFERENT from generatePayFastSignature (form signature):
+ *   - Form: insertion order, passphrase appended as trailing field after all others.
+ *   - API:  alphabetical sort, passphrase sorted as a regular field.
+ *
+ * Used by chargeAdhoc() and any future API-authenticated PayFast requests.
+ * See: .planning/phases/13-cross-product-foundation/13-PAYFAST-SANDBOX-SPIKE.md
+ */
+export function generatePayFastApiSignature(data: Record<string, string>, passphrase?: string): string {
+  const merged: Record<string, string> = { ...data }
+  if (passphrase) {
+    merged.passphrase = passphrase
+  }
+
+  const paramString = Object.keys(merged)
+    .sort() // Alphabetical ksort — correct for API (NOT for form)
+    .filter(key => key !== 'signature')
+    .map(key => `${key}=${encodeURIComponent(merged[key].trim()).replace(/%20/g, '+')}`)
+    .join('&')
+
+  return crypto.createHash('md5').update(paramString).digest('hex')
 }
 
 /**

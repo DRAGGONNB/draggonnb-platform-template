@@ -68,23 +68,43 @@ See the user_setup section of .planning/phases/13-cross-product-foundation/13-01
 // Algorithm: alphabetical sort, URL-encode values, append passphrase if set
 // ---------------------------------------------------------------------------
 function generateSignature(data, passphrase) {
+  // BUG-FIX 1: Use INSERTION ORDER (NOT alphabetical sort). PayFast's official PHP
+  // SDK at github.com/PayFast/payfast-php-sdk lib/Auth.php and lib/PaymentIntegrations/
+  // Notification.php iterates $_POST/data in insertion order — verified working with
+  // 302 ACCEPTED via scripts/spikes/payfast-order-probe.mjs on 2026-05-02.
+  // Production lib/payments/payfast.ts L244 has the same alphabetical-sort bug.
+  // BUG-FIX 2: Encode passphrase spaces as `+` matching field values (PHP urlencode).
   const paramString = Object.keys(data)
-    .sort()
     .filter(key => key !== 'signature')
     .map(key => `${key}=${encodeURIComponent(String(data[key]).trim()).replace(/%20/g, '+')}`)
     .join('&')
 
   const stringToHash = passphrase
-    ? `${paramString}&passphrase=${encodeURIComponent(passphrase.trim())}`
+    ? `${paramString}&passphrase=${encodeURIComponent(passphrase.trim()).replace(/%20/g, '+')}`
     : paramString
 
   return crypto.createHash('md5').update(stringToHash).digest('hex')
 }
 
 // ---------------------------------------------------------------------------
-// API header builder — mirrors buildHeaders in lib/payments/payfast-subscription-api.ts
-// The timestamp format strips milliseconds and appends +00:00
+// API signature — DIFFERENT algorithm from form signature:
+// - ALPHABETICAL sort of all keys (including 'passphrase' as a regular key)
+// - urlencode each value (with + for spaces)
+// - join with &
+// Per PayFast SDK lib/Auth.php generateApiSignature() — confirmed against sandbox
+// returning HTTP 200 instead of HTTP 405. Different from form's insertion-order rule.
 // ---------------------------------------------------------------------------
+function generateApiSignature(data, passphrase) {
+  const merged = { ...data }
+  if (passphrase) merged.passphrase = passphrase
+  const paramString = Object.keys(merged)
+    .sort()
+    .filter(k => k !== 'signature')
+    .map(k => `${k}=${encodeURIComponent(String(merged[k]).trim()).replace(/%20/g, '+')}`)
+    .join('&')
+  return crypto.createHash('md5').update(paramString).digest('hex')
+}
+
 function buildApiHeaders(bodyFields, passphrase) {
   const timestamp = new Date().toISOString().replace(/\.\d+Z$/, '+00:00')
   const unsigned = {
@@ -93,7 +113,7 @@ function buildApiHeaders(bodyFields, passphrase) {
     'timestamp': timestamp,
     ...bodyFields,
   }
-  const signature = generateSignature(unsigned, passphrase ?? '')
+  const signature = generateApiSignature(unsigned, passphrase ?? '')
   return {
     'merchant-id': MERCHANT_ID,
     'version': 'v1',
@@ -104,7 +124,8 @@ function buildApiHeaders(bodyFields, passphrase) {
 }
 
 const SANDBOX_PROCESS_URL = 'https://sandbox.payfast.co.za/eng/process'
-const SANDBOX_API_BASE = 'https://sandbox.payfast.co.za'
+// API uses api.payfast.co.za for BOTH sandbox and prod; sandbox enabled via ?testing=true
+const PAYFAST_API_BASE = 'https://api.payfast.co.za'
 
 // ---------------------------------------------------------------------------
 // Output accumulator — written to payfast-spike-output.json at end
@@ -137,57 +158,126 @@ async function runStep1() {
   const returnUrl = `${appUrl}/payment/success`
   const cancelUrl = `${appUrl}/pricing`
 
-  // subscription_type=2 = ad-hoc (matches PayFast docs for token-based arbitrary charges)
+  // Field order matches PayFast official SDK $fields array (lib/Auth.php).
+  // The signature MUST be computed in the same order as fields are POSTed —
+  // PayFast iterates $_POST in insertion order on its server. Reordering this
+  // literal will silently break the signature.
+  // subscription_type=2 = tokenization (capture a token for future ad-hoc charges).
+  // PayFast: type=2 does NOT use frequency/cycles/recurring_amount/billing_date.
   const formData = {
-    amount: '5.00',
-    billing_date: getTodayPlusDays(1),
-    cancel_url: cancelUrl,
-    cycles: '0',
-    email_address: 'spike@draggonnb.co.za',
-    frequency: '3',
-    item_description: 'PayFast sandbox spike for Phase 13 GATE-02 validation',
-    item_name: 'SPIKE-13-01',
-    m_payment_id: mPaymentId,
     merchant_id: MERCHANT_ID,
     merchant_key: MERCHANT_KEY,
+    return_url: returnUrl,
+    cancel_url: cancelUrl,
+    notify_url: notifyUrl,
     name_first: 'Spike',
     name_last: 'Test',
-    notify_url: notifyUrl,
-    recurring_amount: '5.00',
-    return_url: returnUrl,
+    email_address: 'spike@draggonnb.co.za',
+    m_payment_id: mPaymentId,
+    amount: '5.00',
+    item_name: 'SPIKE-13-01',
+    item_description: 'PayFast sandbox spike for Phase 13 GATE-02 validation',
     subscription_type: '2',
   }
 
-  const signature = generateSignature(formData, PASSPHRASE)
+  // Compute the param string we hash (insertion order — matches generateSignature)
+  const paramStringForHash = Object.keys(formData)
+    .filter(k => k !== 'signature')
+    .map(k => `${k}=${encodeURIComponent(String(formData[k]).trim()).replace(/%20/g, '+')}`)
+    .join('&')
+
+  const sigWithPass = generateSignature(formData, PASSPHRASE)
+  const sigNoPass = generateSignature(formData, '')
+
+  const useNoPassphrase = process.env.PAYFAST_NO_PASSPHRASE === 'true'
+  const signature = useNoPassphrase ? sigNoPass : sigWithPass
   const payload = { ...formData, signature }
 
-  // Build form-encoded query string for redirect URL
-  const params = new URLSearchParams(payload)
-  const redirectUrl = `${SANDBOX_PROCESS_URL}?${params.toString()}`
+  const passphraseSuffix = PASSPHRASE ? `&passphrase=${encodeURIComponent(PASSPHRASE.trim()).replace(/%20/g, '+')}` : ''
+  console.log(`\n=== SIGNATURE DIAGNOSTIC ===`)
+  console.log(`Mode: ${useNoPassphrase ? 'NO PASSPHRASE' : 'WITH PASSPHRASE'}`)
+  console.log(`Passphrase value (length ${(PASSPHRASE || '').length}): ${PASSPHRASE ? `"${PASSPHRASE}"` : '(empty)'}`)
+  console.log(`Param string being hashed (insertion order, NOT alphabetical):`)
+  console.log(`  ${paramStringForHash}`)
+  console.log(`String + passphrase appended:`)
+  console.log(`  ${paramStringForHash}${passphraseSuffix}`)
+  console.log(`Computed signature WITH passphrase: ${sigWithPass}`)
+  console.log(`Computed signature NO passphrase:   ${sigNoPass}`)
+  console.log(`Using: ${signature}`)
+  console.log(`==============================\n`)
+
+  // PayFast expects an HTML form POST (application/x-www-form-urlencoded), NOT a GET URL.
+  // GET-URL transit re-encodes whitespace and reserved chars in ways that break the
+  // PHP-side signature recomputation. lib/payments/payfast.ts targets HTML-form POST;
+  // we mirror that by emitting a self-submitting HTML file the user opens in browser.
+  const hiddenInputs = Object.entries(payload)
+    .map(([k, v]) => `    <input type="hidden" name="${escapeHtml(k)}" value="${escapeHtml(String(v))}">`)
+    .join('\n')
+
+  const htmlPath = path.join(__dirname, 'payfast-redirect.html')
+  const html = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>PayFast Sandbox Spike — Auto-submit</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 600px; margin: 4rem auto; padding: 1rem; }
+    h1 { color: #c41e3a; }
+    button { background: #c41e3a; color: white; border: 0; padding: 1rem 2rem; font-size: 1rem; cursor: pointer; border-radius: 4px; }
+    code { background: #f4f4f4; padding: 0.1rem 0.3rem; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <h1>Phase 13 GATE-02 Sandbox Spike</h1>
+  <p><strong>m_payment_id:</strong> <code>${escapeHtml(mPaymentId)}</code></p>
+  <p>Click below to POST the signed form to PayFast sandbox. The page will redirect.</p>
+  <form id="pf" action="${SANDBOX_PROCESS_URL}" method="POST">
+${hiddenInputs}
+    <button type="submit">Submit to PayFast Sandbox</button>
+  </form>
+  <script>
+    // Auto-submit after 500ms so the user can inspect first if they want.
+    setTimeout(() => document.getElementById('pf').submit(), 500);
+  </script>
+</body>
+</html>
+`
+  fs.writeFileSync(htmlPath, html, 'utf8')
 
   output.steps.step1 = {
     mPaymentId,
     notifyUrl,
     formData: { ...formData, merchant_key: '****' }, // redact key
-    redirectUrl,
+    htmlPath,
   }
 
   console.log(`m_payment_id: ${mPaymentId}`)
   console.log(`notify_url:   ${notifyUrl}`)
-  console.log(`\nRedirect URL (open in browser to complete Subscribe checkout):\n`)
-  console.log(redirectUrl)
+  console.log(`\nSelf-submitting HTML form written to:\n  ${htmlPath}`)
   console.log(`
 NEXT STEPS:
-  1. Open the URL above in a browser
-  2. Complete the sandbox checkout (test card: 4000000000000002, exp: any future date, CVV: any 3 digits)
-  3. Accept the subscription agreement
-  4. Wait for the ITN to fire to your notify_url (or check PayFast sandbox dashboard -> Subscriptions -> latest entry -> token)
-  5. Copy the token value
-  6. Add to .env.local: PAYFAST_TEST_TOKEN=<token>
-  7. Re-run: node scripts/spikes/payfast-sandbox-spike.mjs
+  1. Open the HTML file in your browser:
+       start ${htmlPath}
+     (or double-click it from File Explorer)
+  2. The page auto-POSTs to PayFast sandbox after 0.5s
+  3. Complete the sandbox checkout (test card: 4000000000000002, exp: any future date, CVV: any 3 digits)
+  4. Accept the subscription agreement
+  5. Wait for the ITN to fire to your notify_url (or check PayFast sandbox dashboard -> Subscriptions -> latest entry -> token)
+  6. Copy the token value
+  7. Add to .env.local: PAYFAST_TEST_TOKEN=<token>
+  8. Re-run: node scripts/spikes/payfast-sandbox-spike.mjs
 `)
 
   saveOutput()
+}
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
 }
 
 // ---------------------------------------------------------------------------
@@ -349,7 +439,9 @@ async function runSteps2to5(token) {
 // ---------------------------------------------------------------------------
 
 async function sendAdhoc(token, amount, mPaymentId, itemName) {
-  const url = `${SANDBOX_API_BASE}/subscriptions/${token}/adhoc`
+  // Sandbox mode: append ?testing=true to the api.payfast.co.za URL.
+  // PayFast SDK PayFastApi::$apiUrl is https://api.payfast.co.za regardless of mode.
+  const url = `${PAYFAST_API_BASE}/subscriptions/${token}/adhoc?testing=true`
   const body = {
     amount,
     item_name: itemName,

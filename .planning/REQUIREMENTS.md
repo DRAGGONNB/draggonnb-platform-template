@@ -7,14 +7,15 @@
 **Locked decisions (D1–D10, approved 2026-05-01):**
 - **D1: SSO bridge at `auth.draggonnb.com`** — JWT bridge endpoint with 60s HS256 tokens, fragment delivery, jti replay protection via DB table, per-host cookies. NOT shared cookie domain.
 - **D2: Per-product memberships, no role auto-translate.** Trophy 9 roles + DraggonnB 4 roles never auto-map. Cross-product approval action types are product-scoped.
-- **D3: Default ALL bookings to PayFast Subscribe** to capture stored token, surface "no token" gracefully when EFT chosen. Damage flow checks token first, routes to manual collection if absent.
-- **D4: Single billing root = parallel subscriptions, same card.** Two PayFast charges (one stay, one hunt), one checkout flow. Synthetic invoice = v3.2.
+- **D3 (revised 2026-05-01 post-Swazulu discovery): Multi-route booking checkout.** Default routes per-tenant via `tenant_modules.config.billing.payment_route` ∈ {`own_payfast`, `draggonnb_payfast`, `eft_manual`}. PayFast Subscribe captures stored token where used; EFT mode skips PayFast entirely (manual reconciliation). Damage flow checks token first; routes to manual collection if EFT or token absent. **Replaces original "default ALL bookings to PayFast Subscribe."**
+- **D4 (revised 2026-05-01 post-Swazulu discovery): Split-by-default invoice model with multi-payer payment links.** Booker's bill is the primary `billing_invoice`; per-hunter extras (animals, slaughter) attach as lines tagged with `hunter_id`. Hunting-infrastructure lines (PH, vehicle) tagged `hunter_id=NULL` and payable by booker. Each payment link settles a slice of the same invoice (booker pays infrastructure, hunters pay their kills). Multi-payer transactional fee applied per link when on `draggonnb_payfast` route. Synthetic single-charge unification deferred to v3.2. **Replaces original "parallel subscriptions, same card."**
 - **D5: PayFast lib = copy-paste with sync-version header (4 small files); federation logic = private package `@draggonnb/federation-shared`** with exact version pinning.
-- **D6: Auto-create Trophy `orgs` row at module-activation time** (provisioning saga step 10). Explicit invite for additional `org_members`.
+- **D6: Auto-create Trophy `orgs` row at module-activation time** (provisioning saga step 10). Explicit invite for additional `org_members`. Confirmed 2026-05-01: Swazulu = single legal entity (farmer + breeder + hunting + events) — one DraggonnB org row, one Trophy org row.
 - **D7: SSO replay protection = DB-backed `sso_bridge_tokens` table** for v3.1 (Redis only if >1000 bridge crossings/day).
 - **D8: Mobile sweep = DraggonnB only (82 pages)** for Phase 16. Trophy already mobile-first per its CLAUDE.md.
-- **D9: Single Telegram bot per org**, product-tagged callback data (`approve:{product}:{request_id}`). Refactor existing ops bot onto grammY in same PR.
+- **D9 (revised 2026-05-01 post-Swazulu discovery): Single Telegram bot per org with manifest-driven callbacks.** Each module exports a typed manifest declaring its approval action types, Telegram callbacks (with product prefix), emitted events, required tenant inputs, and billing line types. Bot registers callbacks from manifests at runtime; onboarding wizard generates dynamic forms from manifests; approval spine action-type registry is manifest-driven. **Replaces original "hand-wired callbacks per product."** Refactor existing ops bot onto grammY in same PR.
 - **D10: Currency display = "ZAR 10,500.00 (≈ USD 575)" with ISO code prominent everywhere.**
+- **D11 (added 2026-05-01): Polymorphic platform-level billing layer.** Operational records stay separate per product (`accommodation_bookings`, `safaris`, `safari_hunters`, future `breeder_*`); financial truth lives in three new platform tables (`billing_invoices`, `billing_invoice_lines`, `billing_invoice_payment_links`). Each module emits lines via `@draggonnb/federation-shared` billing service — Trophy OS does NOT gain a billing table. Booker = one invoice; lines polymorphic via `source_type + source_id`; payment links slice the invoice (multi-payer, multi-route).
 
 **Scope guardrails:**
 - Trophy OS UI rework — out of scope; stays as-is
@@ -46,7 +47,7 @@
 
 ### Cross-Product Navigation (NAV)
 
-- [ ] **NAV-01**: DraggonnB sidebar conditionally shows "Trophy OS" item only when `tenant_modules.config.trophy.linked_org_id` is set; click triggers SSO bridge.
+- [ ] **NAV-01**: DraggonnB sidebar conditionally shows "Trophy OS" item only when `organizations.linked_trophy_org_id` is non-null for the active tenant (canonical FK source of truth, surfaced via `x-linked-trophy-org-id` middleware header). The JSONB `tenant_modules.config.trophy.linked_org_id` is a best-effort denormalized cache for module-config-aware code paths only — never the canonical source. Click triggers SSO bridge.
 - [ ] **NAV-02**: Trophy OS conditionally shows "DraggonnB OS" item in its sidebar/header for users whose origin tenant has DraggonnB modules activated; click triggers reverse SSO bridge.
 - [ ] **NAV-03**: Cross-product nav shows loading state during bridge round-trip (max 2 seconds, fallback message on timeout).
 - [ ] **NAV-04**: User in DraggonnB clicks "Trophy OS" but their tenant has no Trophy membership → routed to "Activate Trophy OS" UI (not silent auto-create, per D2/D6).
@@ -78,7 +79,7 @@
 - [ ] **DAMAGE-02**: PayFast ITN webhook captures `token` field on subscription confirmation and stores it on `accommodation_bookings.guest_payfast_token UUID NULL` (NEW nullable column, multi-step OPS-05).
 - [ ] **DAMAGE-03**: `accommodation_bookings.max_incidental_charge_zar INTEGER` column added — default `total_zar * 1.5` or 5000 ZAR cents whichever higher. Communicated to guest in T&Cs.
 - [ ] **DAMAGE-04**: `accommodation_bookings.damage_consent_at TIMESTAMPTZ NULL` records guest acceptance of damage T&Cs at booking time.
-- [ ] **DAMAGE-05**: Phase 13 PayFast sandbox spike confirms `chargeAdhoc()` amount unit (rands vs cents), Subscribe-token charge mechanism, and absence/presence of hold-and-capture before any Phase 15 code lands.
+- [x] **DAMAGE-05** (RESOLVED 2026-05-02 via GATE-02): PayFast sandbox spike confirmed chargeAdhoc() must send INTEGER CENTS, Subscribe-token supports arbitrary-amount charges, hold-and-capture is unavailable (immediate charge only). Code corrections applied to lib/payments/payfast-adhoc.ts + payfast.ts. See GATE-02 and 13-PAYFAST-SANDBOX-SPIKE.md.
 - [ ] **DAMAGE-06**: New table `damage_incidents` — `id, booking_id, organization_id, flagged_by_user_id, item_description, item_category, evidence_photo_urls TEXT[], proposed_amount_zar INTEGER, status, created_at`. Status enum: `pending_approval`, `approved`, `charged`, `disputed`, `refunded`, `cancelled`.
 - [ ] **DAMAGE-07**: Telegram `/damage` command on DraggonnB ops bot opens guided flow — booking selection (open bookings only), photo upload (≥2 required), description, category from itemized price list, proposed amount.
 - [ ] **DAMAGE-08**: Itemized damage price list (default + tenant-overridable) stored in `tenant_modules.config.accommodation.damage_price_list JSONB`. Categories: glassware, linen, electronics, furniture, structural, other.
@@ -169,8 +170,38 @@
 
 ### Pre-Phase Gates (GATE)
 
-- [ ] **GATE-01**: Pre-Phase-13 Swazulu discovery call completed — validates split-billing model (D4), damage workflow (DAMAGE-*), approval thresholds (APPROVAL-*), role mapping reality (D2), cross-product nav expectation. Output: confirmed/revised D3, D4, D6, D9. Block Phase 13 architecture lock until done.
-- [ ] **GATE-02**: PayFast sandbox spike (Phase 13 first plan) — confirms `chargeAdhoc()` amount unit, Subscribe-token charge mechanism, hold-and-capture availability before Phase 15 ships damage billing.
+- [x] **GATE-01** (RESOLVED 2026-05-01): Swazulu discovery effectively complete via DB audit + owner-side knowledge transfer (Chris set up Swazulu's lodges personally). Outputs captured in `.planning/research/SWAZULU-DISCOVERY.md`: D3 revised (multi-route checkout), D4 revised (split-by-default invoice + multi-payer payment links), D6 confirmed (single entity), D9 revised (manifest-driven callbacks). New D11 added (polymorphic billing layer). Three new req categories triggered: INVOICE-*, PAYROUTE-*, MANIFEST-*. Pricing/damage-list/vendor-SOP artefacts captured out-of-band before Phase 15.
+- [x] **GATE-02** (RESOLVED 2026-05-02): PayFast sandbox spike complete. Amount unit = INTEGER CENTS (Call A rands → 400 "Integer Expected"; Call B cents → 200 success). Subscribe-token charges arbitrary amounts confirmed (Call C different amount → 200 success). Hold-and-capture UNAVAILABLE (response body has code/status/data only, no capture_url/hold_reference/auth_code). Idempotency NOT enforced server-side (duplicate m_payment_id returns new pf_payment_id). 5 bugs found and fixed: URL base (sandbox.payfast.co.za → api.payfast.co.za + ?testing=true), amount unit (÷100 removed), form signature sort order (alphabetical removed), passphrase space encoding (%20 → +), API signature helper added. See `.planning/phases/13-cross-product-foundation/13-PAYFAST-SANDBOX-SPIKE.md`.
+
+### Polymorphic Billing Layer (INVOICE) — NEW 2026-05-01
+
+- [ ] **INVOICE-01**: New table `billing_invoices` — `id, organization_id, billing_owner_user_id, billing_owner_email, currency, subtotal_zar_cents, vat_zar_cents, total_zar_cents, amount_paid_zar_cents, balance_due_zar_cents, status, payment_route, external_invoice_ref, created_at, due_at, paid_at`. Status enum: `draft, issued, partial_paid, paid, cancelled, refunded`.
+- [ ] **INVOICE-02**: New table `billing_invoice_lines` — `id, invoice_id, source_product, source_type, source_id, hunter_id NULLABLE, description, quantity, unit_price_zar_cents, line_total_zar_cents, vat_zar_cents, sort_order, created_at`. `source_type + source_id` polymorphic FK; `hunter_id` tags per-hunter extras.
+- [ ] **INVOICE-03**: New table `billing_invoice_payment_links` — `id, invoice_id, payer_user_id NULLABLE, payer_email, amount_zar_cents, payment_route, platform_fee_zar_cents NULLABLE, payfast_token NULLABLE, paid_at NULLABLE, status`. Status enum: `pending, paid, partial, expired, refunded, cancelled`.
+- [ ] **INVOICE-04**: `lib/billing/invoice-service.ts` exposes `createInvoice()`, `addInvoiceLine()`, `issueInvoice()`, `createPaymentLink()`, `recordPayment()`, `refundLine()` — single API surface used by every module's billing emission.
+- [ ] **INVOICE-05**: `addInvoiceLine()` is product-pluggable — DraggonnB Accommodation calls it for nights/addons; Trophy OS calls it for safari days, animals, slaughter; future Breeder OS will call it for breeding services. No product-specific billing tables added downstream.
+- [ ] **INVOICE-06**: Payment link generator produces a slice of the invoice — `selectLines(invoice_id, predicate)` returns sum of matching lines. Default presets: "all lines hunter_id IS NULL" (booker/infrastructure), "all lines hunter_id = X" (per-hunter), "remaining unpaid" (catch-all).
+- [ ] **INVOICE-07**: Multi-payer settlement reconciles automatically — when sum of `paid_at IS NOT NULL` payment links equals invoice `total_zar_cents`, invoice transitions to `paid`. Partial payments transition to `partial_paid`.
+- [ ] **INVOICE-08**: Cross-product RLS — `billing_invoices` SELECT requires `organization_users` membership in `organization_id`. Lines + payment links inherit via FK join.
+- [ ] **INVOICE-09**: `billing_invoices` is the canonical financial truth; existing `accommodation_invoices` remains Phase-15 backwards-compat shim (writes through to `billing_invoices` via 3-step OPS-05). Final cutover deferred until Phase 17 cleanup.
+- [ ] **INVOICE-10**: Trophy OS gains zero billing tables — calls DraggonnB billing service via `@draggonnb/federation-shared`. Trophy `safaris` and `safari_hunters` remain operational records only.
+
+### Per-Tenant Payment Routing (PAYROUTE) — NEW 2026-05-01
+
+- [ ] **PAYROUTE-01**: `tenant_modules.config.billing` schema documented and Zod-validated: `{ payment_route: 'own_payfast'|'draggonnb_payfast'|'eft_manual', own_payfast?: { merchant_id, merchant_key }, draggonnb_payfast?: { fee_pct, fee_fixed_zar_cents } }`.
+- [ ] **PAYROUTE-02**: PayFast credentials per tenant — when `payment_route='own_payfast'`, `lib/payments/payfast.ts` resolves merchant credentials per-org via `tenant_modules.config.billing.own_payfast.*`. Falls back to platform credentials on `draggonnb_payfast`. EFT mode bypasses PayFast invocation entirely.
+- [ ] **PAYROUTE-03**: Payment link fee calculation — when `payment_route='draggonnb_payfast'`, `createPaymentLink()` computes `platform_fee_zar_cents = round(amount * fee_pct / 100) + fee_fixed_zar_cents`. Fee surfaced on guest checkout UI ("Includes R{fee} processing fee"). On `own_payfast` and `eft_manual` routes, fee is zero.
+- [ ] **PAYROUTE-04**: EFT-manual mode — when active, payment link generation produces an invoice PDF with bank details + booking ref instead of a PayFast checkout link. Marks the invoice `status='issued'` with manual reconciliation pending. Damage flow on EFT-manual tenant routes ALL damage incidents to manual collection (no token to charge).
+- [ ] **PAYROUTE-05**: Platform-fee remittance — daily aggregate cron computes platform fees collected per `draggonnb_payfast` tenant, writes to `platform_fee_ledger` table, surfaces in `/admin/platform-revenue` for finance reconciliation. Investor reporting line.
+
+### Module Manifest Standardisation (MANIFEST) — NEW 2026-05-01
+
+- [ ] **MANIFEST-01**: Typed module manifest contract at `lib/modules/types.ts` — `{ id, name, required_tenant_inputs[], emitted_events[], approval_actions[], telegram_callbacks[], billing_line_types[] }`. Each field has its own typed sub-schema.
+- [ ] **MANIFEST-02**: Each existing module gains a `lib/modules/{name}/manifest.ts` — accommodation, crm, events, ai_agents, analytics, security_ops. Migration is additive (manifests describe what the module already does; no behaviour change).
+- [ ] **MANIFEST-03**: Onboarding wizard reads `required_tenant_inputs` from active modules, generates dynamic form sections — replaces hardcoded onboarding branches. New module = new manifest, zero wizard code change.
+- [ ] **MANIFEST-04**: Telegram bot callback registry built from manifests at boot — each `telegram_callbacks[]` entry registers `approve:{product}:{action}` and `reject:{product}:{action}` handlers via grammY routing. No hand-wired switch statements.
+- [ ] **MANIFEST-05**: Approval spine action-type registry built from manifests — every `approval_actions[]` entry auto-registers a handler stub; product-scoped action types enforced (D2/APPROVAL-06 guard). Missing handler = clear error at boot, not runtime.
+- [ ] **MANIFEST-06**: Billing service auto-registers line types per module — `addInvoiceLine()` validates `source_product + source_type` against the union of every active module's `billing_line_types[]`. Unknown product/type pair is rejected.
 
 ---
 
@@ -235,11 +266,11 @@ Populated by gsd-roadmapper 2026-05-01. Pre-allocation preserved unchanged — n
 
 | Phase | Title | REQ Count | Categories |
 |-------|-------|-----------|------------|
-| 13 | Cross-Product Foundation | 25 | SSO-01..14, NAV-01..04, STACK-01..04, STACK-07, GATE-01, GATE-02 |
+| 13 | Cross-Product Foundation | 31 | SSO-01..14, NAV-01..04, STACK-01..04, STACK-07, MANIFEST-01..06, GATE-01, GATE-02 |
 | 14 | Approval Spine (3-deploy split: 14.1, 14.2, 14.3) | 19 | APPROVAL-01..18, STACK-05 |
-| 15 | Damage Auto-Billing + Hunt Bookings + Cross-Product Stay Link (6 sub-plans 15.1..15.6) | 32 | DAMAGE-01..17, HUNT-01..09, CROSSLINK-01..06 |
+| 15 | Damage Auto-Billing + Hunt Bookings + Cross-Product Stay Link (8 sub-plans 15.0..15.6) | 47 | INVOICE-01..10, PAYROUTE-01..05, DAMAGE-01..17, HUNT-01..09, CROSSLINK-01..06 |
 | 16 | PWA + Trophy PayFast + v3.0 Carry-Forward (5 sub-plans 16.1..16.5) | 36 | PWA-01..15, TROPHY-01..12, CARRY-01..08, STACK-06 |
-| **Total** | | **112** | 103 feature reqs + 9 meta reqs (STACK + GATE) |
+| **Total** | | **133** | 124 feature reqs + 9 meta reqs (STACK + GATE) |
 
 ### Per-REQ assignment
 
@@ -265,19 +296,26 @@ Populated by gsd-roadmapper 2026-05-01. Pre-allocation preserved unchanged — n
 | STACK-05 | 14 | Pending | grammY adoption (Telegram framework); ops-bot refactor in same PR |
 | STACK-06 | 16 | Pending | @serwist/next + serwist (PWA service worker) |
 | STACK-07 | 13 | Pending | @draggonnb/federation-shared private package |
-| GATE-01 | 13 | Pending | Swazulu discovery call — BLOCKS Phase 13 architecture lock |
+| MANIFEST-01..06 | 13 | Pending | Module manifest contract + dynamic onboarding/Telegram/approval registries (D9) |
+| INVOICE-01..10 | 15 | Pending | 15.0 polymorphic billing schema + line emission API (D11) — FIRST sub-plan, before 15.1 |
+| PAYROUTE-01..05 | 15 | Pending | 15.0 per-tenant payment routing config + fee calc + EFT fallback (D3) |
+| GATE-01 | 13 | RESOLVED 2026-05-01 | Swazulu discovery completed via DB audit + owner-side knowledge — see SWAZULU-DISCOVERY.md |
 | GATE-02 | 13 | Pending | PayFast sandbox spike — FIRST plan inside Phase 13; unblocks Phase 15 |
 
 ### Sequence-critical dependencies (cross-phase)
 
-1. **GATE-01 (pre-Phase-13)** — Swazulu discovery call blocks Phase 13 architecture lock. Validates D3, D4, D6, D9.
-2. **Phase 14 OPS-05 split** — APPROVAL-01/02/03 enforce a 3-deploy migration sequence (add nullable → backfill → NOT NULL). Bundling fails per CLAUDE.md OPS-05.
-3. **Phase 15.1 hidden pre-requisite** — DAMAGE-01 (PayFast Subscribe-token capture in `lib/accommodation/payments/payfast-link.ts`) must land BEFORE damage intake (15.2) or any damage charge code can run.
-4. **Phase 15.6 ↔ 16.1 circular dependency** — HUNT-07 stubs charges in 15.6; actual `chargeAdhoc()` call waits for TROPHY-01..11 in 16.1; HUNT-08 + per-hunter charge flow lands in 16.2.
-5. **DAMAGE-05 cross-phase** — sandbox spike happens inside Phase 13 GATE-02, even though the requirement is categorized under DAMAGE.
+1. ~~**GATE-01 (pre-Phase-13)**~~ — RESOLVED 2026-05-01 via DB audit + owner knowledge transfer. Outputs in `.planning/research/SWAZULU-DISCOVERY.md`. D3, D4, D9 revised; D11 added; INVOICE/PAYROUTE/MANIFEST categories triggered.
+2. **Phase 13 MANIFEST foundation** — MANIFEST-01..06 must land before Phase 14 approval-spine action-type registry (APPROVAL-05) can be manifest-driven. Without manifests, the spine falls back to hardcoded action types (regression).
+3. **Phase 15.0 INVOICE + PAYROUTE foundation** — must land BEFORE 15.1 (DAMAGE-01 PayFast Subscribe-token capture) or any 15.* damage/hunt code. Polymorphic billing layer is the substrate every later sub-plan emits into.
+4. **Phase 14 OPS-05 split** — APPROVAL-01/02/03 enforce a 3-deploy migration sequence (add nullable → backfill → NOT NULL). Bundling fails per CLAUDE.md OPS-05.
+5. **Phase 15.1 hidden pre-requisite** — DAMAGE-01 (PayFast Subscribe-token capture in `lib/accommodation/payments/payfast-link.ts`) must land BEFORE damage intake (15.2) or any damage charge code can run.
+6. **Phase 15.6 ↔ 16.1 circular dependency** — HUNT-07 stubs charges in 15.6; actual `chargeAdhoc()` call waits for TROPHY-01..11 in 16.1; HUNT-08 + per-hunter charge flow lands in 16.2.
+7. **DAMAGE-05 cross-phase** — sandbox spike happens inside Phase 13 GATE-02, even though the requirement is categorized under DAMAGE.
 
-Total v3.1 unconditional REQ-IDs: **103 feature + 9 meta = 112**.
+Total v3.1 unconditional REQ-IDs: **124 feature + 9 meta = 133**.
 
 ---
 
-*Last updated: 2026-05-01 — milestone v3.1 Operational Spine requirements defined; 10 cross-cutting decisions D1-D10 locked; Trophy OS Option C federation aligned; ROADMAP.md created with phases 13-16, all 112 REQ-IDs mapped to exactly one phase, pre-Phase-13 Swazulu discovery call (GATE-01) blocks architecture lock.*
+*Last updated: 2026-05-01 (revision 2) — Swazulu discovery resolved via DB audit + owner-side knowledge transfer. D3, D4, D9 revised. D11 added (polymorphic billing layer). New categories INVOICE-* (10), PAYROUTE-* (5), MANIFEST-* (6) bring v3.1 total from 112 to 133 reqs. Phase 15 grows from 6 sub-plans to 8 (15.0 INVOICE+PAYROUTE foundations land first). Phase 13 picks up MANIFEST as foundational layer. GATE-01 resolved; GATE-02 (PayFast sandbox spike) remains first plan inside Phase 13. See `.planning/research/SWAZULU-DISCOVERY.md` for full audit + decision rationale.*
+
+*Last updated: 2026-05-01 (revision 3) — NAV-01 wording clarified: canonical source-of-truth is `organizations.linked_trophy_org_id` FK column (surfaced via middleware header), with JSONB `tenant_modules.config.trophy.linked_org_id` re-cast as best-effort denormalized cache. Aligns requirement wording with plan 13-07 implementation per checker BLOCKER 5.*

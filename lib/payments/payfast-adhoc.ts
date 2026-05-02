@@ -1,15 +1,19 @@
 // lib/payments/payfast-adhoc.ts
 // Phase 09 BILL-03: one-off setup fee + top-up + addon pro-rate charges via PayFast ad-hoc API.
 //
-// NOTE: Cents vs rands for `amount` field is NOT confirmed against PayFast sandbox
-// — see Plan 09-04 spike. This implementation sends RANDS with 2 decimals,
-// matching existing form-based subscription integration pattern.
+// Amount unit: INTEGER CENTS — confirmed via Phase 13 Plan 01 sandbox spike (2026-05-02).
+// Spike Call A (amount=250.00 rands) → HTTP 400 "Integer Expected".
+// Spike Call B (amount=25000 cents) → HTTP 200 success.
+// See .planning/phases/13-cross-product-foundation/13-PAYFAST-SANDBOX-SPIKE.md
+//
+// API base URL: api.payfast.co.za for BOTH sandbox and production.
+// Sandbox mode is enabled via ?testing=true query param (NOT a separate subdomain).
+// Using sandbox.payfast.co.za for API calls returns HTTP 405 Method Not Allowed.
 
-import { getPayFastConfig, generatePayFastSignature } from './payfast'
+import { getPayFastConfig, generatePayFastApiSignature } from './payfast'
 import { makeMPaymentId, PAYFAST_PREFIX, type PayFastPrefix } from './payfast-prefix'
 
-const PAYFAST_API_BASE_PROD = 'https://api.payfast.co.za'
-const PAYFAST_API_BASE_SANDBOX = 'https://sandbox.payfast.co.za'
+const PAYFAST_API_BASE = 'https://api.payfast.co.za'
 
 interface AdhocChargeArgs {
   subscriptionToken: string
@@ -30,15 +34,16 @@ export async function chargeAdhoc(
   args: AdhocChargeArgs,
 ): Promise<{ success: boolean; mPaymentId: string; response: unknown }> {
   const cfg = getPayFastConfig()
-  const base = cfg.mode === 'production' ? PAYFAST_API_BASE_PROD : PAYFAST_API_BASE_SANDBOX
   const mPaymentId = makeMPaymentId(args.prefix, args.organizationId)
   const timestamp = new Date().toISOString().replace(/\.\d+Z$/, '+00:00')
 
-  // Send rands with 2 decimal places (spike pending in 09-04 to confirm unit)
-  const amountRands = (args.amountCents / 100).toFixed(2)
+  // Amount unit: INTEGER CENTS — confirmed via Phase 13 Plan 01 sandbox spike (2026-05-02).
+  // Send raw integer cents. Do NOT divide by 100.
+  // See .planning/phases/13-cross-product-foundation/13-PAYFAST-SANDBOX-SPIKE.md
+  const amountStr = String(args.amountCents)
 
   const body = {
-    amount: amountRands,
+    amount: amountStr,
     item_name: args.itemName,
     item_description: args.itemDescription ?? args.itemName,
     m_payment_id: mPaymentId,
@@ -50,12 +55,17 @@ export async function chargeAdhoc(
     'timestamp': timestamp,
     ...body,
   }
-  const signature = generatePayFastSignature(
+  // API signature uses alphabetical ksort + passphrase as a regular sorted field.
+  // This is DIFFERENT from form signature (insertion order, passphrase appended last).
+  // See generatePayFastApiSignature in payfast.ts.
+  const signature = generatePayFastApiSignature(
     unsigned as Record<string, string>,
     cfg.passphrase ?? '',
   )
 
-  const url = `${base}/subscriptions/${args.subscriptionToken}/adhoc`
+  // Sandbox mode via ?testing=true; production omits the param.
+  const testingParam = cfg.mode === 'sandbox' ? '?testing=true' : ''
+  const url = `${PAYFAST_API_BASE}/subscriptions/${args.subscriptionToken}/adhoc${testingParam}`
   const res = await fetch(url, {
     method: 'POST',
     headers: {
