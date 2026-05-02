@@ -11,19 +11,34 @@ See: .planning/PROJECT.md (updated 2026-04-24)
 ## Current Position
 
 Milestone: **v3.1 Operational Spine** (started 2026-05-01)
-Phase: 13 — Cross-Product Foundation (BLOCKED on GATE-01 Swazulu discovery call)
-Plan: —
-Status: Roadmap created. 4 phases defined (13-16); 112 REQ-IDs mapped (103 feature + 9 meta); 10 cross-cutting decisions D1-D10 locked. Pre-Phase-13 Swazulu discovery call (GATE-01) blocks Phase 13 architecture lock. After GATE-01, run /gsd:plan-phase 13.
-Last activity: 2026-05-01 — ROADMAP.md created for v3.1; Phase 14 split confirmed into 14.1/14.2/14.3 per OPS-05; Phase 15.1 PayFast Subscribe-token capture confirmed as hidden pre-requisite; Phase 15.6 ↔ 16.1 circular dependency resolved via stub-then-charge.
+Phase: 13 — Cross-Product Foundation (in progress)
+Plan: 13-03 COMPLETE (Wave 1 — parallel with 13-01 PayFast spike + 13-02 STACK upgrades)
+Status: **13-03 DONE 2026-05-02.** Module manifest contract shipped (MANIFEST-01 + MANIFEST-02 closed). 8 files: types.ts + registry.ts + 6 manifests. Zero existing behavior changed. tsc clean on new files. Plan 13-04 (manifest-driven registries) unblocked.
+Last activity: 2026-05-02 — Executed 13-03 (module manifest contract). Created lib/modules/types.ts (ModuleManifest + 5 sub-schemas) + lib/modules/registry.ts (MODULE_REGISTRY + 5 helpers) + 6 manifests (accommodation, crm, events, ai_agents, analytics, security_ops). 450 LOC total. 2 commits: 9829c0fd (types+registry) + 4da6714e (manifests).
 
 ## Resume Next Session
 
-**v3.1 ROADMAP READY.** All planning artifacts in place: PROJECT.md (milestone section), REQUIREMENTS.md (112 REQ-IDs, 10 locked decisions), research/SUMMARY.md (5 bottom-line findings, decision matrix), ROADMAP.md (4 phases, sequence-critical constraints flagged).
+**v3.1 ROADMAP REVISED (rev 2).** All planning artifacts in place: PROJECT.md (milestone section), REQUIREMENTS.md (**133 REQ-IDs**, 11 locked decisions D1-D11), research/SUMMARY.md (5 bottom-line findings, decision matrix), research/SWAZULU-DISCOVERY.md (DB audit + owner reality), ROADMAP.md (4 phases, 8 sub-plans in Phase 15, MANIFEST foundational in Phase 13).
 
-**Before Phase 13 planning:**
-- **GATE-01 — Swazulu discovery call** (non-negotiable). Validates split-billing model (D4), damage workflow, approval thresholds, role mapping reality (D2), cross-product nav expectation. Output: confirmed/revised D3, D4, D6, D9. BLOCKS Phase 13 architecture lock.
+**GATE-01 RESOLVED 2026-05-01** — Swazulu DB audit + owner knowledge transfer (Chris set up the lodges personally). Outputs:
+- D3 revised → multi-route checkout (own_payfast / draggonnb_payfast / eft_manual per tenant)
+- D4 revised → split-by-default invoice + multi-payer payment links (replaces parallel-subscriptions model)
+- D9 revised → manifest-driven Telegram callbacks
+- D11 added → polymorphic platform-level billing layer
+- New REQ categories: INVOICE-* (10) + PAYROUTE-* (5) + MANIFEST-* (6) = 21 new reqs
+- Phase 15.0 (INVOICE+PAYROUTE) becomes first sub-plan, ahead of 15.1
+- Phase 13 picks up MANIFEST-* as foundational alongside SSO/NAV/STACK
 
-**Once GATE-01 returns:** Run /gsd:plan-phase 13. First plan inside Phase 13 is GATE-02 PayFast sandbox spike (also unblocks Phase 15 damage code).
+**13-03 DONE.** Next: Continue Wave 1 (13-01 PayFast spike + 13-02 STACK upgrades) or proceed to 13-04 (manifest-driven registries — onboarding wizard, Telegram callback registry, approval action-type registry, billing line-type registry). Plan 13-04 is now unblocked by 13-03.
+
+**Outstanding Swazulu artefacts** (out-of-band capture, not Phase 13 blockers — needed before Phase 15 Swazulu pilot):
+1. Finalised pricing sheet (lodge nightly + hunt day rate + animal price list + PH/vehicle/slaughter rates)
+2. Itemised damage price list (R20 glass + R25 plate are the seeds; need full version for `tenant_modules.config.accommodation.damage_price_list`)
+3. Vendor SOPs (taxidermy + butchery handover specs, carcass instructions)
+4. Cancellation policy JSON (Chris's verbal version captured in SWAZULU-DISCOVERY.md; needs to land in `accommodation_cancellation_policies.tiers JSONB`)
+5. Deposit policy JSON
+6. Subdomain assignment (`organizations.subdomain` is NULL for swa-zulu)
+7. PayFast routing decision (own merchant vs DraggonnB-managed) → drives PAYROUTE-* config for the pilot
 
 **Carry-forward from v3.0 (lands in v3.1 Phase 16):**
 - 12-07 (smart-landing dashboard) — committed at `bedaff0e`, push pending
@@ -90,6 +105,8 @@ Progress: [██████████] 100% (12/12 Phase 11 plans done) · v
 
 ### Decisions (v3.0-specific, most recent first)
 
+- **2026-05-02 (13-03 execution):** Module manifest contract pattern established. `MODULE_REGISTRY` uses explicit static imports (NOT filesystem glob — Vercel edge runtime incompatible with `fs.glob()`). `MODULE_REGISTRY` is `readonly` to prevent runtime mutation. Events module manifest is a placeholder (referenced in module_registry but not feature-active in v3.1). `security_ops` telegram_callbacks empty — Elijah uses WhatsApp not Telegram. `ai_agents` approval_actions empty — AI agents propose actions but ownership of the resulting approval belongs to the module handling the action (e.g., accommodation owns damage_charge). `analytics` all-empty — read-only consumer. handler_path values in approval_actions point to `lib/approvals/handlers/{action-type}` — Phase 14 creates those files. No `assertAllHandlersResolvable()` in Phase 13 (would fail before handlers exist). vitest invocation on Windows produces spurious `STATUS_STACK_BUFFER_OVERRUN` exits and worker timeout unhandled errors — pre-existing environment instability, not code failures.
+
 - **2026-04-27 (11-05 execution):** `organizations.activated_at` is ABSENT from live Supabase DB (psqfgzbjbgqrmjskdavs) — column exists in 00_initial_schema.sql but was never applied. `isInNewTenantPeriod()` uses `created_at` as fallback. Phase 12 must add migration for `activated_at`, backfill, then switch. Unit-testing BaseAgent subclasses requires `vi.mock('@/lib/config/env')` hoisted (not just mocking payfast) — env module validates eagerly at import. BrandSafetyAgent: Haiku temperature=0 correct for safety classification tasks. CampaignDrafterAgent: Sonnet default (creative multi-channel needs larger context).
 
 - **2026-04-26 (10-06 execution):** VAT formula locked as `Math.round(cents * 1.15)` — pure integer cent math, no float drift. en-ZA locale renders ZAR as "R599,00" (comma decimal + NBSP thousands) — kept as-is, tests use `\s+` regex. /pricing module picker is RSC + client split: server fetches `billing_addons_catalog`, client renders interactive total. addon IDs NEVER hard-coded — picker iterates whatever the catalog returns. Trust trio "3 business days to go live / Pay in Rands / Cancel anytime" replaces Pitfall F false copy in 4 locations (sections.tsx hero strip, PricingPreview, CTASection, register-interest.tsx). Hero illustration is Lucide gear icon placeholder pending custom SVG. Legacy localStorage `OnboardingChecklist` kept in repo (unreferenced) for safety; new API-backed `app/(dashboard)/_components/onboarding-checklist.tsx` is now the dashboard checklist.
@@ -129,8 +146,21 @@ Progress: [██████████] 100% (12/12 Phase 11 plans done) · v
 
 ## Session Continuity
 
-Last session: 2026-05-01 — Closed 12-06 (pushed to origin/main: 157b297b..59ee9d2e), then executed 12-08 in main session. Built 7 new files (lib/landing/module-content.ts + 3 components + tests + docs) + 2 modified (sections.tsx, app/page.tsx). 6/6 vitest tests pass. Manual smoke-test localhost:3000 confirmed 6 cards rendered with correct data attributes + 5 anchor sections present. 12-07 next.
+Last session: 2026-05-02 — Executed 13-03 (module manifest contract). Created 8 files: lib/modules/types.ts + lib/modules/registry.ts + 6 manifests. 450 LOC total. tsc clean on new files. 2 commits: 9829c0fd + 4da6714e.
 Resume file: none.
+
+### Session (2026-05-02) — Phase 13 Plan 13-03: Module Manifest Contract COMPLETE
+
+**What was done:**
+1. Created `lib/modules/types.ts` — ModuleId union + 5 sub-schemas (TenantInputSpec, EmittedEventSpec, ApprovalActionSpec, TelegramCallbackSpec, BillingLineTypeSpec) + ModuleManifest root interface. Canonical Telegram callback_data format (`approve:{product}:{action_type}:{resource_id}`) documented in header comment.
+2. Created `lib/modules/registry.ts` — MODULE_REGISTRY (readonly array, explicit static imports) + 5 helpers: getManifestsForOrg, getAllApprovalActions, getAllTelegramCallbacks, getAllBillingLineTypes, getAllEmittedEvents.
+3. Created lib/modules/ directory structure with 6 subdirectories.
+4. Authored 6 manifest files (pure data, import type only): accommodation (richest: 2 approvals, 1 Telegram callback, 3 billing types, 7 events), crm (1 approval backward-compat, 6 events), events (placeholder), ai_agents (3 events, brand_voice + cost_ceiling inputs), analytics (all empty), security_ops/Elijah (4 events, WhatsApp-based so no Telegram callbacks).
+5. tsc: zero errors in lib/modules/ (3 pre-existing errors in elijah-full/social-content-full test files unchanged). vitest: no manifest-related failures (manifests are pure data, no existing tests reference lib/modules/).
+6. REQ-IDs closed: MANIFEST-01, MANIFEST-02.
+7. Committed 13-03-SUMMARY.md + STATE.md update.
+
+**Next: Execute Plan 13-04** (manifest-driven registries — onboarding wizard, Telegram callback registry, approval action-type registry, billing line-type registry) or parallel plans 13-01/13-02 if those are ready.
 
 ### Session (2026-05-01) — Phase 12 Plan 12-08: Module-Focused Landing COMPLETE
 
