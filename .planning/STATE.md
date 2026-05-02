@@ -12,9 +12,9 @@ See: .planning/PROJECT.md (updated 2026-04-24)
 
 Milestone: **v3.1 Operational Spine** (started 2026-05-01)
 Phase: 13 — Cross-Product Foundation (in progress)
-Plan: 13-02 COMPLETE + 13-03 COMPLETE (Wave 1 complete — 13-01 PayFast spike running in parallel)
-Status: **13-02 DONE 2026-05-02.** @supabase/ssr 0.10.2 + jose ^5.10.0 + getAll/setAll refactor + .npmrc @draggonnb scope. STACK-01, STACK-02, STACK-04, STACK-03 (DraggonnB-side) closed. **13-03 DONE 2026-05-02.** Module manifest contract shipped (MANIFEST-01 + MANIFEST-02 closed).
-Last activity: 2026-05-02 — Executed 13-02 (STACK upgrades: @supabase/ssr 0.1.0->0.10.2, @supabase/supabase-js ^2.105.1, jose ^5.10.0, getAll/setAll refactor in server.ts + middleware.ts, CATASTROPHIC #1 guard, .npmrc GitHub Packages). 2 commits: a534199c (feat) + 6fc8f7b1 (chore). Also executed 13-03 (module manifest contract). Created lib/modules/types.ts + lib/modules/registry.ts + 6 manifests. 450 LOC. 2 commits: 9829c0fd + 4da6714e.
+Plan: 13-02 COMPLETE + 13-03 COMPLETE + 13-04 COMPLETE (Wave 1+2 complete — 13-01 PayFast spike running in parallel)
+Status: **13-02 DONE 2026-05-02.** @supabase/ssr 0.10.2 + jose ^5.10.0 + getAll/setAll refactor + .npmrc @draggonnb scope. STACK-01, STACK-02, STACK-04, STACK-03 (DraggonnB-side) closed. **13-03 DONE 2026-05-02.** Module manifest contract shipped (MANIFEST-01 + MANIFEST-02 closed). **13-04 DONE 2026-05-02.** 4 manifest-driven registries shipped: ApprovalActionRegistry, Telegram callback registry, billing line-type registry, onboarding form builder + renderer. MANIFEST-03, MANIFEST-04, MANIFEST-05, MANIFEST-06 closed.
+Last activity: 2026-05-02 — Executed 13-04 (manifest-driven registries). 6 files created, 467 LOC, 15 tests passing. 2 task commits: 21d7caf5 (registries) + 33de84ea (onboarding form).
 
 ## Resume Next Session
 
@@ -29,7 +29,7 @@ Last activity: 2026-05-02 — Executed 13-02 (STACK upgrades: @supabase/ssr 0.1.
 - Phase 15.0 (INVOICE+PAYROUTE) becomes first sub-plan, ahead of 15.1
 - Phase 13 picks up MANIFEST-* as foundational alongside SSO/NAV/STACK
 
-**13-03 DONE.** Next: Continue Wave 1 (13-01 PayFast spike + 13-02 STACK upgrades) or proceed to 13-04 (manifest-driven registries — onboarding wizard, Telegram callback registry, approval action-type registry, billing line-type registry). Plan 13-04 is now unblocked by 13-03.
+**13-04 DONE.** Next: Continue 13-05 (cross-product navigation shell) or 13-06/13-07 (remaining Wave 2 plans). 13-01 PayFast spike still in parallel.
 
 **Outstanding Swazulu artefacts** (out-of-band capture, not Phase 13 blockers — needed before Phase 15 Swazulu pilot):
 1. Finalised pricing sheet (lodge nightly + hunt day rate + animal price list + PH/vehicle/slaughter rates)
@@ -109,6 +109,8 @@ Progress: [██████████] 100% (12/12 Phase 11 plans done) · v
 
 - **2026-05-02 (13-03 execution):** Module manifest contract pattern established. `MODULE_REGISTRY` uses explicit static imports (NOT filesystem glob — Vercel edge runtime incompatible with `fs.glob()`). `MODULE_REGISTRY` is `readonly` to prevent runtime mutation. Events module manifest is a placeholder (referenced in module_registry but not feature-active in v3.1). `security_ops` telegram_callbacks empty — Elijah uses WhatsApp not Telegram. `ai_agents` approval_actions empty — AI agents propose actions but ownership of the resulting approval belongs to the module handling the action (e.g., accommodation owns damage_charge). `analytics` all-empty — read-only consumer. handler_path values in approval_actions point to `lib/approvals/handlers/{action-type}` — Phase 14 creates those files. No `assertAllHandlersResolvable()` in Phase 13 (would fail before handlers exist). vitest invocation on Windows produces spurious `STATUS_STACK_BUFFER_OVERRUN` exits and worker timeout unhandled errors — pre-existing environment instability, not code failures.
 
+- **2026-05-02 (13-04 execution):** ApprovalActionRegistry is per-request not singleton (enabledModuleIds varies per org). `product` for qualified key sourced from ownerManifest.product at construction time (not from ApprovalActionSpec — would duplicate state). `assertAllHandlersResolvable()` ships but is NOT called in Phase 13; Phase 14 adds boot call once handler files exist. Telegram callback-registry iterates MODULE_REGISTRY directly (not via getAllTelegramCallbacks helper) — identical output, clearer product-tagging logic. ManifestForm 'use client' appears after comment header — Next.js App Router accepts directive before first import. Qualified key format: `{product}.{action_type}` (e.g. `draggonnb.damage_charge`). Callback data format: `{verb}:{product}:{key}:{resource_id}`.
+
 - **2026-04-27 (11-05 execution):** `organizations.activated_at` is ABSENT from live Supabase DB (psqfgzbjbgqrmjskdavs) — column exists in 00_initial_schema.sql but was never applied. `isInNewTenantPeriod()` uses `created_at` as fallback. Phase 12 must add migration for `activated_at`, backfill, then switch. Unit-testing BaseAgent subclasses requires `vi.mock('@/lib/config/env')` hoisted (not just mocking payfast) — env module validates eagerly at import. BrandSafetyAgent: Haiku temperature=0 correct for safety classification tasks. CampaignDrafterAgent: Sonnet default (creative multi-channel needs larger context).
 
 - **2026-04-26 (10-06 execution):** VAT formula locked as `Math.round(cents * 1.15)` — pure integer cent math, no float drift. en-ZA locale renders ZAR as "R599,00" (comma decimal + NBSP thousands) — kept as-is, tests use `\s+` regex. /pricing module picker is RSC + client split: server fetches `billing_addons_catalog`, client renders interactive total. addon IDs NEVER hard-coded — picker iterates whatever the catalog returns. Trust trio "3 business days to go live / Pay in Rands / Cancel anytime" replaces Pitfall F false copy in 4 locations (sections.tsx hero strip, PricingPreview, CTASection, register-interest.tsx). Hero illustration is Lucide gear icon placeholder pending custom SVG. Legacy localStorage `OnboardingChecklist` kept in repo (unreferenced) for safety; new API-backed `app/(dashboard)/_components/onboarding-checklist.tsx` is now the dashboard checklist.
@@ -148,7 +150,7 @@ Progress: [██████████] 100% (12/12 Phase 11 plans done) · v
 
 ## Session Continuity
 
-Last session: 2026-05-02 — Executed 13-03 (module manifest contract). Created 8 files: lib/modules/types.ts + lib/modules/registry.ts + 6 manifests. 450 LOC total. tsc clean on new files. 2 commits: 9829c0fd + 4da6714e.
+Last session: 2026-05-02 — Executed 13-04 (manifest-driven registries). Created 6 files: lib/approvals/registry.ts + lib/telegram/callback-registry.ts + lib/billing/line-type-registry.ts + lib/onboarding/manifest-form-builder.ts + app/(dashboard)/onboarding/wizard/manifest-form.tsx + __tests__/unit/modules/registry.test.ts. 467 LOC total. 15 tests passing. 2 task commits: 21d7caf5 + 33de84ea.
 Resume file: none.
 
 ### Session (2026-05-02) — Phase 13 Plan 13-03: Module Manifest Contract COMPLETE
