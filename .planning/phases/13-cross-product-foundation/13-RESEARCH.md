@@ -1643,3 +1643,17 @@ For Phase 13, the spike (13-05) will confirm which approach works. The bridge to
 ---
 
 *All codebase findings verified against live files at C:\Dev\draggonnb-platform and C:\Dev\DraggonnB\products\trophy-os on 2026-05-01.*
+
+---
+
+## Trophy OS Companion Upgrade (executed in Trophy repo, not here)
+
+When the Trophy repo session runs Phase 13 work, it must:
+1. Bump `@supabase/ssr` from `^0.9.0` to `^0.10.2` in `C:\Dev\DraggonnB\products\trophy-os\package.json`.
+2. Run `npm install`.
+3. No code refactor required — Trophy's `src/lib/supabase/server.ts` already uses getAll/setAll.
+4. Add `jose` `^5.10.0` to dependencies (Trophy's plan 13-06 consumer route imports it via @draggonnb/federation-shared).
+5. Create `.npmrc` at the Trophy repo root with the same `@draggonnb:registry=https://npm.pkg.github.com` line.
+6. Add `GITHUB_PACKAGES_TOKEN` to Trophy's Vercel project env vars.
+
+Cross-link: this hand-off is owned by DraggonnB Phase 13 plan 13-02 but executed during Trophy's parallel Phase 13 work.
