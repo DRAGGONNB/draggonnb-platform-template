@@ -12,9 +12,9 @@ See: .planning/PROJECT.md (updated 2026-04-24)
 
 Milestone: **v3.1 Operational Spine** (started 2026-05-01)
 Phase: 13 — Cross-Product Foundation (in progress)
-Plan: 13-02 COMPLETE + 13-03 COMPLETE + 13-04 COMPLETE (Wave 1+2 complete — 13-01 PayFast spike running in parallel)
-Status: **13-02 DONE 2026-05-02.** @supabase/ssr 0.10.2 + jose ^5.10.0 + getAll/setAll refactor + .npmrc @draggonnb scope. STACK-01, STACK-02, STACK-04, STACK-03 (DraggonnB-side) closed. **13-03 DONE 2026-05-02.** Module manifest contract shipped (MANIFEST-01 + MANIFEST-02 closed). **13-04 DONE 2026-05-02.** 4 manifest-driven registries shipped: ApprovalActionRegistry, Telegram callback registry, billing line-type registry, onboarding form builder + renderer. MANIFEST-03, MANIFEST-04, MANIFEST-05, MANIFEST-06 closed.
-Last activity: 2026-05-02 — Executed 13-04 (manifest-driven registries). 6 files created, 467 LOC, 15 tests passing. 2 task commits: 21d7caf5 (registries) + 33de84ea (onboarding form).
+Plan: 13-01 COMPLETE + 13-02 COMPLETE + 13-03 COMPLETE + 13-04 COMPLETE (Wave 1+2 complete + GATE-02 spike complete)
+Status: **13-01 DONE 2026-05-02.** PayFast sandbox spike: amount=CENTS confirmed, arbitrary-amount YES, hold-and-capture NO, idempotency NOT server-enforced. 5 bugs fixed in payfast-adhoc.ts + payfast.ts. GATE-02 + DAMAGE-05 closed. **13-02 DONE 2026-05-02.** @supabase/ssr 0.10.2 + jose ^5.10.0 + getAll/setAll refactor + .npmrc @draggonnb scope. STACK-01, STACK-02, STACK-04, STACK-03 (DraggonnB-side) closed. **13-03 DONE 2026-05-02.** Module manifest contract shipped (MANIFEST-01 + MANIFEST-02 closed). **13-04 DONE 2026-05-02.** 4 manifest-driven registries shipped: ApprovalActionRegistry, Telegram callback registry, billing line-type registry, onboarding form builder + renderer. MANIFEST-03, MANIFEST-04, MANIFEST-05, MANIFEST-06 closed.
+Last activity: 2026-05-02 — Executed 13-01 Task 2 (PayFast spike report + code corrections + tests). 1 task commit: b54e5677.
 
 ## Resume Next Session
 
@@ -29,7 +29,7 @@ Last activity: 2026-05-02 — Executed 13-04 (manifest-driven registries). 6 fil
 - Phase 15.0 (INVOICE+PAYROUTE) becomes first sub-plan, ahead of 15.1
 - Phase 13 picks up MANIFEST-* as foundational alongside SSO/NAV/STACK
 
-**13-04 DONE.** Next: Continue 13-05 (cross-product navigation shell) or 13-06/13-07 (remaining Wave 2 plans). 13-01 PayFast spike still in parallel.
+**13-01 DONE + 13-04 DONE.** Next: Continue 13-05 (cross-product navigation shell) or 13-06/13-07 (remaining Wave 2 plans). GATE-02 resolved — Phase 15 damage code unblocked.
 
 **Outstanding Swazulu artefacts** (out-of-band capture, not Phase 13 blockers — needed before Phase 15 Swazulu pilot):
 1. Finalised pricing sheet (lodge nightly + hunt day rate + animal price list + PH/vehicle/slaughter rates)
@@ -105,6 +105,8 @@ Progress: [██████████] 100% (12/12 Phase 11 plans done) · v
 
 ### Decisions (v3.0-specific, most recent first)
 
+- **2026-05-02 (13-01 execution — PayFast spike):** Amount unit = INTEGER CENTS (Call A 250.00 rands → HTTP 400 "Integer Expected"; Call B 25000 cents → HTTP 200). Arbitrary-amount charges against a Subscribe token = YES. Hold-and-capture = UNAVAILABLE (response has only code/status/data fields). Idempotency = NOT server-enforced (duplicate m_payment_id creates a new charge). Phase 15 damage architecture: immediate-charge-on-approval (no hold window). Phase 15 must enforce idempotency client-side via DB check before calling chargeAdhoc(). Two distinct PayFast signature algorithms: form (insertion order, passphrase trailing, + for spaces) vs API (ksort, passphrase merged as sorted field). Wrong URL for API: api.payfast.co.za for both modes; sandbox via ?testing=true (not sandbox.payfast.co.za which returns HTTP 405). 5 production bugs fixed in payfast-adhoc.ts + payfast.ts. GATE-02 + DAMAGE-05 closed.
+
 - **2026-05-02 (13-02 execution):** @supabase/ssr upgrade: refactor + bump must happen in same commit (LATENT-01 — TypeScript won't catch silent API mismatch between 0.1.0 get/set/remove shape and 0.10.2 getAll/setAll shape). Middleware setAll pattern: iterate request.cookies.set first, then response = NextResponse.next({ request }), then iterate response.cookies.set — two-pass required. CATASTROPHIC #1: setAll in middleware MUST NEVER include domain option (per-host cookies only; Domain=.draggonnb.co.za would leak sessions across tenant subdomains). Pre-existing test failures (53/649): dashboard-page mock missing maybeSingle (added in 12-07, mock never updated), component timeout failures, env mock failures — all pre-13-02. .npmrc had existing legacy-peer-deps=true, preserved. GITHUB_PACKAGES_TOKEN needed in Vercel for @draggonnb/federation-shared install (needed at 13-05, not now).
 
 - **2026-05-02 (13-03 execution):** Module manifest contract pattern established. `MODULE_REGISTRY` uses explicit static imports (NOT filesystem glob — Vercel edge runtime incompatible with `fs.glob()`). `MODULE_REGISTRY` is `readonly` to prevent runtime mutation. Events module manifest is a placeholder (referenced in module_registry but not feature-active in v3.1). `security_ops` telegram_callbacks empty — Elijah uses WhatsApp not Telegram. `ai_agents` approval_actions empty — AI agents propose actions but ownership of the resulting approval belongs to the module handling the action (e.g., accommodation owns damage_charge). `analytics` all-empty — read-only consumer. handler_path values in approval_actions point to `lib/approvals/handlers/{action-type}` — Phase 14 creates those files. No `assertAllHandlersResolvable()` in Phase 13 (would fail before handlers exist). vitest invocation on Windows produces spurious `STATUS_STACK_BUFFER_OVERRUN` exits and worker timeout unhandled errors — pre-existing environment instability, not code failures.
@@ -150,8 +152,25 @@ Progress: [██████████] 100% (12/12 Phase 11 plans done) · v
 
 ## Session Continuity
 
-Last session: 2026-05-02 — Executed 13-04 (manifest-driven registries). Created 6 files: lib/approvals/registry.ts + lib/telegram/callback-registry.ts + lib/billing/line-type-registry.ts + lib/onboarding/manifest-form-builder.ts + app/(dashboard)/onboarding/wizard/manifest-form.tsx + __tests__/unit/modules/registry.test.ts. 467 LOC total. 15 tests passing. 2 task commits: 21d7caf5 + 33de84ea.
+Last session: 2026-05-02 — Executed 13-01 Task 2 (PayFast spike report + 5 code corrections + 15 unit tests). 1 task commit: b54e5677. GATE-02 + DAMAGE-05 resolved.
 Resume file: none.
+
+### Session (2026-05-02) — Phase 13 Plan 13-01: PayFast Sandbox Spike COMPLETE
+
+**What was done:**
+1. Task 2: Wrote 13-PAYFAST-SANDBOX-SPIKE.md with 3 confirmations, response excerpts, 5 bug write-ups.
+2. Applied 5 production bug fixes: URL base (sandbox→api.payfast.co.za), amount unit (rands→cents), form-sig sort order (alpha sort removed), passphrase space encoding (%20→+), API sig helper added.
+3. Created __tests__/unit/payments/payfast-adhoc.test.ts — 15 tests all passing.
+4. Marked GATE-02 + DAMAGE-05 [x] RESOLVED in REQUIREMENTS.md.
+5. Added payfast-raw-response.html to .gitignore.
+6. Committed all diagnostic spike probe scripts (4 files) for audit trail.
+
+**Key findings:** PayFast adhoc API = integer cents, arbitrary amounts supported, hold-and-capture unavailable, idempotency client-side responsibility. Two distinct signature algorithms (form vs API).
+
+### Session (2026-05-02) — Phase 13 Plan 13-04: Manifest-Driven Registries COMPLETE
+
+**What was done:**
+Executed 13-04 (manifest-driven registries). Created 6 files: lib/approvals/registry.ts + lib/telegram/callback-registry.ts + lib/billing/line-type-registry.ts + lib/onboarding/manifest-form-builder.ts + app/(dashboard)/onboarding/wizard/manifest-form.tsx + __tests__/unit/modules/registry.test.ts. 467 LOC total. 15 tests passing. 2 task commits: 21d7caf5 + 33de84ea.
 
 ### Session (2026-05-02) — Phase 13 Plan 13-03: Module Manifest Contract COMPLETE
 
