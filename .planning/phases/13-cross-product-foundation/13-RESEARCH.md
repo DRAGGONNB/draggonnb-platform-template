@@ -1657,3 +1657,35 @@ When the Trophy repo session runs Phase 13 work, it must:
 6. Add `GITHUB_PACKAGES_TOKEN` to Trophy's Vercel project env vars.
 
 Cross-link: this hand-off is owned by DraggonnB Phase 13 plan 13-02 but executed during Trophy's parallel Phase 13 work.
+
+### Install @draggonnb/federation-shared@1.0.0 in Trophy (UPDATED 2026-05-03)
+
+The package is now live. Trophy session must run:
+
+```bash
+# From C:\Dev\DraggonnB\products\trophy-os
+npm install @draggonnb/federation-shared@1.0.0
+```
+
+**Critical: use exact version pin, NO caret.** The package is a coordinated-deploy type — both issuer (DraggonnB) and consumer (Trophy) must run the same version. Add to `package.json` as:
+
+```json
+"@draggonnb/federation-shared": "1.0.0"
+```
+
+NOT `"^1.0.0"`. If npm adds the caret automatically, remove it before committing.
+
+**Vercel env vars required on Trophy Vercel project** (Production + Preview + Development):
+
+| Variable | Value |
+|----------|-------|
+| `GITHUB_PACKAGES_TOKEN` | `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` (same classic PAT as DraggonnB) |
+| `SSO_BRIDGE_SECRET` | `74056e6e2d7a99a42e1ebc9ae493f583ee01d1b9be1b67943b1574c0dece6145` |
+
+Both values must be IDENTICAL between DraggonnB and Trophy — the bridge JWT is signed with SSO_BRIDGE_SECRET and verified on the consumer. Asymmetric values = all SSO logins fail.
+
+**Verify install:**
+```bash
+node -e "const f = require('@draggonnb/federation-shared'); console.log(Object.keys(f))"
+# Expected: [ 'asDraggonnbOrgId', 'asTrophyOrgId', 'BRIDGE_TOKEN_TTL_SECONDS', 'LOGOUT_TOKEN_TTL_SECONDS', 'signBridgeToken', 'verifyBridgeToken', 'signLogoutToken', 'verifyLogoutToken' ]
+```

@@ -13,7 +13,8 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
     "test:components": "vitest run --reporter=verbose __tests__/components",
-    "provisioning:resume": "tsx scripts/provisioning/resume.ts"
+    "provisioning:resume": "tsx scripts/provisioning/resume.ts",
+    "check:federation-pinned": "node scripts/ci/check-federation-pinned.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.73.0",
@@ -34,7 +35,6 @@
     "@radix-ui/react-toast": "^1.1.5",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.105.1",
-    "jose": "^5.10.0",
     "@tanstack/react-table": "^8.20.0",
     "cheerio": "^1.2.0",
     "class-variance-authority": "^0.7.0",
@@ -42,6 +42,7 @@
     "date-fns": "^3.3.0",
     "date-fns-tz": "^3.2.0",
     "exponential-backoff": "^3.1.3",
+    "jose": "^5.10.0",
     "konva": "^10.2.3",
     "lucide-react": "^0.312.0",
     "next": "14.2.33",

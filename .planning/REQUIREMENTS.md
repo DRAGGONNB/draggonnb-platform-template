@@ -32,18 +32,18 @@
 
 - [ ] **SSO-01**: User clicks "Trophy OS" in DraggonnB sidebar; lands on Trophy OS authenticated within ~2 seconds. Reverse direction works the same.
 - [ ] **SSO-02**: SSO bridge endpoint lives at `auth.draggonnb.com/api/sso/issue` (issuer) and `<consumer>/api/sso/consume` (each app's consumer). HS256 JWTs signed with `SSO_BRIDGE_SECRET` env var.
-- [ ] **SSO-03**: Bridge tokens are 60s TTL maximum, single-use, with `jti` UUID tracked in `sso_bridge_tokens` table — replays return 401 + audit row written.
+- [x] **SSO-03** (DONE 2026-05-03 via 13-05): `sso_bridge_tokens` table created in live Supabase with FORCE RLS, `consumed_at NULLABLE`, jti UUID PK, expires_at index. Replay protection schema complete. Bridge implementation in plan 13-06.
 - [ ] **SSO-04**: Token delivery via URL fragment (`#token=...`), Referrer-Policy `no-referrer` set on consumer route, never query string. CSP headers prevent token leak via mixed-content embeds.
 - [ ] **SSO-05**: Bridge token carries explicit `intended_tenant_id`, `origin_tenant_id`, `user_id`, and `intended_product` (`draggonnb`/`trophy`). Both tenant fields validated against `cross_product_org_links` at consume time.
 - [ ] **SSO-06**: New middleware `tenant_membership_proof` runs BEFORE `getUserOrg()` on every protected route in both apps. Asserts `(user_id, tenant_id)` membership exists with `is_active=true`. No row = 403, never silent auto-create.
 - [ ] **SSO-07**: Per-host session cookies — `app.draggonnb.co.za`, `*.draggonnb.co.za` tenant subdomains, `trophyos.co.za`, `auth.draggonnb.com` each get their own cookie. NEVER `Domain=.draggonnb.co.za`.
 - [ ] **SSO-08**: CI lint blocks `revalidate=N` on any auth-touching route (Pitfall 1 guard) and blocks Supabase client imports without `getUserOrg()` chain.
-- [ ] **SSO-09**: `cross_product_org_links` table maps `(draggonnb_org_id, trophy_org_id, status, created_at)`. Per-org one-to-one for v3.1; junction-shaped for future multi-farm-per-org.
-- [ ] **SSO-10**: `organizations.linked_trophy_org_id UUID NULL REFERENCES orgs(id) ON DELETE SET NULL` column added (DraggonnB schema, multi-step OPS-05 migration).
+- [x] **SSO-09** (DONE 2026-05-03 via 13-05): `cross_product_org_links` table created in live Supabase with UNIQUE(draggonnb_org_id, trophy_org_id), FORCE RLS, SELECT policy for org members. FK to orgs(id) + organizations(id) with ON DELETE CASCADE.
+- [x] **SSO-10** (STEP 1/4 DONE 2026-05-03 via 13-05): `organizations.linked_trophy_org_id UUID NULL` column added in live Supabase (OPS-05 Step 1). Partial index on non-null values. FK constraint deferred to plan 13-07 (Step 4 — after Trophy schema confirmed live).
 - [ ] **SSO-11**: Provisioning saga gains step 10 (`activate-trophy-module`) — when DraggonnB activates `module_id='trophy'` for an org, idempotently creates a Trophy `orgs` row and writes `cross_product_org_links` mapping. Step is retryable + paused-on-failure (existing saga semantics).
-- [ ] **SSO-12**: Brand types `DraggonnbOrgId` and `TrophyOrgId` exported from `@draggonnb/federation-shared` package; compiler refuses to mix.
+- [x] **SSO-12** (DONE 2026-05-03 via 13-05): `DraggonnbOrgId` and `TrophyOrgId` opaque brand types + `asDraggonnbOrgId` / `asTrophyOrgId` helpers exported from `@draggonnb/federation-shared@1.0.0`. Unique symbol brands prevent cross-type assignment at compile time.
 - [ ] **SSO-13**: Federation logout — DraggonnB sign-out invalidates the user's Trophy session via cross-product ping (best-effort, async). Trophy logout same in reverse.
-- [ ] **SSO-14**: Phase 13 SSO sandbox spike completed before bridge implementation — validates HS256 vs ES256, fragment-vs-query delivery, exact CSP headers, edge IP allow-listing.
+- [x] **SSO-14** (DONE 2026-05-03 via 13-05): SSO architecture spike completed. HS256 locked (D1), fragment delivery locked, CSP headers locked, edge IP allow-listing rejected (Vercel no static egress IPs), Option B session bridging locked (pass tokens in JWT, call setSession on consumer). See `.planning/phases/13-cross-product-foundation/13-SSO-SPIKE.md`.
 
 ### Cross-Product Navigation (NAV)
 
@@ -166,7 +166,7 @@
 - [ ] **STACK-04**: `jose ^5.x` added to DraggonnB platform, Trophy OS, and `@draggonnb/federation-shared` for HS256 JWT operations.
 - [ ] **STACK-05**: `grammy ^1.42.0` added to DraggonnB platform; existing `lib/accommodation/telegram/ops-bot.ts` (raw Bot API) refactored onto grammY in same PR (single bot framework in codebase).
 - [ ] **STACK-06**: `@serwist/next ^9.5.10` and `serwist ^9.5.10` (devDep) added to DraggonnB platform for PWA service worker.
-- [ ] **STACK-07**: Private package `@draggonnb/federation-shared` published to GitHub Packages registry — initial contents: HS256 JWT sign/verify, `ApprovalRequest` types, brand types `DraggonnbOrgId`/`TrophyOrgId`. Hard cap 200 LOC. Both products lock to exact version (no `^` ranges).
+- [x] **STACK-07** (DONE 2026-05-03 via 13-05): `@draggonnb/federation-shared@1.0.0` published to GitHub Packages at https://github.com/DRAGGONNB/federation-shared/pkgs/npm/federation-shared. 138 LOC (under 200 cap). Exports: brand types, BridgeTokenPayload, LogoutTokenPayload, ApprovalRequest, BillingLineInput, signBridgeToken/verifyBridgeToken, signLogoutToken/verifyLogoutToken, constants. DraggonnB install verified (tsc clean). CI lint guard `scripts/ci/check-federation-pinned.mjs` added. Fine-grained PAT rejected by GitHub; classic PAT with write:packages required.
 
 ### Pre-Phase Gates (GATE)
 
@@ -292,15 +292,15 @@ Populated by gsd-roadmapper 2026-05-01. Pre-allocation preserved unchanged — n
 | TROPHY-01..11 | 16 | Pending | 16.1 Trophy PayFast wiring (unblocks 16.2) |
 | TROPHY-12 | 16 | Pending | 16.2 multi-hunter sandbox spike before per-hunter charge ships |
 | CARRY-01..08 | 16 | Pending | 16.5 v3.0 carry-forward + DraggonnB-only mobile sweep |
-| STACK-01..04 | 13 | Pending | Supabase SSR upgrade, jose adoption — shared infra for all subsequent phases |
+| STACK-01..04 | 13 | DONE 2026-05-02 | @supabase/ssr 0.10.2 upgrade + jose + .npmrc — completed in 13-02 |
 | STACK-05 | 14 | Pending | grammY adoption (Telegram framework); ops-bot refactor in same PR |
 | STACK-06 | 16 | Pending | @serwist/next + serwist (PWA service worker) |
-| STACK-07 | 13 | Pending | @draggonnb/federation-shared private package |
-| MANIFEST-01..06 | 13 | Pending | Module manifest contract + dynamic onboarding/Telegram/approval registries (D9) |
+| STACK-07 | 13 | DONE 2026-05-03 | @draggonnb/federation-shared@1.0.0 published — 138 LOC, GitHub Packages, CI lint guard |
+| MANIFEST-01..06 | 13 | DONE 2026-05-02 | Module manifest contract + 4 registries — completed in 13-03 + 13-04 |
 | INVOICE-01..10 | 15 | Pending | 15.0 polymorphic billing schema + line emission API (D11) — FIRST sub-plan, before 15.1 |
 | PAYROUTE-01..05 | 15 | Pending | 15.0 per-tenant payment routing config + fee calc + EFT fallback (D3) |
 | GATE-01 | 13 | RESOLVED 2026-05-01 | Swazulu discovery completed via DB audit + owner-side knowledge — see SWAZULU-DISCOVERY.md |
-| GATE-02 | 13 | Pending | PayFast sandbox spike — FIRST plan inside Phase 13; unblocks Phase 15 |
+| GATE-02 | 13 | RESOLVED 2026-05-02 | PayFast sandbox spike complete — amount=CENTS, arbitrary charges YES, hold-and-capture NO — see 13-PAYFAST-SANDBOX-SPIKE.md |
 
 ### Sequence-critical dependencies (cross-phase)
 
