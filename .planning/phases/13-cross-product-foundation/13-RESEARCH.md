@@ -1689,3 +1689,40 @@ Both values must be IDENTICAL between DraggonnB and Trophy — the bridge JWT is
 node -e "const f = require('@draggonnb/federation-shared'); console.log(Object.keys(f))"
 # Expected: [ 'asDraggonnbOrgId', 'asTrophyOrgId', 'BRIDGE_TOKEN_TTL_SECONDS', 'LOGOUT_TOKEN_TTL_SECONDS', 'signBridgeToken', 'verifyBridgeToken', 'signLogoutToken', 'verifyLogoutToken' ]
 ```
+
+### Trophy-Side SSO Routes Required for Bidirectional Flow (UPDATED 2026-05-03 — 13-07 wrap-up)
+
+DraggonnB Phase 13 is now complete on the DraggonnB side. The `/api/sso/validate` route at `app/api/sso/validate/route.ts` in DraggonnB handles **inbound Trophy → DraggonnB** token validation. However, for the Trophy → DraggonnB direction to work end-to-end, Trophy must implement its own parallel issuer and consumer.
+
+**Trophy must implement (mirroring DraggonnB's Phase 13-06 work):**
+
+1. **`src/app/api/sso/issue/route.ts`** (Trophy-side issuer) — when a Trophy user clicks "DraggonnB" in the Trophy sidebar:
+   - Signs a `BridgeTokenPayload` using `signBridgeToken()` from `@draggonnb/federation-shared@1.0.0`
+   - Writes the jti to `sso_bridge_tokens` table (shared Supabase project, same table)
+   - Returns HTTP 302 redirect to `{draggonnb_platform}/sso/consume#token={jwt}`
+   - Target URL: `https://app.draggonnb.co.za/sso/consume#token=...` (or platform domain for dev)
+   - `intended_product` field in JWT: `'draggonnb'`
+
+2. **`src/app/sso/consume/page.tsx`** (Trophy-side consumer) — when a DraggonnB user is bridged into Trophy:
+   - Reads `window.location.hash` on client-side
+   - POSTs the raw token to Trophy's own `POST /api/sso/validate`
+   - Calls `supabase.auth.setSession({ access_token, refresh_token })` from the validate response
+   - Redirects to `/dashboard` (Trophy's dashboard)
+   - Must set CSP header: `frame-ancestors none` to block iframe fragment extraction
+   - Must set `Referrer-Policy: no-referrer` on the route
+
+3. **`POST /api/sso/validate`** (Trophy-side validate) — equivalent of DraggonnB's validate route:
+   - Verifies the JWT using `verifyBridgeToken()` from `@draggonnb/federation-shared@1.0.0`
+   - Checks `sso_bridge_tokens.consumed_at IS NULL` for the jti (replay guard)
+   - Sets `consumed_at = now()` atomically
+   - Validates `cross_product_org_links` row exists for the org pair
+   - Returns `{ access_token, refresh_token }` from the existing Supabase session
+
+4. **Trophy middleware membership check** — equivalent of DraggonnB's `verifyMembership()`:
+   - Checks `org_members(user_id, org_id, is_active=true)` for every protected Trophy route
+   - No row = 403, redirect to Trophy's equivalent of `/dashboard/activate-trophy?reason=missing_trophy_membership`
+   - Never auto-creates an `org_members` row (D2 guard)
+
+**Note:** DraggonnB's `/api/sso/validate` route (built in 13-06) already handles the **DraggonnB → Trophy** direction correctly. Trophy's consumer (`/sso/consume`) calls DraggonnB's validate when the token has `intended_product='trophy'`. The routes are symmetric: each product validates tokens intended for itself.
+
+**Cross-reference:** DraggonnB's consumer page (`app/sso/consume/page.tsx`) and validate route (`app/api/sso/validate/route.ts`) are the templates Trophy should mirror. The `lib/sso/jwt.ts` wrapper pattern (binding `SSO_BRIDGE_SECRET` to `signBridgeToken`/`verifyBridgeToken`) should be replicated in Trophy as `src/lib/sso/jwt.ts`.

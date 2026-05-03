@@ -11,10 +11,10 @@ See: .planning/PROJECT.md (updated 2026-04-24)
 ## Current Position
 
 Milestone: **v3.1 Operational Spine** (started 2026-05-01)
-Phase: 13 — Cross-Product Foundation (in progress)
-Plan: 13-01 COMPLETE + 13-02 COMPLETE + 13-03 COMPLETE + 13-04 COMPLETE + 13-05 COMPLETE + 13-06 COMPLETE + 13-07 CODE COMPLETE / migrations pending (Wave 1+2+3+4+5 code complete)
-Status: **13-07 CODE DONE 2026-05-03.** Cross-product sidebar + activate-trophy saga: TrophyCrossLink sidebar component (active=bridge link, inactive=CTA), LATENT-02 middleware header injection (x-linked-trophy-org-id), activate-trophy-module saga step 10 (idempotent 4-write transactional), /dashboard/activate-trophy page + ActivateTrophyForm + POST /api/activate-trophy, set_tenant_module_config_path JSONB RPC migration authored, FK constraint migration authored. 2 task commits d5ed65a0 + fa507e2e. tsc clean. CI guards pass. **BLOCKED: 2 migrations need applying** — Supabase Management API PAT expired; orchestrator must apply via Dashboard or fresh PAT. NAV-01, NAV-02, NAV-03, NAV-04, SSO-10 Step4, SSO-11 closed (pending migration apply). **13-06 DONE 2026-05-03.** SSO bridge end-to-end: issuer (GET /api/sso/issue), validate consumer (POST /api/sso/validate), consume page (/sso/consume), federation logout (/api/sso/invalidate), tenant_membership_proof middleware, LATENT-03 allowAutoCreate fix, check-sso-lint.mjs CI guard. 9 REQ-IDs closed: SSO-01, SSO-02 (partial — issuer callable, auth.draggonnb.com alias deferred to Phase 16), SSO-04, SSO-05, SSO-06, SSO-07, SSO-08, SSO-11, SSO-13. 7 unit tests pass.
-Last activity: 2026-05-03 — Executed 13-07 (cross-product sidebar + saga step 10: 2 code tasks, 7 files created, 4 modified, 2 commits d5ed65a0 + fa507e2e). Blocked on migration apply (PAT expired).
+Phase: 13 — Cross-Product Foundation (COMPLETE 2026-05-03)
+Plan: 13-01 COMPLETE + 13-02 COMPLETE + 13-03 COMPLETE + 13-04 COMPLETE + 13-05 COMPLETE + 13-06 COMPLETE + 13-07 COMPLETE (all 7/7 plans done)
+Status: **PHASE 13 COMPLETE 2026-05-03.** All code committed + both pending migrations applied to live Supabase (psqfgzbjbgqrmjskdavs) by orchestrator via MCP. 13-07 final wrap-up: tsc clean (pre-existing elijah-full + social-content-full errors only), `check-sso-lint.mjs` exits 0, `check-federation-pinned.mjs` exits 0, module registry tests pass (15/15). REQ-IDs marked complete: NAV-01, NAV-03, NAV-04, SSO-10 (all 4 steps), SSO-11, plus SSO-04..SSO-08, SSO-13 (from 13-06, not previously marked). Trophy OS Companion section in 13-RESEARCH.md extended with bidirectional SSO route requirements. Phase 14 ready (pending Trophy companion session: 4 items for full E2E SSO test).
+Last activity: 2026-05-03 — Phase 13 wrap-up complete. Migrations applied. REQ-IDs updated. 13-RESEARCH.md Trophy companion section extended. SUMMARY updated with migration confirmation.
 
 ## Resume Next Session
 
@@ -29,7 +29,7 @@ Last activity: 2026-05-03 — Executed 13-07 (cross-product sidebar + saga step 
 - Phase 15.0 (INVOICE+PAYROUTE) becomes first sub-plan, ahead of 15.1
 - Phase 13 picks up MANIFEST-* as foundational alongside SSO/NAV/STACK
 
-**13-07 CODE COMPLETE.** Next: Apply 2 migrations to live Supabase (Supabase Dashboard SQL Editor or fresh PAT). Migration #1: `supabase/migrations/20260503125702_set_tenant_module_config_path_rpc.sql` (JSONB path-set RPC). Migration #2: `supabase/migrations/20260503125800_add_linked_trophy_org_id_fk.sql` (FK constraint — orphan check already verified clean). After migrations applied: Phase 13 exit criterion achieved. Phase 14 still BLOCKED until Trophy ships 4 companion items (middleware + issue route + consume page + membership check). SSO_BRIDGE_SECRET set in both Vercel projects. GITHUB_PACKAGES_TOKEN needed in Trophy Vercel.
+**PHASE 13 COMPLETE.** Both migrations applied to live DB via orchestrator MCP. Phase 13 exit criterion structurally met: code + DB in sync, tsc clean, CI guards pass. Runtime E2E verification (sidebar click → Trophy authenticated in ~2s) deferred to manual smoke — requires Trophy companion session to ship 4 items. Phase 14 ready to plan. Carry-forward: regenerate `apply-migration.mjs` PAT before Phase 14 migration work.
 
 **Outstanding Swazulu artefacts** (out-of-band capture, not Phase 13 blockers — needed before Phase 15 Swazulu pilot):
 1. Finalised pricing sheet (lodge nightly + hunt day rate + animal price list + PH/vehicle/slaughter rates)
@@ -111,7 +111,7 @@ Progress: [██████████] 100% (12/12 Phase 11 plans done) · v
 
 - **2026-05-02 (13-03 execution):** Module manifest contract pattern established. `MODULE_REGISTRY` uses explicit static imports (NOT filesystem glob — Vercel edge runtime incompatible with `fs.glob()`). `MODULE_REGISTRY` is `readonly` to prevent runtime mutation. Events module manifest is a placeholder (referenced in module_registry but not feature-active in v3.1). `security_ops` telegram_callbacks empty — Elijah uses WhatsApp not Telegram. `ai_agents` approval_actions empty — AI agents propose actions but ownership of the resulting approval belongs to the module handling the action (e.g., accommodation owns damage_charge). `analytics` all-empty — read-only consumer. handler_path values in approval_actions point to `lib/approvals/handlers/{action-type}` — Phase 14 creates those files. No `assertAllHandlersResolvable()` in Phase 13 (would fail before handlers exist). vitest invocation on Windows produces spurious `STATUS_STACK_BUFFER_OVERRUN` exits and worker timeout unhandled errors — pre-existing environment instability, not code failures.
 
-- **2026-05-03 (13-07 execution):** Cross-product sidebar + activate-trophy saga complete. Trophy orgs.type enum confirmed: ('game_farm','outfitter','taxidermist','processor','logistics') — default='game_farm' for DraggonnB-linked Trophy orgs. Saga step wiring = direct-call pattern (not orchestrator registry) — activate-trophy CTA path doesn't need full provisioning chain; orchestrator wiring deferred to Phase 15. JSONB cache (set_tenant_module_config_path RPC) is best-effort; canonical source is organizations.linked_trophy_org_id FK column, injected as x-linked-trophy-org-id header by middleware (LATENT-02 fix). Platform-domain sidebar fallback: sidebar-server.tsx queries DB directly when header absent (localhost/apex domain sessions). Supabase Management API PAT expired — 2 migrations committed to repo but not applied to live DB. Pre-conditions verified: orgs table accessible, zero organizations with non-null linked_trophy_org_id.
+- **2026-05-03 (13-07 complete):** Cross-product sidebar + activate-trophy saga + both migrations LIVE. Trophy orgs.type enum: ('game_farm','outfitter','taxidermist','processor','logistics') — default='game_farm'. Saga step wiring = direct-call pattern (not orchestrator registry) — deferred to Phase 15 for full provisioning chain. JSONB cache (set_tenant_module_config_path RPC) best-effort; canonical source = organizations.linked_trophy_org_id FK + x-linked-trophy-org-id middleware header (LATENT-02 fix). Platform-domain sidebar fallback: sidebar-server.tsx queries DB directly when header absent. apply-migration.mjs PAT expired (sbp_98ba...) — regenerate before Phase 14 migration work.
 
 - **2026-05-03 (13-06 execution):** SSO bridge end-to-end shipped. BridgeTokenPayload in federation-shared v1.0.0 has origin_org/target_org fields in addition to draggonnb_org/trophy_org — issuer populates both pairs identically. SSO-08b lint scoped to app/(dashboard)/**/*.tsx only (NOT all api routes — webhook/M2M/public/restaurant have alternative auth); broad scope produces 94 false positives. invalidate route uses sso_bridge_tokens table with sentinel 00000000 org IDs for logout jti tracking (logout has no org context). auth.draggonnb.com Vercel alias deferred to Phase 16 (no DNS/Vercel alias configured in Phase 13). Trophy companion blockers: 4 items required before Phase 14 end-to-end SSO test.
 
@@ -158,8 +158,8 @@ Progress: [██████████] 100% (12/12 Phase 11 plans done) · v
 
 ## Session Continuity
 
-Last session: 2026-05-03 — Executed 13-07 (cross-product sidebar + saga step 10). 2 task commits: d5ed65a0 + fa507e2e. tsc clean. CI guards pass. Blocked at migration checkpoint.
-Resume file: none. Checkpoint: apply 2 migrations to Supabase then confirm Phase 13 complete.
+Last session: 2026-05-03 — Phase 13 wrap-up. Applied 2 migrations via orchestrator MCP. REQ-IDs updated (NAV-01, NAV-03, NAV-04, SSO-04..SSO-08, SSO-10, SSO-11, SSO-13). 13-RESEARCH.md Trophy companion section extended. 13-07-SUMMARY.md migration status updated. REQUIREMENTS.md marked complete.
+Resume file: none. Phase 13 COMPLETE. Start Phase 14 with `/gsd:plan-phase 14`.
 
 ### Session (2026-05-02) — Phase 13 Plan 13-01: PayFast Sandbox Spike COMPLETE
 

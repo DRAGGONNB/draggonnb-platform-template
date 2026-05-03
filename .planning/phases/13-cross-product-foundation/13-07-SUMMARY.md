@@ -85,14 +85,15 @@ completed: 2026-05-03
 - **Activation API route:** `POST /api/activate-trophy` — admin-gated, fully-typed `ProvisioningJob` (no `as any`), calls `activateTrophyModule()` saga step
 - **Saga step 10:** `activateTrophyModule()` — idempotent (returns existing if `linked_trophy_org_id` already set), transactional (rollback Trophy orgs row if `cross_product_org_links` fails; rollback both if `organizations` update fails), JSONB cache best-effort
 - **Trophy `orgs.type` confirmed:** `'game_farm'` from `trophy-os/supabase/migrations/001_initial.sql` CHECK constraint `('game_farm','outfitter','taxidermist','processor','logistics')`
-- **Two migrations authored:** RPC migration (`set_tenant_module_config_path`) + FK migration (`fk_organizations_linked_trophy_org`); both written to `supabase/migrations/`
+- **Two migrations applied to live Supabase (psqfgzbjbgqrmjskdavs) via MCP:** RPC migration (`set_tenant_module_config_path`) + FK migration (`fk_organizations_linked_trophy_org`). Verified: `pg_proc` returns 1 row for the RPC; `pg_constraint` returns `FOREIGN KEY (linked_trophy_org_id) REFERENCES orgs(id) ON DELETE SET NULL` with `confdeltype='n'`. Applied by orchestrator via `mcp__plugin_supabase_supabase__apply_migration` after PAT-expired executor checkpoint.
 
 ## Task Commits
 
 1. **Task 1: Provisioning saga step + migrations + types** — `d5ed65a0` (feat)
 2. **Task 2: Sidebar cross-link + activate page + middleware header** — `fa507e2e` (feat)
 
-**Plan metadata:** (committed at end of session, pending migration checkpoint resolution)
+**Plan metadata:** `67a5a3ff` (docs) — SUMMARY + STATE update
+**Migration apply:** Orchestrator applied both migrations via Supabase MCP after PAT-expired checkpoint. Confirmed live in DB by orchestrator verification queries.
 
 ## Files Created/Modified
 
@@ -158,36 +159,24 @@ completed: 2026-05-03
 
 ## Authentication Gates
 
-**Migration application blocked by expired PAT:**
+**Migration application — RESOLVED by orchestrator 2026-05-03:**
 
-- `supabase/migrations/20260503125702_set_tenant_module_config_path_rpc.sql` — NOT YET APPLIED
-- `supabase/migrations/20260503125800_add_linked_trophy_org_id_fk.sql` — NOT YET APPLIED
+Both migrations were applied to live Supabase project `psqfgzbjbgqrmjskdavs` by the orchestrator via `mcp__plugin_supabase_supabase__apply_migration` after executor hit PAT-expired checkpoint.
 
-**Verification commands (run after applying):**
-```sql
--- Verify RPC:
-SELECT proname FROM pg_proc WHERE proname = 'set_tenant_module_config_path';
--- Expected: 1 row
+- `supabase/migrations/20260503125702_set_tenant_module_config_path_rpc.sql` — APPLIED. Verified: `EXISTS(SELECT 1 FROM pg_proc WHERE proname='set_tenant_module_config_path')` = `true`.
+- `supabase/migrations/20260503125800_add_linked_trophy_org_id_fk.sql` — APPLIED. Verified: `pg_get_constraintdef` returns `FOREIGN KEY (linked_trophy_org_id) REFERENCES orgs(id) ON DELETE SET NULL`, `confdeltype = 'n'` (SET NULL).
 
--- Verify FK:
-SELECT conname FROM pg_constraint WHERE conname = 'fk_organizations_linked_trophy_org';
--- Expected: 1 row
-```
+**Pre-flight checks confirmed by orchestrator before applying FK:**
+- Orphan count: `SELECT COUNT(*) FROM organizations WHERE linked_trophy_org_id IS NOT NULL` = 0 (FK safe to apply directly)
+- `orgs` table confirmed live in same Supabase project
 
-**Orphan pre-check (already verified clean before authoring FK migration):**
-```sql
-SELECT COUNT(*) AS orphan_count
-FROM organizations
-WHERE linked_trophy_org_id IS NOT NULL
-  AND linked_trophy_org_id NOT IN (SELECT id FROM orgs);
--- Expected: 0 (verified via Supabase JS client — zero rows with non-null linked_trophy_org_id exist)
-```
+**Carry-forward:** The local `apply-migration.mjs` script PAT (`sbp_98ba...`) is expired and needs regeneration before Phase 14 work begins. All Phase 13 migrations are in `supabase/migrations/` with timestamps as the canonical record — the live DB now matches.
 
 ## Next Phase Readiness
 
 **Phase 13 exit criterion:** A Swazulu admin clicks "Trophy OS" in the sidebar → lands authenticated in Trophy in ~2 seconds.
 
-**DraggonnB side (this plan):** COMPLETE (code deployed, migrations pending).
+**DraggonnB side (this plan):** COMPLETE (code deployed + both migrations applied to live DB).
 **Trophy side:** Still needs 4 companion items before end-to-end SSO test:
 1. Trophy `src/middleware.ts` — session refresh + org_members membership check
 2. Trophy `/api/sso/issue` route — mirrors DraggonnB issuer; signs with same `SSO_BRIDGE_SECRET`
@@ -204,8 +193,8 @@ WHERE linked_trophy_org_id IS NOT NULL
 - NAV-02: cross-product navigation UX (COMPLETE — DraggonnB side)
 - NAV-03: provisioning saga step 10 (COMPLETE — direct-call pattern)
 - NAV-04: activate empty state, no silent auto-create (COMPLETE)
-- SSO-11: JSONB RPC + saga step (COMPLETE — pending RPC migration apply)
-- SSO-10 Step 4: FK constraint (COMPLETE — pending FK migration apply)
+- SSO-11: JSONB RPC + saga step (COMPLETE — migrations applied to live DB)
+- SSO-10 Step 4: FK constraint (COMPLETE — FK migration applied to live DB, OPS-05 4-step sequence closed)
 
 **Hand-off to Trophy parallel session:**
 - Install `@draggonnb/federation-shared@1.0.0` (exact pin, see 13-05 SUMMARY)
