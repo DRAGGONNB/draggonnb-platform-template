@@ -72,6 +72,11 @@ export interface GetUserOrgResult {
   error: string | null
 }
 
+export interface GetUserOrgOptions {
+  /** default true for backward-compat with existing callers */
+  allowAutoCreate?: boolean
+}
+
 /**
  * Auto-create user records (organization_users + user_profiles) when missing.
  * Uses admin client to bypass RLS (user is already authenticated via auth.getUser).
@@ -176,7 +181,8 @@ async function ensureUserRecord(
  *
  * Schema: organization_users (junction) + user_profiles + organizations
  */
-export async function getUserOrg(): Promise<GetUserOrgResult> {
+export async function getUserOrg(options: GetUserOrgOptions = {}): Promise<GetUserOrgResult> {
+  const { allowAutoCreate = true } = options
   try {
     const supabase = await createClient()
 
@@ -239,8 +245,14 @@ export async function getUserOrg(): Promise<GetUserOrgResult> {
       }
     }
 
-    // Auto-create if still missing
+    // Auto-create if still missing (LATENT-03: gate behind allowAutoCreate for SSO-originated sessions)
     if (!membership && user.email) {
+      if (!allowAutoCreate) {
+        return {
+          data: null,
+          error: 'No active membership; auto-create disabled for SSO-originated session',
+        }
+      }
       console.warn('User record missing for authenticated user, attempting auto-create:', user.id)
       const autoResult = await ensureUserRecord(user)
 

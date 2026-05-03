@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse, type NextRequest } from 'next/server'
 import { verifyApiKey } from '@/lib/security/api-key-auth'
+import { verifyMembership } from '@/lib/auth/membership-proof'
 
 interface TenantContext {
   organizationId: string
@@ -13,6 +14,10 @@ interface TenantContext {
 // In-memory cache for tenant lookups (avoids DB query on every request)
 const tenantCache = new Map<string, { data: TenantContext; expires: number }>()
 const CACHE_TTL = 60_000 // 60 seconds
+
+// In-memory cache for membership proofs (SSO-06: tenant_membership_proof)
+// Key: `membership:${userId}:${orgId}` => boolean, expires per CACHE_TTL
+const membershipCache = new Map<string, { valid: boolean; expires: number }>()
 
 // Module-to-route mapping for access gating
 const MODULE_ROUTE_MAP: Record<string, string> = {
@@ -176,6 +181,33 @@ export async function updateSession(request: NextRequest) {
 
   const { data: { user }, error } = await supabase.auth.getUser()
 
+  // --- SSO-06: tenant_membership_proof — runs BEFORE any downstream getUserOrg() ---
+  // 403 on missing membership; never auto-create silently. Bypass for SSO/auth routes themselves.
+  if (user && subdomain) {
+    const tenantId = request.headers.get('x-tenant-id') || ''
+    if (tenantId) {
+      const membershipCacheKey = `membership:${user.id}:${tenantId}`
+      const cached = membershipCache.get(membershipCacheKey)
+      let membershipValid: boolean
+      if (cached && cached.expires > Date.now()) {
+        membershipValid = cached.valid
+      } else {
+        membershipValid = await verifyMembership(user.id, tenantId)
+        membershipCache.set(membershipCacheKey, { valid: membershipValid, expires: Date.now() + CACHE_TTL })
+      }
+      if (!membershipValid) {
+        const path = request.nextUrl.pathname
+        const isProtectedPath = path.startsWith('/dashboard') || (path.startsWith('/api/') && !path.startsWith('/api/sso/'))
+        if (isProtectedPath) {
+          return NextResponse.json(
+            { error: 'No active membership in this tenant', code: 'TENANT_MEMBERSHIP_REQUIRED' },
+            { status: 403 }
+          )
+        }
+      }
+    }
+  }
+
   // --- Public route bypass (webhooks, guest portal, iCal feeds) ---
   const publicApiRoutes = [
     '/api/webhooks/whatsapp',
@@ -233,6 +265,17 @@ export async function updateSession(request: NextRequest) {
   // If user is authenticated and trying to access auth routes (login/signup)
   if (isAuthRoute && user && !error) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
+  // --- SSO-04 / SSO-08: CSP headers for /sso/consume consumer page ---
+  // frame-ancestors 'none' blocks iframe embedding (fragment-token extraction attack).
+  // connect-src restricts XHR/fetch to known origins (prevents token exfiltration).
+  if (request.nextUrl.pathname === '/sso/consume') {
+    response.headers.set(
+      'Content-Security-Policy',
+      "default-src 'self'; connect-src 'self' https://psqfgzbjbgqrmjskdavs.supabase.co wss://psqfgzbjbgqrmjskdavs.supabase.co; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; form-action 'self'"
+    )
+    response.headers.set('Referrer-Policy', 'no-referrer')
   }
 
   return response
