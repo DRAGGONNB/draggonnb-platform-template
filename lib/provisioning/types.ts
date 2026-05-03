@@ -13,6 +13,7 @@ export interface CreatedResources {
   // Shared DB provisioning (new)
   organizationId?: string;
   subdomain?: string;
+  trophyOrgId?: string;
 
   // Legacy: per-client Supabase (kept for backwards compat)
   supabaseProjectId?: string;
@@ -52,4 +53,5 @@ export type ProvisioningStep =
   | 'onboarding-sequence'
   | 'qa-check'
   | 'register-client'
+  | 'activate-trophy-module'
   | 'finalize';
