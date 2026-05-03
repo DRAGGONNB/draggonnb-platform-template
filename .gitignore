@@ -62,3 +62,5 @@ scripts/provisioning/clients/_results.json
 scripts/spikes/payfast-spike-output.json
 scripts/spikes/payfast-redirect.html
 scripts/spikes/payfast-raw-response.html
+.playwright-mcp/
+supabase/.temp/
