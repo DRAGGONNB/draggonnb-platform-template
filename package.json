@@ -14,7 +14,8 @@
     "test:coverage": "vitest run --coverage",
     "test:components": "vitest run --reporter=verbose __tests__/components",
     "provisioning:resume": "tsx scripts/provisioning/resume.ts",
-    "check:federation-pinned": "node scripts/ci/check-federation-pinned.mjs"
+    "check:federation-pinned": "node scripts/ci/check-federation-pinned.mjs",
+    "check:sso-lint": "node scripts/ci/check-sso-lint.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.73.0",
