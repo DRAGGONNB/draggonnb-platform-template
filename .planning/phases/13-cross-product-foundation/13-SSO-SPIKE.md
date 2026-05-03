@@ -152,6 +152,27 @@ If the cross-product logout fails (network, timeout), DraggonnB still completes 
 
 ---
 
+## 12A. D1/SSO-02 Status — auth.draggonnb.com Vercel Alias (Plan 13-06 Update)
+
+**Status: Partial-closed. Deferred to Phase 16.**
+
+D1 specifies `auth.draggonnb.com` as the canonical issuer subdomain for the SSO bridge. Plan 13-06 implements the issuer at `app.draggonnb.co.za/api/sso/issue` on the platform domain (no DNS subdomain configured).
+
+**Why deferred:**
+- Configuring `auth.draggonnb.com` requires: (a) DNS CNAME record at Hostinger pointing to Vercel, (b) Vercel alias configuration for the DraggonnB deployment, (c) SSL certificate provisioning. This is a DNS/infrastructure change outside the Phase 13 code scope.
+- The SSO bridge is fully functional on the platform domain for the Phase 13 → Phase 14 development window. Trophy links to `/api/sso/issue?target=trophy` on the tenant's `.draggonnb.co.za` host.
+- No breaking change when the alias is added later — the issuer URL is configurable via environment.
+
+**Phase 16 action required:**
+1. Add CNAME: `auth.draggonnb.com` → `cname.vercel-dns.com`
+2. Add Vercel alias `auth.draggonnb.com` to the DraggonnB platform deployment
+3. Update `TROPHY_BASE_URL` and `DRAGGONNB_BASE_URL` env vars to use `auth.draggonnb.com` as issuer
+4. Update SSO-02 in REQUIREMENTS.md from partial-closed to fully closed
+
+**REQ-ID status:** SSO-02 = partial-closed (issuer callable, canonical subdomain deferred).
+
+---
+
 ## 12. Sign-Off
 
 All Phase 13 SSO architecture decisions LOCKED. Plan 13-06 implements with no remaining design questions. CATASTROPHIC #1 (cookie-scope leak) and CATASTROPHIC #2 (cross-product role mapping) guards specified for the implementer.
