@@ -4,11 +4,18 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { SidebarSection } from './sidebar-section'
+import { TrophyCrossLink } from '@/components/sidebar/trophy-cross-link'
 import type { SidebarItem } from '@/lib/dashboard/build-sidebar'
 
 interface SidebarClientProps {
   items: SidebarItem[]
   orgName?: string
+  /**
+   * Linked Trophy org ID from x-linked-trophy-org-id header (injected by middleware).
+   * null = no Trophy link; non-null = Trophy OS is activated for this org.
+   * NAV-01 / LATENT-02.
+   */
+  linkedTrophyOrgId?: string | null
 }
 
 /**
@@ -17,7 +24,7 @@ interface SidebarClientProps {
  *
  * Palette: #1E1B16 charcoal bg, #B8941E gold accent, #FDFCFA warm white text
  */
-export function SidebarClient({ items, orgName }: SidebarClientProps) {
+export function SidebarClient({ items, orgName, linkedTrophyOrgId = null }: SidebarClientProps) {
   const pathname = usePathname()
 
   return (
@@ -55,6 +62,12 @@ export function SidebarClient({ items, orgName }: SidebarClientProps) {
             return <SidebarSection key={item.id} item={item} isActive={isActive} />
           })}
         </nav>
+
+        {/* Cross-Product: Trophy OS link (NAV-01). Always rendered — active or activate CTA. */}
+        <div className="mt-4 border-t border-[#3a3328] pt-3 px-1">
+          <p className="px-3 pb-1 text-[10px] uppercase tracking-wider text-[#4a4438]">Cross-Product</p>
+          <TrophyCrossLink linkedTrophyOrgId={linkedTrophyOrgId} />
+        </div>
 
         {/* Org name footer */}
         {orgName && (

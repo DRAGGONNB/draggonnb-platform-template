@@ -9,6 +9,7 @@ interface TenantContext {
   subdomain: string
   tier: string
   enabledModules: string[]
+  linkedTrophyOrgId: string | null
 }
 
 // In-memory cache for tenant lookups (avoids DB query on every request)
@@ -62,7 +63,7 @@ async function resolveTenant(subdomain: string): Promise<TenantContext | null> {
 
   const { data: org } = await adminClient
     .from('organizations')
-    .select('id, subscription_tier, subdomain')
+    .select('id, subscription_tier, subdomain, linked_trophy_org_id')
     .eq('subdomain', subdomain)
     .is('archived_at', null) // Phase 10 (10-07): soft-archived orgs must not resolve
     .single()
@@ -80,6 +81,7 @@ async function resolveTenant(subdomain: string): Promise<TenantContext | null> {
     subdomain: org.subdomain,
     tier: org.subscription_tier,
     enabledModules: (modules || []).map((m: { module_id: string }) => m.module_id),
+    linkedTrophyOrgId: (org as unknown as { linked_trophy_org_id: string | null }).linked_trophy_org_id ?? null,
   }
 
   tenantCache.set(subdomain, { data: context, expires: Date.now() + CACHE_TTL })
@@ -147,6 +149,9 @@ export async function updateSession(request: NextRequest) {
     headers.set('x-tenant-subdomain', tenant.subdomain)
     headers.set('x-tenant-tier', tenant.tier)
     headers.set('x-tenant-modules', tenant.enabledModules.join(','))
+    // LATENT-02: inject linked_trophy_org_id so sidebar can render Trophy link
+    // without a separate DB query per request. Empty string = no link.
+    headers.set('x-linked-trophy-org-id', tenant.linkedTrophyOrgId ?? '')
 
     response = NextResponse.next({
       request: { headers },
