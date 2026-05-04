@@ -10,7 +10,7 @@ import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const SUPABASE_ACCESS_TOKEN = 'sbp_98ba1a552214eccb126d71f5822ed758826d2a00';
+const SUPABASE_ACCESS_TOKEN = process.env.SUPABASE_ACCESS_TOKEN || 'sbp_ad50b10190d42003e1b3ca468f448eece9bf3a0a';
 const PROJECT_REF = 'psqfgzbjbgqrmjskdavs';
 const MIGRATION_FILE = process.argv[2];
 
