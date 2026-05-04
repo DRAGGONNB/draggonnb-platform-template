@@ -326,7 +326,7 @@ Phases execute in numeric order: 13 → 14 (14.1 → 14.2 → 14.3) → 15 (15.1
 | 11. Easy/Advanced CRM PoC + Campaign Studio Decision Gate | v3.0 | 12/12 | Complete | 2026-04-27 |
 | 12. Launch Polish + v3.1 Handoff | v3.0 | 3/10 | Partial — 7 plans carried forward to v3.1 Phase 16 | 2026-04-30 (3 plans) |
 | 13. Cross-Product Foundation | v3.1 | 7/7 | Complete | 2026-05-03 |
-| 14. Approval Spine | v3.1 | 0/3 | Not started | - |
+| 14. Approval Spine | v3.1 | 3/3 | Complete | 2026-05-04 |
 | 15. Damage Auto-Billing + Hunt Bookings + Cross-Product Stay Link | v3.1 | 0/TBD | Not started | - |
 | 16. PWA + Trophy PayFast + v3.0 Carry-Forward | v3.1 | 0/TBD | Not started | - |
 

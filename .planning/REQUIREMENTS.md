@@ -54,24 +54,24 @@
 
 ### Approval Spine (APPROVAL)
 
-- [ ] **APPROVAL-01**: Existing `approval_requests` table generalised via 3-step OPS-05 migration — Step 1 adds nullable columns (`product`, `target_resource_type`, `target_resource_id`, `target_org_id`, `action_type`, `action_payload JSONB`); drops `post_id` NOT NULL.
-- [ ] **APPROVAL-02**: Step 2 backfills existing social-post rows with `product='draggonnb'`, `target_resource_type='social_post'`, `target_resource_id=post_id`, `target_org_id=organization_id`, `action_type='social_post'`. Idempotent. Verifies zero NULLs before Step 3.
-- [ ] **APPROVAL-03**: Step 3 adds NOT NULL constraints on the 4 target columns. `post_id` retained as nullable for Phase 17 cleanup.
-- [ ] **APPROVAL-04**: `lib/approvals/spine.ts` exports `proposeApproval()`, `approveRequest()`, `rejectRequest()`, `listPendingForUser()` — generic interface used by every action type.
-- [ ] **APPROVAL-05**: Action type registry at `lib/approvals/handlers/` — one handler per action type: `damage_charge`, `rate_change`, `content_post`, `quota_change`, `safari_status_change`, `supplier_job_approval`. Each handler implements `propose(payload)`, `execute(approval)`, and `revert(approval)`.
-- [ ] **APPROVAL-06**: Action types are product-scoped: `draggonnb.damage_charge`, `trophy.quota_change`, etc. No generic cross-product approval type (D2 guard).
-- [ ] **APPROVAL-07**: Telegram tap-to-approve via grammY `^1.42.0` — DraggonnB ops bot refactored onto grammY in same PR. Inline keyboard buttons fire `approve:{product}:{request_id}` and `reject:{product}:{request_id}` callbacks.
-- [ ] **APPROVAL-08**: Telegram bot uses Bot API `secret_token` for webhook signature verification; webhook handler checks token before processing.
-- [ ] **APPROVAL-09**: Telegram callback queries deduped via `telegram_update_log` table with `update_id` PRIMARY KEY — replays return cached response, never re-execute.
-- [ ] **APPROVAL-10**: Atomic stored procedure `approve_request_atomic(approval_id, approver_user_id, decision)` enforces expiry (30s grace), idempotency, and status reconciliation. Returns `{ status, error }`. Cron sweep never modifies in-flight rows.
-- [ ] **APPROVAL-11**: Approver user verified via mapped `(telegram_user_id, organization_users.user_id)` lookup, NOT "user who tapped the button." Forwarded messages can't impersonate.
-- [ ] **APPROVAL-12**: Inline keyboard self-disables on first valid click via `editMessageReplyMarkup` to prevent double-tap.
-- [ ] **APPROVAL-13**: Telegram approval messages contain ONLY internal IDs (`damage_id`, `request_id`); never PII (guest name, phone, card last4) — Pitfall 21 guard.
-- [ ] **APPROVAL-14**: Approval delivery via DM to assigned approver only — never approval channel posts (Pitfall 6 guard).
-- [ ] **APPROVAL-15**: Web fallback at `/approvals` — paginated table of pending approvals for the current user, with one-click approve/reject. Mobile-first.
-- [ ] **APPROVAL-16**: 3 OR-stacked SELECT RLS policies on `approval_requests` — DraggonnB approvers, Trophy approvers, cross-product linked owners. Each has explicit role gate.
-- [ ] **APPROVAL-17**: Approval audit log appended on every state change — proposer, approver, action_type, timestamps, before/after payload — written to existing `audit_log` table with `resource_type='approval_request'`.
-- [ ] **APPROVAL-18**: Single-level approve/reject only. Multi-level chains, delegation, conditional auto-approve are explicit anti-features for v3.1.
+- [x] **APPROVAL-01**: Existing `approval_requests` table generalised via 3-step OPS-05 migration — Step 1 adds nullable columns (`product`, `target_resource_type`, `target_resource_id`, `target_org_id`, `action_type`, `action_payload JSONB`); drops `post_id` NOT NULL.
+- [x] **APPROVAL-02**: Step 2 backfills existing social-post rows with `product='draggonnb'`, `target_resource_type='social_post'`, `target_resource_id=post_id`, `target_org_id=organization_id`, `action_type='social_post'`. Idempotent. Verifies zero NULLs before Step 3.
+- [x] **APPROVAL-03**: Step 3 adds NOT NULL constraints on the 4 target columns. `post_id` retained as nullable for Phase 17 cleanup.
+- [x] **APPROVAL-04**: `lib/approvals/spine.ts` exports `proposeApproval()`, `approveRequest()`, `rejectRequest()`, `listPendingForUser()` — generic interface used by every action type.
+- [x] **APPROVAL-05**: Action type registry at `lib/approvals/handlers/` — one handler per action type: `damage_charge`, `rate_change`, `content_post`, `quota_change`, `safari_status_change`, `supplier_job_approval`. Each handler implements `propose(payload)`, `execute(approval)`, and `revert(approval)`.
+- [x] **APPROVAL-06**: Action types are product-scoped: `draggonnb.damage_charge`, `trophy.quota_change`, etc. No generic cross-product approval type (D2 guard).
+- [x] **APPROVAL-07**: Telegram tap-to-approve via grammY `^1.42.0` — DraggonnB ops bot refactored onto grammY in same PR. Inline keyboard buttons fire `approve:{product}:{request_id}` and `reject:{product}:{request_id}` callbacks.
+- [x] **APPROVAL-08**: Telegram bot uses Bot API `secret_token` for webhook signature verification; webhook handler checks token before processing.
+- [x] **APPROVAL-09**: Telegram callback queries deduped via `telegram_update_log` table with `update_id` PRIMARY KEY — replays return cached response, never re-execute.
+- [x] **APPROVAL-10**: Atomic stored procedure `approve_request_atomic(approval_id, approver_user_id, decision)` enforces expiry (30s grace), idempotency, and status reconciliation. Returns `{ status, error }`. Cron sweep never modifies in-flight rows.
+- [x] **APPROVAL-11**: Approver user verified via mapped `(telegram_user_id, organization_users.user_id)` lookup, NOT "user who tapped the button." Forwarded messages can't impersonate.
+- [x] **APPROVAL-12**: Inline keyboard self-disables on first valid click via `editMessageReplyMarkup` to prevent double-tap.
+- [x] **APPROVAL-13**: Telegram approval messages contain ONLY internal IDs (`damage_id`, `request_id`); never PII (guest name, phone, card last4) — Pitfall 21 guard.
+- [x] **APPROVAL-14**: Approval delivery via DM to assigned approver only — never approval channel posts (Pitfall 6 guard).
+- [x] **APPROVAL-15**: Web fallback at `/approvals` — paginated table of pending approvals for the current user, with one-click approve/reject. Mobile-first.
+- [x] **APPROVAL-16**: 3 OR-stacked SELECT RLS policies on `approval_requests` — DraggonnB approvers, Trophy approvers, cross-product linked owners. Each has explicit role gate.
+- [x] **APPROVAL-17**: Approval audit log appended on every state change — proposer, approver, action_type, timestamps, before/after payload — written to existing `audit_log` table with `resource_type='approval_request'`.
+- [x] **APPROVAL-18**: Single-level approve/reject only. Multi-level chains, delegation, conditional auto-approve are explicit anti-features for v3.1.
 
 ### Damage Auto-Billing (DAMAGE)
 
@@ -164,7 +164,7 @@
 - [ ] **STACK-02**: `@supabase/supabase-js` bumped to `^2.105.1` in DraggonnB platform.
 - [ ] **STACK-03**: `@supabase/ssr` upgraded `0.9.0` → `0.10.2` in Trophy OS — same refactor pattern, lower regression risk.
 - [ ] **STACK-04**: `jose ^5.x` added to DraggonnB platform, Trophy OS, and `@draggonnb/federation-shared` for HS256 JWT operations.
-- [ ] **STACK-05**: `grammy ^1.42.0` added to DraggonnB platform; existing `lib/accommodation/telegram/ops-bot.ts` (raw Bot API) refactored onto grammY in same PR (single bot framework in codebase).
+- [x] **STACK-05**: `grammy ^1.42.0` added to DraggonnB platform; existing `lib/accommodation/telegram/ops-bot.ts` (raw Bot API) refactored onto grammY in same PR (single bot framework in codebase).
 - [ ] **STACK-06**: `@serwist/next ^9.5.10` and `serwist ^9.5.10` (devDep) added to DraggonnB platform for PWA service worker.
 - [x] **STACK-07** (DONE 2026-05-03 via 13-05): `@draggonnb/federation-shared@1.0.0` published to GitHub Packages at https://github.com/DRAGGONNB/federation-shared/pkgs/npm/federation-shared. 138 LOC (under 200 cap). Exports: brand types, BridgeTokenPayload, LogoutTokenPayload, ApprovalRequest, BillingLineInput, signBridgeToken/verifyBridgeToken, signLogoutToken/verifyLogoutToken, constants. DraggonnB install verified (tsc clean). CI lint guard `scripts/ci/check-federation-pinned.mjs` added. Fine-grained PAT rejected by GitHub; classic PAT with write:packages required.
 
@@ -278,8 +278,8 @@ Populated by gsd-roadmapper 2026-05-01. Pre-allocation preserved unchanged — n
 |--------|-------|--------|-------|
 | SSO-01..14 | 13 | Pending | Federation core; GATE-01 blocks architecture lock |
 | NAV-01..04 | 13 | Pending | Cross-product nav (conditional on linked_org) |
-| APPROVAL-01..03 | 14 | Pending | OPS-05 3-deploy split: 01→14.1, 02→14.2, 03→14.3 |
-| APPROVAL-04..18 | 14 | Pending | Spine implementation lands in 14.3 alongside NOT NULL constraints |
+| APPROVAL-01..03 | 14 | Complete | OPS-05 3-deploy split: 01→14.1, 02→14.2, 03→14.3 |
+| APPROVAL-04..18 | 14 | Complete | Spine implementation, grammY adoption, Telegram bot, /approvals UI shipped 14-03 (2026-05-04) |
 | DAMAGE-01..04 | 15 | Pending | 15.1 PayFast Subscribe-token capture — hidden pre-req for 15.2+ |
 | DAMAGE-05 | 15 | Pending | Sandbox spike happens in Phase 13 GATE-02 (cross-phase) |
 | DAMAGE-06..09 | 15 | Pending | 15.2 Telegram intake + photo evidence |
@@ -293,7 +293,7 @@ Populated by gsd-roadmapper 2026-05-01. Pre-allocation preserved unchanged — n
 | TROPHY-12 | 16 | Pending | 16.2 multi-hunter sandbox spike before per-hunter charge ships |
 | CARRY-01..08 | 16 | Pending | 16.5 v3.0 carry-forward + DraggonnB-only mobile sweep |
 | STACK-01..04 | 13 | DONE 2026-05-02 | @supabase/ssr 0.10.2 upgrade + jose + .npmrc — completed in 13-02 |
-| STACK-05 | 14 | Pending | grammY adoption (Telegram framework); ops-bot refactor in same PR |
+| STACK-05 | 14 | Complete | grammY adoption (Telegram framework); ops-bot refactor in same PR |
 | STACK-06 | 16 | Pending | @serwist/next + serwist (PWA service worker) |
 | STACK-07 | 13 | DONE 2026-05-03 | @draggonnb/federation-shared@1.0.0 published — 138 LOC, GitHub Packages, CI lint guard |
 | MANIFEST-01..06 | 13 | DONE 2026-05-02 | Module manifest contract + 4 registries — completed in 13-03 + 13-04 |

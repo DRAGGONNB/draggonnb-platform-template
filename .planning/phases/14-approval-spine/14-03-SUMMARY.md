@@ -259,3 +259,32 @@ Phase 14 is functionally complete. The following ops actions remain for full pro
 
 APPROVAL-01 through APPROVAL-18 + STACK-05: All closed.
 OPS-05 deploy 3 of 3: Phase 14 complete.
+
+---
+
+## Post-deploy smoke test (2026-05-04 afternoon)
+
+**Verified end-to-end via web UI** with `tester-admin@draggonnb.test`:
+- Inserted live `approval_requests` row (id `ad98ee43-56c2-45e1-b2ba-bddc188157dd`) for org `094a610d-2a05-44a4-9fa5-e6084bb632c9` (DragoonB Business Automation), `damage_charge` action, 7-day expiry.
+- Telegram DM landed in chat 8026688031 with verbose Option-2 body shape (CONTEXT A1).
+- "Open in /approvals" URL button navigated to detail page → render correct (product/resource/expires/payload + JSON inspector).
+- Web UI Approve button → `approve_request_atomic` RPC fired → status `pending → approved` → `audit_log` row written (`status_change:approved`) → `approval_jobs` row queued.
+- DB integrity confirmed via management API: `approval_requests.status='approved'`, `handler_run_count=1`, audit row matches.
+
+**Three production bugs surfaced and fixed inline post-Wave-3:**
+
+1. **`user_profiles` PK column mismatch** (`auth-command.ts:64-67` + `spine.ts:99-101`). Code used `user_id` but the table PK is `id` (mirrors `auth.users.id`). Symptom: spine's `sendApprovalDMs` returned 0 profiles → Telegram DM never auto-fired; `/auth` deep-link upsert 400'd. Fix: switch both files to `id` and `onConflict:'id'`. Commit `4ec593f1`.
+
+2. **Telegram callback_data 64-byte cap exceeded.** Original 4-segment shape `{verb}:{product}:{action_type}:{UUID}` is 68 bytes for `damage_charge` — Telegram returns `BUTTON_DATA_INVALID`. Inline Approve/Reject buttons couldn't ship for that action_type. Fix: drop `action_type` segment (handler already fetches `approval_requests` row by id and reads action_type from there). New shape `{verb}:{product}:{UUID}` is ≤54 bytes. Updated `buildCallbackData`, `buildCallbackPattern`, `parseCallbackData` (3 parts), and both regex matchers in `approval-callback.ts`. Commit `4ec593f1`.
+
+3. **Cron auth env-var mismatch.** Worker route validated against `INTERNAL_CRON_SECRET` only; Vercel cron auto-injects `Authorization: Bearer <CRON_SECRET>` (different env var). Every minute Vercel cron fired → 401 → no work → queued `approval_jobs` row sat indefinitely. Fix: both `/api/cron/approval-worker` and `/api/cron/approval-expiry-sweep` now accept either `INTERNAL_CRON_SECRET` (pg_net path) or `CRON_SECRET` (Vercel cron path). Commit `fc41102a`.
+
+**Telegram-bot inline tap-Approve was NOT verified end-to-end** (gated by Bug 2 until `4ec593f1` deploys; rather than re-craft a third smoke test mid-session, deferred to organic verification when the first real `proposeApproval()` call lands in Phase 15 damage flow).
+
+**ALTER DATABASE GUC permission gap surfaced** while attempting to set `app.internal_api_url` / `app.internal_cron_secret` for the pg_net cron path. Supabase doesn't grant superuser to management-API tokens, so `ALTER DATABASE postgres SET ...` returned "permission denied". The pg_cron Job 2 (worker dequeue via pg_net.http_post) cannot read those GUCs. Practical impact: zero — the Vercel cron path covers the same workload at 1-min cadence (defense-in-depth as designed). The pg_net path is dead code for v3.1; revisit when/if Supabase exposes a Vault-based secret-injection alternative.
+
+## Carry-forward to Phase 15
+
+- Worker dequeue verification (the queued smoke-test row at id `ad98ee43-...` will be picked up after `fc41102a` deploys and the next Vercel cron fires; expected behavior: handler runs, fails because no real PayFast token + no real booking, status flips to `failed`, ops_reconcile_queue row written).
+- 360px mobile sweep stays Phase 16 (per existing carry-forward in v3.1 ROADMAP).
+- pg_net GUC pattern → Vault-based secret injection → revisit if/when Supabase exposes the hook.

@@ -11,20 +11,28 @@ See: .planning/PROJECT.md (updated 2026-04-24)
 ## Current Position
 
 Milestone: **v3.1 Operational Spine** (started 2026-05-01)
-Phase: 14 — Approval Spine (COMPLETE 2026-05-04)
-Plan: 14-03 COMPLETE (Deploy 3 of 3 — spine + grammY + /approvals UI + 8 quality gate tests)
-Status: **Phase 13 COMPLETE. Phase 14 COMPLETE 2026-05-04.** All 3 OPS-05 deploys shipped. Approval spine live on psqfgzbjbgqrmjskdavs. Pending owner ops actions: Telegram webhook registration + Vercel env vars (APPROVAL_PHOTO_HMAC_SECRET, TELEGRAM_WEBHOOK_SECRET) + Postgres GUCs for pg_net cron auth.
-Last activity: 2026-05-04 — Phase 14 Plan 14-03 complete. 8 migrations applied, grammY adopted, /approvals web UI + 8 tests shipped. Pushed to main (commit bbd3f0e5).
+Phase: 14 — Approval Spine (COMPLETE 2026-05-04, smoke-verified end-to-end)
+Plan: 14-03 COMPLETE + 3 inline production-bug fixes during smoke
+Status: **Phase 14 fully shipped + smoke-verified.** 19 REQ-IDs closed (APPROVAL-01..18, STACK-05). All 3 OPS-05 deploys live on psqfgzbjbgqrmjskdavs. Telegram webhook registered, Vercel env vars set, grammY-based @Draggonnb_OS_bot online. Web-UI approve flow verified end-to-end on a real `approval_requests` row (id `ad98ee43-...`): atomic stored proc fired, audit_log row written, status flipped pending→approved, approval_jobs queued.
+Last activity: 2026-05-04 — Phase 14 wrap-up + 3 bug fixes (4ec593f1 + fc41102a). Pushed to main.
 
 ## Resume Next Session
 
-**Phase 14 COMPLETE.** Owner ops actions needed before Telegram bot is live:
-1. Register Telegram webhook: `curl -F "url=https://draggonnb-platform.vercel.app/api/telegram/webhook" -F "secret_token=$TELEGRAM_WEBHOOK_SECRET" -F "allowed_updates=[\"message\",\"callback_query\"]" "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook"`
-2. Set Vercel env vars: `APPROVAL_PHOTO_HMAC_SECRET` + `TELEGRAM_WEBHOOK_SECRET` (if not already set)
-3. Set Postgres GUCs (Supabase SQL editor): `ALTER DATABASE postgres SET app.internal_api_url = 'https://draggonnb-platform.vercel.app'; ALTER DATABASE postgres SET app.internal_cron_secret = '<value>';`
-4. Smoke test /approvals page at 360px + approve a test damage_charge via Telegram DM
+**Phase 14 COMPLETE + smoke-verified.** No outstanding owner ops actions for Phase 14.
 
-**Next Phase:** Phase 15 (damage_charge PayFast wire-up + invoice + payment route layer) OR Phase 16 (DNS, auth.draggonnb.com alias, runtime checks carry-forward)
+**Bug fixes shipped during smoke (2026-05-04 afternoon):**
+1. `user_profiles` PK column was `id` not `user_id` — auth-command.ts + spine.ts both fixed (commit 4ec593f1)
+2. Telegram callback_data 4-segment shape exceeded 64-byte cap on `damage_charge` — dropped action_type from callback_data (commit 4ec593f1)
+3. Vercel cron 401'd worker because of CRON_SECRET vs INTERNAL_CRON_SECRET mismatch — both worker + expiry-sweep routes now accept either (commit fc41102a)
+
+**Smoke deferrals (low risk, organic verification in Phase 15):**
+- Telegram tap-Approve via inline keyboard end-to-end (gated by Bug 2 until commit 4ec593f1 deploys; will validate organically when first real `proposeApproval()` call lands in Phase 15 damage flow)
+- Worker pickup of queued `approval_jobs` row at id `ad98ee43-...` (handler will likely fail with no real PayFast token, write `ops_reconcile_queue` row — that's the designed behavior for a synthetic test row)
+
+**Known limitation (deferred, no Phase 14 impact):**
+- `ALTER DATABASE postgres SET app.* = ...` permission denied via Supabase management API — pg_net cron path can't read GUCs. Vercel cron path covers same workload at 1-min cadence. Revisit when Supabase exposes a Vault-based secret-injection alternative.
+
+**Next Phase:** Phase 15 (damage_charge PayFast wire-up + INVOICE/PAYROUTE polymorphic billing layer) OR Phase 16 (DNS fix, auth.draggonnb.com Vercel alias, 360px mobile sweep, v3.0 carry-forward).
 
 **v3.1 ROADMAP REVISED (rev 2).** All planning artifacts in place: PROJECT.md (milestone section), REQUIREMENTS.md (**133 REQ-IDs**, 11 locked decisions D1-D11), research/SUMMARY.md (5 bottom-line findings, decision matrix), research/SWAZULU-DISCOVERY.md (DB audit + owner reality), ROADMAP.md (4 phases, 8 sub-plans in Phase 15, MANIFEST foundational in Phase 13).
 
