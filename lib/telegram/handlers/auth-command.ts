@@ -61,10 +61,12 @@ async function handleAuthToken(ctx: any, token: string): Promise<void> {
   }
 
   const supabase = createAdminClient()
+  // BUGFIX (Phase 14 smoke): user_profiles PK is `id` (mirrors auth.users.id), NOT `user_id`.
+  // Original Phase 14-03 code 400'd the upsert and broke the /auth deep-link flow.
   const { error } = await supabase.from('user_profiles').upsert({
-    user_id: userId,
+    id: userId,
     telegram_user_id: ctx.from.id,
-  }, { onConflict: 'user_id' })
+  }, { onConflict: 'id' })
 
   if (error) {
     await ctx.reply(`Failed to link: ${error.message}`)

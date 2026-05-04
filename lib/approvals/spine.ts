@@ -96,11 +96,16 @@ async function sendApprovalDMs(
 
   const { data: profiles } = await supabase
     .from('user_profiles')
-    .select('user_id, telegram_user_id')
-    .in('user_id', userIds)
+    .select('id, telegram_user_id')
+    .in('id', userIds)
     .not('telegram_user_id', 'is', null)
 
-  const cb = `:${input.product}:${input.action_type}:${approvalId}`
+  // BUGFIX (Phase 14 smoke): callback_data has 64-byte max in Telegram Bot API.
+  // The 4-segment approve:{product}:{action_type}:{UUID} shape exceeds 64 bytes for
+  // damage_charge (68 bytes). Drop action_type — the handler already fetches the
+  // approval_requests row by id and reads action_type from there.
+  // New format: approve:{product}:{approvalId} (54 bytes max — well under cap)
+  const cb = `:${input.product}:${approvalId}`
   const kb = new InlineKeyboard()
     .text('Approve', `approve${cb}`)
     .text('Reject', `reject${cb}`)
@@ -122,7 +127,7 @@ async function sendApprovalDMs(
     try {
       await sendTelegramMessage(p.telegram_user_id as any, text, { reply_markup: kb })
     } catch (e) {
-      console.error(`[spine] Failed to DM user ${p.user_id}:`, e)
+      console.error(`[spine] Failed to DM user ${p.id}:`, e)
     }
   }
 }

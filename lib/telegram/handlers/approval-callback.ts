@@ -3,11 +3,15 @@
  * grammY callback_query handlers for approval spine.
  * Implements RESEARCH.md Pattern 1 (two-pass edit) + Pattern 2 (verifyApprover) + Pattern 5 (atomic proc).
  *
- * Callback data format (Phase 13 contract):
- *   approve:{product}:{action_type}:{approval_id}
- *   reject:{product}:{action_type}:{approval_id}
+ * Callback data format (Phase 14 smoke fix — 64-byte cap):
+ *   approve:{product}:{approval_id}
+ *   reject:{product}:{approval_id}
  *   reason:{code}:{approval_id}
  *   reason:other:{approval_id}
+ *
+ * action_type was dropped from callback_data because the original 4-segment
+ * shape exceeded Telegram's 64-byte callback_data limit for `damage_charge`.
+ * Handlers now look up action_type from approval_requests by resource_id.
  */
 
 import { Bot, InlineKeyboard, Context } from 'grammy'
@@ -19,8 +23,8 @@ import { verifyApprover } from '@/lib/approvals/spine'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export function registerApprovalCallbacks(bot: Bot<BotContext>): void {
-  // approve:{product}:{action_type}:{approval_id}
-  bot.callbackQuery(/^approve:(draggonnb|trophy):[a-z_]+:[0-9a-f-]+$/, async (ctx) => {
+  // approve:{product}:{approval_id} — action_type lookup happens via DB by approval_id
+  bot.callbackQuery(/^approve:(draggonnb|trophy):[0-9a-f-]+$/, async (ctx) => {
     await ctx.answerCallbackQuery()
     const parsed = parseCallbackData(ctx.callbackQuery.data!)
     if (!parsed) return
@@ -84,8 +88,8 @@ export function registerApprovalCallbacks(bot: Bot<BotContext>): void {
     }
   })
 
-  // reject:{product}:{action_type}:{approval_id}
-  bot.callbackQuery(/^reject:(draggonnb|trophy):[a-z_]+:[0-9a-f-]+$/, async (ctx) => {
+  // reject:{product}:{approval_id} — action_type lookup happens via DB by approval_id
+  bot.callbackQuery(/^reject:(draggonnb|trophy):[0-9a-f-]+$/, async (ctx) => {
     await ctx.answerCallbackQuery()
     const parsed = parseCallbackData(ctx.callbackQuery.data!)
     if (!parsed) return
