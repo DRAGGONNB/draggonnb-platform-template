@@ -209,3 +209,46 @@ when active). Internal routes (`/execute`, `/verify`) validate `x-internal-hmac`
 | /api/crm/easy-view/dismiss | POST | Hide a card item for 7 days (crm_action_dismissals) |
 | /api/crm/ui-mode | POST | Persist user_profiles.ui_mode |
 | /api/crm/drafts | POST/DELETE | Upsert/delete entity_drafts (1s debounce, 7d TTL) |
+
+### Webhook Auth Pattern (Phase 14)
+
+The Telegram webhook (`/api/telegram/webhook`) uses grammY's `webhookCallback` with `secretToken` validation:
+
+```typescript
+const handler = webhookCallback(getBot(), 'std/http', {
+  secretToken: process.env.TELEGRAM_WEBHOOK_SECRET,
+  onTimeout: 'return',
+  timeoutMilliseconds: 9_000,
+})
+```
+
+Replay protection: `telegram_update_log` PK on `update_id`. On PK conflict (23505), return 200 silently — Telegram interprets 2xx as "processed" and stops retrying.
+
+**Runtime:** NEVER `export const runtime = 'edge'` on the webhook route — grammY conversations require Node.js crypto + event emitters.
+
+### /approvals Routes (Phase 14)
+
+| Route | Method | Purpose | Auth |
+|---|---|---|---|
+| /api/approvals/[id]/approve | POST | Approve (D2 enforced via spine.approveRequest) | admin or manager |
+| /api/approvals/[id]/reject | POST | Reject with reason_code (D2 enforced via spine.rejectRequest) | admin or manager |
+| /api/approvals/[id]/photos/[asset_id] | GET | Stream photo from Supabase Storage via HMAC-signed URL | HMAC sig validation only |
+| /api/integrations/telegram/auth-link | POST | Generate 15-min one-time deep-link for telegram_user_id activation | authenticated user |
+| /api/cron/approval-worker | GET/POST | Dequeue approval_jobs and run handlers (SKIP LOCKED) | INTERNAL_CRON_SECRET |
+| /api/cron/approval-expiry-sweep | GET | Sweep expired pending rows via sweep_expired_approvals RPC | INTERNAL_CRON_SECRET |
+
+The approve/reject routes catch `'no permission for this product'` thrown by spine and map it to 403 — this is the W4/D2 enforcement surface for the web path.
+
+### Signed URL HMAC Pattern (Phase 14)
+
+Photo viewer uses HMAC-signed URLs to gate access to Supabase Storage blobs without exposing the service role key in the browser.
+
+**Payload format:** `${approval_id}:${asset_id}:${exp}` (where `exp` is Unix timestamp seconds)
+
+**URL shape:** `/api/approvals/{id}/photos/{asset_id}?sig={hex64}&exp={unix}`
+
+**Secret:** `APPROVAL_PHOTO_HMAC_SECRET` env var (generate via `openssl rand -hex 32`)
+
+**Expiry:** Default 1800s (30 minutes). Validator uses `timingSafeEqual` to prevent timing attacks.
+
+**Generation:** Call `generatePhotoSignedUrl(approvalId, assetId, expirySeconds)` from `lib/approvals/spine.ts`. Never construct the URL inline — reuse the helper to keep payload format consistent between generator and validator.

@@ -138,6 +138,12 @@ export function buildSidebar(activeModules: string[], role: string): SidebarItem
       ],
     },
     {
+      id: 'approvals',
+      label: 'Approvals',
+      href: '/approvals',
+      icon: 'CheckSquare',
+    },
+    {
       id: 'settings',
       label: 'Settings',
       href: '/settings',
