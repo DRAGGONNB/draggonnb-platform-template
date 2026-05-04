@@ -160,8 +160,8 @@ Progress: [██████████] 100% (12/12 Phase 11 plans done) · v
 
 ## Session Continuity
 
-Last session: 2026-05-04 — Phase 14 Plan 14-01 complete. 3 migrations applied to live Supabase. database.types.ts regenerated. tsc clean.
-Resume file: none. Execute Plan 14-02 (backfill existing social-post rows with product='social', action_type='approve_social_post').
+Last session: 2026-05-04 — Phase 14 Plan 14-01 complete. 3 migrations applied to live Supabase. database.types.ts regenerated. tsc clean. LOCAL COMMITS MADE but push blocked by GitHub push protection (pre-existing Phase 13 secrets in historical commits).
+Resume file: none. BEFORE 14-02: Chris must bypass push protection at 3 GitHub URLs (see 14-01-SUMMARY.md Issues section) then `git push origin main`. Execute Plan 14-02 (backfill) after push succeeds.
 
 ### Session (2026-05-04) — Phase 14 Plan 14-01: Approval Spine Schema (Deploy 1 of 3)
 

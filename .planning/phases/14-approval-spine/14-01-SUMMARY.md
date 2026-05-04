@@ -141,6 +141,12 @@ None — plan executed exactly as written. Schema inspection before apply confir
 ## Issues Encountered
 
 - `/tmp/` in bash resolves to `/tmp/` (Linux-style) but Node.js resolves to `C:\tmp\` on Windows. Used `--input-type=commonjs` with project-relative path instead of temp file for type generation.
+- **Push blocked by GitHub push protection (pre-existing issue, NOT introduced by 14-01):** Commits from Phase 13 (`990785a9`, `d5ed65a0`, `6140c44b`) contain secrets (expired Supabase PAT, a Supabase secret key in apply-migration-v2.mjs, and a GitHub PAT in 13-RESEARCH.md). These commits were not previously pushed to remote. Push requires browser-based bypass at 3 GitHub unblock URLs:
+  1. `https://github.com/DRAGGONNB/draggonnb-platform/security/secret-scanning/unblock-secret/3DFW2wlZ6KsW7r0Qrv54BLHXqZh`
+  2. `https://github.com/DRAGGONNB/draggonnb-platform/security/secret-scanning/unblock-secret/3DFW30QGvTEwsd2AccsOpXhWzcH`
+  3. `https://github.com/DRAGGONNB/draggonnb-platform/security/secret-scanning/unblock-secret/3DFW30tEAeKn7UpEF8SdzXRfp9H`
+  All 3 secrets are already rotated/expired. Chris needs to visit each URL and approve the bypass, then run `git push origin main`.
+  **Migrations are already applied to live Supabase** — this does not block 14-02 execution.
 
 ## W7 Trade-off: telegram_update_log Service-Role Only
 
