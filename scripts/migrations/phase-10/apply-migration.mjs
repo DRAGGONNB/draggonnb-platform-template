@@ -10,7 +10,11 @@ import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const SUPABASE_ACCESS_TOKEN = process.env.SUPABASE_ACCESS_TOKEN || 'sbp_ad50b10190d42003e1b3ca468f448eece9bf3a0a';
+const SUPABASE_ACCESS_TOKEN = process.env.SUPABASE_ACCESS_TOKEN;
+if (!SUPABASE_ACCESS_TOKEN) {
+  console.error('SUPABASE_ACCESS_TOKEN env var required (Personal Access Token from supabase.com/dashboard/account/tokens — needs management write scope).');
+  process.exit(1);
+}
 const PROJECT_REF = 'psqfgzbjbgqrmjskdavs';
 const MIGRATION_FILE = process.argv[2];
 
