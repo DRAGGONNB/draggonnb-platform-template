@@ -4,6 +4,14 @@
     {
       "path": "/api/ops/cost-rollup",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/approval-worker",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/approval-expiry-sweep",
+      "schedule": "*/5 * * * *"
     }
   ]
 }
