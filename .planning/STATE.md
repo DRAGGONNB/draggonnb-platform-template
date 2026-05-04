@@ -11,12 +11,20 @@ See: .planning/PROJECT.md (updated 2026-04-24)
 ## Current Position
 
 Milestone: **v3.1 Operational Spine** (started 2026-05-01)
-Phase: 14 — Approval Spine (started 2026-05-04)
-Plan: 14-02 COMPLETE (Deploy 2 of 3 — idempotent backfill applied to live Supabase)
-Status: **Phase 13 COMPLETE. Phase 14 IN PROGRESS — 14-01 COMPLETE + 14-02 COMPLETE 2026-05-04.** Backfill migration applied. Zero-NULL gate passed. 14-03 (NOT NULL + spine impl + grammY + /approvals UI) is now unblocked.
-Last activity: 2026-05-04 — Phase 14 Plan 14-02 complete. Backfill migration 20260504000010 applied + verified. 0 NULLs across all 8 backfill-target cols. OPS-05 gate passed.
+Phase: 14 — Approval Spine (COMPLETE 2026-05-04)
+Plan: 14-03 COMPLETE (Deploy 3 of 3 — spine + grammY + /approvals UI + 8 quality gate tests)
+Status: **Phase 13 COMPLETE. Phase 14 COMPLETE 2026-05-04.** All 3 OPS-05 deploys shipped. Approval spine live on psqfgzbjbgqrmjskdavs. Pending owner ops actions: Telegram webhook registration + Vercel env vars (APPROVAL_PHOTO_HMAC_SECRET, TELEGRAM_WEBHOOK_SECRET) + Postgres GUCs for pg_net cron auth.
+Last activity: 2026-05-04 — Phase 14 Plan 14-03 complete. 8 migrations applied, grammY adopted, /approvals web UI + 8 tests shipped. Pushed to main (commit bbd3f0e5).
 
 ## Resume Next Session
+
+**Phase 14 COMPLETE.** Owner ops actions needed before Telegram bot is live:
+1. Register Telegram webhook: `curl -F "url=https://draggonnb-platform.vercel.app/api/telegram/webhook" -F "secret_token=$TELEGRAM_WEBHOOK_SECRET" -F "allowed_updates=[\"message\",\"callback_query\"]" "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook"`
+2. Set Vercel env vars: `APPROVAL_PHOTO_HMAC_SECRET` + `TELEGRAM_WEBHOOK_SECRET` (if not already set)
+3. Set Postgres GUCs (Supabase SQL editor): `ALTER DATABASE postgres SET app.internal_api_url = 'https://draggonnb-platform.vercel.app'; ALTER DATABASE postgres SET app.internal_cron_secret = '<value>';`
+4. Smoke test /approvals page at 360px + approve a test damage_charge via Telegram DM
+
+**Next Phase:** Phase 15 (damage_charge PayFast wire-up + invoice + payment route layer) OR Phase 16 (DNS, auth.draggonnb.com alias, runtime checks carry-forward)
 
 **v3.1 ROADMAP REVISED (rev 2).** All planning artifacts in place: PROJECT.md (milestone section), REQUIREMENTS.md (**133 REQ-IDs**, 11 locked decisions D1-D11), research/SUMMARY.md (5 bottom-line findings, decision matrix), research/SWAZULU-DISCOVERY.md (DB audit + owner reality), ROADMAP.md (4 phases, 8 sub-plans in Phase 15, MANIFEST foundational in Phase 13).
 
@@ -160,8 +168,27 @@ Progress: [██████████] 100% (12/12 Phase 11 plans done) · v
 
 ## Session Continuity
 
-Last session: 2026-05-04 — Phase 14 Plan 14-02 complete. Backfill migration applied to live Supabase. 0 NULLs verified. OPS-05 gate passed. Ready for 14-03.
+Last session: 2026-05-04 — Phase 14 Plan 14-03 complete. All 3 OPS-05 deploys done. grammY adopted, /approvals UI + 8 tests shipped. pnpm-lock.yaml removed to unblock Vercel builds. Checkpoint: Telegram webhook + Vercel env setup needed from owner.
 Resume file: none.
+
+### Session (2026-05-04) — Phase 14 Plan 14-03: Approval Spine Deploy 3 of 3
+
+**What was done:**
+1. Applied 8 migrations (20-27): SET NOT NULL (7 cols), approval_jobs table, ops_reconcile_queue, approve_request_atomic proc, 5 RLS policies, pg-cron (expiry sweep + worker + cleanup jobs), audit_log table + trigger, claim_approval_jobs SKIP LOCKED proc.
+2. STACK-05: grammy@1.42.0 + @grammyjs/conversations@2.1.1 installed; lib/telegram/bot.ts refactored to grammY Bot singleton; lib/accommodation/telegram/ops-bot.ts refactored to grammY Api(); 3 new handler files (auth-command, approval-callback, reject-conversation); webhook route with secretToken + replay protection.
+3. Approval spine: spine.ts, handler-registry.ts, 3 real handlers (damage_charge/rate_change/content_post) + 3 stubs (trophy), worker.ts (SKIP LOCKED + two-pass edit), expiry-sweep.ts, notify.ts.
+4. /approvals web UI: 3-tab page RSC, /approvals/[id] detail with photo viewer + reject form, approve/reject API routes, HMAC photo stream route, Telegram auth-link route + Connect Telegram page.
+5. 8 mandatory quality gate tests (73 tests total across new files) + bot.test.ts vi.hoisted fix + sidebar-build.test.ts count update.
+6. Vercel cron entries added to vercel.json; pnpm-lock.yaml removed to fix Vercel build.
+7. Pushed to main (bbd3f0e5). Vercel build triggered — now using npm+package-lock.json.
+
+**Deviations:** audit_log created inline (absent from live DB), HANDLER_REGISTRY created separate from MODULE_REGISTRY (was an array not dict), sidebar test counts updated, error?.message → error string fix in RSC pages, pnpm-lock.yaml removed.
+
+**REQ-IDs touched:** APPROVAL-01 through APPROVAL-18 + STACK-05 all CLOSED. Phase 14 COMPLETE.
+
+**Commits (in order):** fdeba8ca, 7e5daa90, f98051f4, a8a68c42, 002970ab, 77cc6172, bbd3f0e5
+
+**Pending owner ops:** Telegram webhook curl, Vercel env vars (APPROVAL_PHOTO_HMAC_SECRET), Postgres GUCs for pg_net.
 
 ### Session (2026-05-04) — Phase 14 Plan 14-02: Approval Spine Backfill (Deploy 2 of 3)
 
