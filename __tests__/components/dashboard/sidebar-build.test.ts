@@ -2,9 +2,9 @@ import { describe, it, expect } from 'vitest'
 import { buildSidebar } from '@/lib/dashboard/build-sidebar'
 
 describe('buildSidebar', () => {
-  it('starter org with crm-only modules + user role returns 5 items (no verticals, no Admin)', () => {
+  it('starter org with crm-only modules + user role returns 6 items (no verticals, no Admin)', () => {
     const items = buildSidebar(['crm'], 'user')
-    expect(items).toHaveLength(5)
+    expect(items).toHaveLength(6)
     const ids = items.map((i) => i.id)
     expect(ids).toContain('dashboard')
     expect(ids).toContain('content-studio')
@@ -19,8 +19,8 @@ describe('buildSidebar', () => {
 
   it('pro org with crm + accommodation + restaurant + role=admin gets verticals as separate top-level items + Admin', () => {
     const items = buildSidebar(['crm', 'accommodation', 'restaurant'], 'admin')
-    // Dashboard, Content Studio, Customers, Accommodation, Restaurant, Insights, Settings, Admin
-    expect(items).toHaveLength(8)
+    // Dashboard, Content Studio, Customers, Accommodation, Restaurant, Insights, Approvals, Settings, Admin
+    expect(items).toHaveLength(9)
     const ids = items.map((i) => i.id)
     expect(ids).toContain('accommodation')
     expect(ids).toContain('restaurant')
@@ -47,9 +47,9 @@ describe('buildSidebar', () => {
     expect(tabLabels).toContain('Cost Monitoring')
   })
 
-  it('empty active modules returns 5 items (no verticals)', () => {
+  it('empty active modules returns 6 items (no verticals)', () => {
     const items = buildSidebar([], 'user')
-    expect(items).toHaveLength(5)
+    expect(items).toHaveLength(6)
     const ids = items.map((i) => i.id)
     expect(ids).not.toContain('accommodation')
     expect(ids).not.toContain('restaurant')

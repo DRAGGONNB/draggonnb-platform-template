@@ -15,6 +15,7 @@ export default defineConfig({
       ['__tests__/integration/dashboard/**', 'node'],
       ['__tests__/integration/crm/**', 'jsdom'],
       ['__tests__/integration/campaigns/**', 'node'],
+      ['__tests__/approvals/**', 'node'],
       ['__tests__/components/**', 'jsdom'],
     ],
     setupFiles: ['./vitest.setup.ts'],
