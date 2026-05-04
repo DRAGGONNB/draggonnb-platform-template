@@ -11,10 +11,10 @@ See: .planning/PROJECT.md (updated 2026-04-24)
 ## Current Position
 
 Milestone: **v3.1 Operational Spine** (started 2026-05-01)
-Phase: 13 — Cross-Product Foundation (COMPLETE 2026-05-03)
-Plan: 13-01 COMPLETE + 13-02 COMPLETE + 13-03 COMPLETE + 13-04 COMPLETE + 13-05 COMPLETE + 13-06 COMPLETE + 13-07 COMPLETE (all 7/7 plans done)
-Status: **PHASE 13 COMPLETE 2026-05-03 — VERIFIER PASSED 5/5.** All code committed + 5 migrations applied to live Supabase (psqfgzbjbgqrmjskdavs) by orchestrator via MCP. 13-07 final wrap-up: tsc clean (pre-existing elijah-full + social-content-full errors only), `check-sso-lint.mjs` exits 0, `check-federation-pinned.mjs` exits 0, module registry tests pass (15/15). REQ-IDs marked complete: NAV-01, NAV-03, NAV-04, SSO-10 (all 4 steps), SSO-11, plus SSO-04..SSO-08, SSO-13 (from 13-06, not previously marked). Trophy OS Companion section in 13-RESEARCH.md extended with bidirectional SSO route requirements. Phase 14 ready (pending Trophy companion session: 4 items for full E2E SSO test). Verification report at `.planning/phases/13-cross-product-foundation/13-VERIFICATION.md`.
-Last activity: 2026-05-03 — Phase 13 wrap-up complete. Migrations applied. REQ-IDs updated. 13-RESEARCH.md Trophy companion section extended. SUMMARY updated with migration confirmation.
+Phase: 14 — Approval Spine (started 2026-05-04)
+Plan: 14-01 COMPLETE (Deploy 1 of 3 — schema migrations applied to live Supabase)
+Status: **Phase 13 COMPLETE. Phase 14 IN PROGRESS — 14-01 COMPLETE 2026-05-04.** 3 migrations applied to live Supabase psqfgzbjbgqrmjskdavs. Schema substrate for grammY bot + /approvals UI in place. Backfill (14-02) and spine impl + NOT NULL (14-03) pending.
+Last activity: 2026-05-04 — Phase 14 Plan 14-01 complete. 3 migrations applied + verified. database.types.ts regenerated. tsc clean (pre-existing baseline).
 
 ## Resume Next Session
 
@@ -105,6 +105,8 @@ Progress: [██████████] 100% (12/12 Phase 11 plans done) · v
 
 ### Decisions (v3.0-specific, most recent first)
 
+- **2026-05-04 (14-01 execution — approval spine schema):** notify_on_complete jsonb is a DEDICATED column on approval_requests (NOT nested in action_payload) per CONTEXT C3 — dispatchNotifyOnComplete reads ar.notify_on_complete directly to prevent silent skip when action_payload is null. handler_run_count NOT NULL DEFAULT 0 ships in deploy 1 (OPS-05 safe exception: DEFAULT fills existing rows during ADD COLUMN). telegram_update_log has NO RLS SELECT policy in v3.1 — W7 trade-off: bot uses service_role; admin audit via direct DB query; defer to v3.2. Legacy assigned_to uuid[] retained alongside new assigned_approvers for backwards-compat (Phase 17 DROP). Partial UNIQUE index on telegram_user_id (WHERE NOT NULL) allows NULLs during staged rollout.
+
 - **2026-05-02 (13-01 execution — PayFast spike):** Amount unit = INTEGER CENTS (Call A 250.00 rands → HTTP 400 "Integer Expected"; Call B 25000 cents → HTTP 200). Arbitrary-amount charges against a Subscribe token = YES. Hold-and-capture = UNAVAILABLE (response has only code/status/data fields). Idempotency = NOT server-enforced (duplicate m_payment_id creates a new charge). Phase 15 damage architecture: immediate-charge-on-approval (no hold window). Phase 15 must enforce idempotency client-side via DB check before calling chargeAdhoc(). Two distinct PayFast signature algorithms: form (insertion order, passphrase trailing, + for spaces) vs API (ksort, passphrase merged as sorted field). Wrong URL for API: api.payfast.co.za for both modes; sandbox via ?testing=true (not sandbox.payfast.co.za which returns HTTP 405). 5 production bugs fixed in payfast-adhoc.ts + payfast.ts. GATE-02 + DAMAGE-05 closed.
 
 - **2026-05-02 (13-02 execution):** @supabase/ssr upgrade: refactor + bump must happen in same commit (LATENT-01 — TypeScript won't catch silent API mismatch between 0.1.0 get/set/remove shape and 0.10.2 getAll/setAll shape). Middleware setAll pattern: iterate request.cookies.set first, then response = NextResponse.next({ request }), then iterate response.cookies.set — two-pass required. CATASTROPHIC #1: setAll in middleware MUST NEVER include domain option (per-host cookies only; Domain=.draggonnb.co.za would leak sessions across tenant subdomains). Pre-existing test failures (53/649): dashboard-page mock missing maybeSingle (added in 12-07, mock never updated), component timeout failures, env mock failures — all pre-13-02. .npmrc had existing legacy-peer-deps=true, preserved. GITHUB_PACKAGES_TOKEN needed in Vercel for @draggonnb/federation-shared install (needed at 13-05, not now).
@@ -158,8 +160,29 @@ Progress: [██████████] 100% (12/12 Phase 11 plans done) · v
 
 ## Session Continuity
 
+Last session: 2026-05-04 — Phase 14 Plan 14-01 complete. 3 migrations applied to live Supabase. database.types.ts regenerated. tsc clean.
+Resume file: none. Execute Plan 14-02 (backfill existing social-post rows with product='social', action_type='approve_social_post').
+
+### Session (2026-05-04) — Phase 14 Plan 14-01: Approval Spine Schema (Deploy 1 of 3)
+
+**What was done:**
+1. Applied migration 20260504000001 — approval_requests gains 14 product-scoped columns (13 nullable + handler_run_count NOT NULL DEFAULT 0; includes dedicated notify_on_complete jsonb per CONTEXT C3) + 3 indexes (expires_pending, assigned_approvers GIN, product_status); post_id NOT NULL dropped.
+2. Applied migration 20260504000002 — telegram_update_log table for APPROVAL-09 replay protection (RLS enabled + FORCE RLS, NO SELECT policy in v3.1 — service_role only; admin audit via direct DB query; admin RLS deferred to v3.2 per W7 trade-off).
+3. Applied migration 20260504000003 — user_profiles.telegram_user_id BIGINT NULL with partial UNIQUE index for APPROVAL-11 verifyApprover() lookup in 14-03.
+4. Regenerated lib/supabase/database.types.ts — 175 net insertions, all 14 new cols typed correctly, handler_run_count: number (no null union), post_id: string | null, telegram_update_log table type generated.
+5. tsc --noEmit clean (3 pre-existing errors: elijah-full + social-content-full, same baseline as Phase 13 exit).
+
+**Verification:** new_cols=14, post_id_nullable=YES, update_log=1, update_log_policies=0, tg_user_id=1 — all checks PASS.
+
+**REQ-IDs touched:** APPROVAL-01 (PARTIAL — schema additive only; backfill pending in 14-02, NOT NULL pending in 14-03), prereqs for APPROVAL-09, APPROVAL-11.
+
+**Commits:** 72208cf6 (migrations), 5d5a7b6a (types regen), + docs commit.
+
+**Next:** Execute Plan 14-02 (backfill UPDATE — WHERE product IS NULL guard for idempotency). After that: 14-03 ships grammY bot + /approvals UI + NOT NULL constraints.
+
+### Session (2026-05-03) — Phase 13 wrap-up
+
 Last session: 2026-05-03 — Phase 13 wrap-up. Applied 2 migrations via orchestrator MCP. REQ-IDs updated (NAV-01, NAV-03, NAV-04, SSO-04..SSO-08, SSO-10, SSO-11, SSO-13). 13-RESEARCH.md Trophy companion section extended. 13-07-SUMMARY.md migration status updated. REQUIREMENTS.md marked complete.
-Resume file: none. Phase 13 COMPLETE. Start Phase 14 with `/gsd:plan-phase 14`.
 
 ### Session (2026-05-02) — Phase 13 Plan 13-01: PayFast Sandbox Spike COMPLETE
 
