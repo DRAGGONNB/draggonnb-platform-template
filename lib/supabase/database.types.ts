@@ -4432,47 +4432,89 @@ export type Database = {
       }
       approval_requests: {
         Row: {
+          action_payload: Json | null
+          action_type: string | null
           approval_rule_id: string | null
+          assigned_approvers: string[] | null
           assigned_to: string[]
           created_at: string | null
           expires_at: string | null
+          handler_run_count: number
           id: string
+          notify_on_complete: Json | null
           organization_id: string
-          post_id: string
+          post_id: string | null
+          product: string | null
+          proposed_to: string | null
+          rejection_reason: string | null
+          rejection_reason_code: string | null
           request_notes: string | null
           requested_at: string | null
           requested_by: string
           status: string | null
+          target_org_id: string | null
+          target_resource_id: string | null
+          target_resource_type: string | null
+          telegram_chat_id: number | null
+          telegram_message_id: number | null
           updated_at: string | null
           urgency: string | null
         }
         Insert: {
+          action_payload?: Json | null
+          action_type?: string | null
           approval_rule_id?: string | null
+          assigned_approvers?: string[] | null
           assigned_to: string[]
           created_at?: string | null
           expires_at?: string | null
+          handler_run_count?: number
           id?: string
+          notify_on_complete?: Json | null
           organization_id: string
-          post_id: string
+          post_id?: string | null
+          product?: string | null
+          proposed_to?: string | null
+          rejection_reason?: string | null
+          rejection_reason_code?: string | null
           request_notes?: string | null
           requested_at?: string | null
           requested_by: string
           status?: string | null
+          target_org_id?: string | null
+          target_resource_id?: string | null
+          target_resource_type?: string | null
+          telegram_chat_id?: number | null
+          telegram_message_id?: number | null
           updated_at?: string | null
           urgency?: string | null
         }
         Update: {
+          action_payload?: Json | null
+          action_type?: string | null
           approval_rule_id?: string | null
+          assigned_approvers?: string[] | null
           assigned_to?: string[]
           created_at?: string | null
           expires_at?: string | null
+          handler_run_count?: number
           id?: string
+          notify_on_complete?: Json | null
           organization_id?: string
-          post_id?: string
+          post_id?: string | null
+          product?: string | null
+          proposed_to?: string | null
+          rejection_reason?: string | null
+          rejection_reason_code?: string | null
           request_notes?: string | null
           requested_at?: string | null
           requested_by?: string
           status?: string | null
+          target_org_id?: string | null
+          target_resource_id?: string | null
+          target_resource_type?: string | null
+          telegram_chat_id?: number | null
+          telegram_message_id?: number | null
           updated_at?: string | null
           urgency?: string | null
         }
@@ -7139,6 +7181,45 @@ export type Database = {
           won_deal_value?: number | null
         }
         Relationships: []
+      }
+      cross_product_org_links: {
+        Row: {
+          created_at: string
+          draggonnb_org_id: string
+          id: string
+          status: string
+          trophy_org_id: string
+        }
+        Insert: {
+          created_at?: string
+          draggonnb_org_id: string
+          id?: string
+          status?: string
+          trophy_org_id: string
+        }
+        Update: {
+          created_at?: string
+          draggonnb_org_id?: string
+          id?: string
+          status?: string
+          trophy_org_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cross_product_org_links_draggonnb_org_id_fkey"
+            columns: ["draggonnb_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cross_product_org_links_trophy_org_id_fkey"
+            columns: ["trophy_org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       customer_contacts: {
         Row: {
@@ -12418,6 +12499,7 @@ export type Database = {
           industry: string | null
           is_active: boolean | null
           limits: Json | null
+          linked_trophy_org_id: string | null
           monthly_cost: number | null
           name: string
           notes: string | null
@@ -12449,6 +12531,7 @@ export type Database = {
           industry?: string | null
           is_active?: boolean | null
           limits?: Json | null
+          linked_trophy_org_id?: string | null
           monthly_cost?: number | null
           name: string
           notes?: string | null
@@ -12480,6 +12563,7 @@ export type Database = {
           industry?: string | null
           is_active?: boolean | null
           limits?: Json | null
+          linked_trophy_org_id?: string | null
           monthly_cost?: number | null
           name?: string
           notes?: string | null
@@ -12499,6 +12583,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_organizations_linked_trophy_org"
+            columns: ["linked_trophy_org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "organizations_package_id_fkey"
             columns: ["package_id"]
@@ -15760,6 +15851,39 @@ export type Database = {
         }
         Relationships: []
       }
+      sso_bridge_tokens: {
+        Row: {
+          consumed_at: string | null
+          expires_at: string
+          issued_at: string
+          jti: string
+          origin_org: string
+          product: string
+          target_org: string
+          user_id: string
+        }
+        Insert: {
+          consumed_at?: string | null
+          expires_at: string
+          issued_at?: string
+          jti: string
+          origin_org: string
+          product: string
+          target_org: string
+          user_id: string
+        }
+        Update: {
+          consumed_at?: string | null
+          expires_at?: string
+          issued_at?: string
+          jti?: string
+          origin_org?: string
+          product?: string
+          target_org?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       staff: {
         Row: {
           active: boolean | null
@@ -16153,6 +16277,32 @@ export type Database = {
             columns: ["staff_id"]
             isOneToOne: false
             referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      telegram_update_log: {
+        Row: {
+          bot_org_id: string | null
+          processed_at: string
+          update_id: number
+        }
+        Insert: {
+          bot_org_id?: string | null
+          processed_at?: string
+          update_id: number
+        }
+        Update: {
+          bot_org_id?: string | null
+          processed_at?: string
+          update_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telegram_update_log_bot_org_id_fkey"
+            columns: ["bot_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -16613,6 +16763,7 @@ export type Database = {
           id: string
           metadata: Json | null
           phone: string | null
+          telegram_user_id: number | null
           ui_mode: string | null
           updated_at: string | null
         }
@@ -16623,6 +16774,7 @@ export type Database = {
           id: string
           metadata?: Json | null
           phone?: string | null
+          telegram_user_id?: number | null
           ui_mode?: string | null
           updated_at?: string | null
         }
@@ -16633,6 +16785,7 @@ export type Database = {
           id?: string
           metadata?: Json | null
           phone?: string | null
+          telegram_user_id?: number | null
           ui_mode?: string | null
           updated_at?: string | null
         }
@@ -17579,6 +17732,25 @@ export type Database = {
           p_quantity?: number
         }
         Returns: Json
+      }
+      schedule_campaign_run_job: {
+        Args: {
+          p_cron_expr: string
+          p_hmac: string
+          p_job_name: string
+          p_run_id: string
+          p_url: string
+        }
+        Returns: undefined
+      }
+      set_tenant_module_config_path: {
+        Args: {
+          p_module_id: string
+          p_organization_id: string
+          p_path: string[]
+          p_value: string
+        }
+        Returns: undefined
       }
       st_3dclosestpoint: {
         Args: { geom1: unknown; geom2: unknown }
