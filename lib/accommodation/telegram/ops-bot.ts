@@ -3,14 +3,13 @@
  * Sends task notifications to department channels with inline action buttons.
  * Handles callback queries from staff accepting/completing tasks.
  *
- * Reuses patterns from lib/telegram/bot.ts but supports per-org bot tokens
- * and department-based channel routing.
+ * STACK-05: Refactored to use grammY Api class instead of raw api.telegram.org fetches.
+ * Per-org bot tokens supported via grammY Api(token) constructor.
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { DailyBriefData } from '@/lib/accommodation/types'
-
-const TELEGRAM_API_BASE = 'https://api.telegram.org'
+import { Api } from 'grammy'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -67,6 +66,9 @@ function getBotToken(channelConfig?: TelegramChannelConfig | null): string {
   return token
 }
 
+/**
+ * STACK-05: Uses grammY Api class per-token (supports per-org bot tokens from accommodation_telegram_channels).
+ */
 async function sendTelegramMessage(
   botToken: string,
   chatId: string,
@@ -77,25 +79,12 @@ async function sendTelegramMessage(
   }
 ): Promise<{ ok: boolean; message_id?: number; error?: string }> {
   try {
-    const response = await fetch(`${TELEGRAM_API_BASE}/bot${botToken}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text,
-        parse_mode: options?.parse_mode || 'HTML',
-        ...( options?.reply_markup ? { reply_markup: options.reply_markup } : {}),
-      }),
+    const api = new Api(botToken)
+    const result = await api.sendMessage(chatId as any, text, {
+      parse_mode: options?.parse_mode || 'HTML',
+      ...(options?.reply_markup ? { reply_markup: options.reply_markup as any } : {}),
     })
-
-    const result = await response.json() as { ok: boolean; result?: { message_id: number }; description?: string }
-
-    if (!result.ok) {
-      console.error('[OpsBot] Telegram send error:', result.description)
-      return { ok: false, error: result.description }
-    }
-
-    return { ok: true, message_id: result.result?.message_id }
+    return { ok: true, message_id: result.message_id }
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : 'Unknown error'
     console.error('[OpsBot] Telegram send failed:', errMsg)
@@ -108,14 +97,12 @@ async function answerCallbackQuery(
   callbackQueryId: string,
   text?: string
 ): Promise<void> {
-  await fetch(`${TELEGRAM_API_BASE}/bot${botToken}/answerCallbackQuery`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      callback_query_id: callbackQueryId,
-      text: text || 'Updated!',
-    }),
-  })
+  try {
+    const api = new Api(botToken)
+    await api.answerCallbackQuery(callbackQueryId, { text: text || 'Updated!' })
+  } catch (e) {
+    console.error('[OpsBot] answerCallbackQuery failed:', e)
+  }
 }
 
 async function editMessageReplyMarkup(
@@ -124,15 +111,14 @@ async function editMessageReplyMarkup(
   messageId: number,
   replyMarkup?: unknown
 ): Promise<void> {
-  await fetch(`${TELEGRAM_API_BASE}/bot${botToken}/editMessageReplyMarkup`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chat_id: chatId,
-      message_id: messageId,
-      reply_markup: replyMarkup || { inline_keyboard: [] },
-    }),
-  })
+  try {
+    const api = new Api(botToken)
+    await api.editMessageReplyMarkup(chatId as any, messageId, {
+      reply_markup: (replyMarkup || { inline_keyboard: [] }) as any,
+    })
+  } catch (e) {
+    console.error('[OpsBot] editMessageReplyMarkup failed:', e)
+  }
 }
 
 // ─── Channel Resolution ─────────────────────────────────────────────────────
